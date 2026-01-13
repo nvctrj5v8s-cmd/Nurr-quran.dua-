@@ -952,12 +952,23 @@ class _QuranPageState extends State<QuranPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> surahs = [];
   SurahLanguage selectedLanguage = SurahLanguage.arabic;
+  int? lastReadSurah;
+  int? bookmarkedSurah;
 
   @override
   void initState() {
     super.initState();
     _loadLanguage();
     _loadSurahList();
+    _loadBookmarks();
+  }
+
+  Future<void> _loadBookmarks() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      lastReadSurah = prefs.getInt('last_read_surah');
+      bookmarkedSurah = prefs.getInt('bookmarked_surah');
+    });
   }
 
   Future<void> _loadSurahList() async {
@@ -1093,9 +1104,13 @@ class _QuranPageState extends State<QuranPage> {
             itemCount: surahs.length,
             itemBuilder: (context, index) {
               final surah = surahs[index];
+              final surahNumber = surah['number'];
+              final isLastRead = lastReadSurah == surahNumber;
+              final isBookmarked = bookmarkedSurah == surahNumber;
+
               return GestureDetector(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => FullSurahPage(
@@ -1105,14 +1120,27 @@ class _QuranPageState extends State<QuranPage> {
                       ),
                     ),
                   );
+                  _loadBookmarks(); // Refresh bookmarks after returning
                 },
                 child: Container(
                   margin: EdgeInsets.symmetric(vertical: 8),
                   padding: EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.85),
+                    color: isBookmarked 
+                        ? widget.themeColor.withOpacity(0.15)
+                        : Colors.black.withOpacity(0.85),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: widget.themeColor, width: 2),
+                    border: Border.all(
+                      color: isBookmarked ? Colors.amber : widget.themeColor,
+                      width: isBookmarked ? 3 : 2,
+                    ),
+                    boxShadow: isBookmarked ? [
+                      BoxShadow(
+                        color: Colors.amber.withOpacity(0.3),
+                        blurRadius: 10,
+                        spreadRadius: 1,
+                      ),
+                    ] : [],
                   ),
                   child: Row(
                     children: [
@@ -1120,7 +1148,7 @@ class _QuranPageState extends State<QuranPage> {
                         width: 50,
                         height: 50,
                         decoration: BoxDecoration(
-                          color: widget.themeColor,
+                          color: isBookmarked ? Colors.amber : widget.themeColor,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -1139,19 +1167,29 @@ class _QuranPageState extends State<QuranPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              surah['englishName'] ?? '',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    surah['englishName'] ?? '',
+                                    style: TextStyle(
+                                      color: isBookmarked ? widget.themeColor : Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                if (isBookmarked)
+                                  Icon(Icons.bookmark, color: Colors.amber, size: 20),
+                                if (isLastRead && !isBookmarked)
+                                  Icon(Icons.history, color: widget.themeColor.withOpacity(0.7), size: 18),
+                              ],
                             ),
                             SizedBox(height: 5),
                             Text(
                               '${surah['numberOfAyahs']} Verse • ${surah['revelationType'] ?? ''}',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: isBookmarked ? Colors.white.withOpacity(0.8) : Colors.white70,
                                 fontSize: 14,
                               ),
                             ),
@@ -1197,6 +1235,133 @@ class FullSurahPage extends StatefulWidget {
 class _FullSurahPageState extends State<FullSurahPage> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0;
+  bool isBookmarked = false;
+  Map<String, Color> highlightedVerses = {}; // "surah_verse" -> Color
+  Color? selectedHighlightColor;
+  bool showColorPicker = false;
+
+  // Highlight-Farben
+  final Map<String, Color> highlightColors = {
+    '💛 Gelb': Colors.yellow.shade300,
+    '💚 Grün': Colors.green.shade200,
+    '💙 Blau': Colors.blue.shade200,
+    '💗 Rosa': Colors.pink.shade200,
+    '🟠 Orange': Colors.orange.shade200,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBookmarkStatus();
+    _saveLastRead();
+    _loadHighlights();
+  }
+
+  Future<void> _loadHighlights() async {
+    final prefs = await SharedPreferences.getInstance();
+    final highlightsJson = prefs.getString('verse_highlights') ?? '{}';
+    try {
+      final Map<String, dynamic> decoded = json.decode(highlightsJson);
+      setState(() {
+        highlightedVerses = decoded.map((key, value) => 
+          MapEntry(key, Color(value as int))
+        );
+      });
+    } catch (e) {
+      print('Error loading highlights: $e');
+    }
+  }
+
+  Future<void> _saveHighlights() async {
+    final prefs = await SharedPreferences.getInstance();
+    final highlightsJson = json.encode(
+      highlightedVerses.map((key, value) => MapEntry(key, value.value))
+    );
+    await prefs.setString('verse_highlights', highlightsJson);
+  }
+
+  void _toggleVerseHighlight(int verseNumber) {
+    final key = '${widget.surahNumber}_$verseNumber';
+    
+    if (highlightedVerses.containsKey(key)) {
+      // Bereits markiert - entfernen
+      setState(() {
+        highlightedVerses.remove(key);
+      });
+      _saveHighlights();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Markierung entfernt'),
+          backgroundColor: Colors.red.withOpacity(0.8),
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else if (selectedHighlightColor != null) {
+      // Markieren mit gewählter Farbe
+      setState(() {
+        highlightedVerses[key] = selectedHighlightColor!;
+      });
+      _saveHighlights();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('✓ Vers markiert!'),
+          backgroundColor: selectedHighlightColor,
+          duration: Duration(seconds: 1),
+        ),
+      );
+    } else {
+      // Keine Farbe gewählt - Hinweis
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('👆 Wähle zuerst eine Farbe oben'),
+          backgroundColor: widget.themeColor,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadBookmarkStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookmarkedSurah = prefs.getInt('bookmarked_surah');
+    setState(() {
+      isBookmarked = bookmarkedSurah == widget.surahNumber;
+    });
+  }
+
+  Future<void> _saveLastRead() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('last_read_surah', widget.surahNumber);
+  }
+
+  Future<void> _toggleBookmark() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (isBookmarked) {
+      await prefs.remove('bookmarked_surah');
+      setState(() => isBookmarked = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lesezeichen entfernt'),
+            backgroundColor: Colors.red.withOpacity(0.8),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } else {
+      await prefs.setInt('bookmarked_surah', widget.surahNumber);
+      setState(() => isBookmarked = true);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('📖 Lesezeichen gesetzt!'),
+            backgroundColor: widget.themeColor,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1214,12 +1379,105 @@ class _FullSurahPageState extends State<FullSurahPage> {
         ),
         centerTitle: true,
         iconTheme: IconThemeData(color: widget.themeColor),
+        actions: [
+          // Color Picker Toggle
+          IconButton(
+            icon: Icon(
+              showColorPicker ? Icons.palette : Icons.palette_outlined,
+              color: showColorPicker ? Colors.amber : widget.themeColor,
+              size: 26,
+            ),
+            onPressed: () {
+              setState(() {
+                showColorPicker = !showColorPicker;
+              });
+            },
+            tooltip: 'Farbe zum Markieren wählen',
+          ),
+          IconButton(
+            icon: Icon(
+              isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              color: isBookmarked ? Colors.amber : widget.themeColor,
+              size: 28,
+            ),
+            onPressed: _toggleBookmark,
+            tooltip: isBookmarked ? 'Lesezeichen entfernen' : 'Lesezeichen setzen',
+          ),
+        ],
       ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: SurahApiService.getSurahVerses(widget.surahNumber, widget.language),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+      body: Column(
+        children: [
+          // Color Picker Bar
+          if (showColorPicker)
+            Container(
+              color: Colors.black.withOpacity(0.9),
+              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+              child: Column(
+                children: [
+                  Text(
+                    '👇 Farbe wählen, dann Verse antippen zum Markieren',
+                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: highlightColors.entries.map((entry) {
+                        final isSelected = selectedHighlightColor == entry.value;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              selectedHighlightColor = isSelected ? null : entry.value;
+                            });
+                          },
+                          child: Container(
+                            margin: EdgeInsets.symmetric(horizontal: 5),
+                            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: entry.value,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isSelected ? Colors.black : Colors.grey,
+                                width: isSelected ? 3 : 1,
+                              ),
+                              boxShadow: isSelected ? [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ] : [],
+                            ),
+                            child: Text(
+                              entry.key,
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  SizedBox(height: 5),
+                  if (selectedHighlightColor != null)
+                    Text(
+                      '✓ Gewählt - jetzt Verse antippen',
+                      style: TextStyle(color: Colors.greenAccent, fontSize: 11),
+                    ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: SurahApiService.getSurahVerses(widget.surahNumber, widget.language),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
               child: CircularProgressIndicator(color: widget.themeColor),
             );
           }
@@ -1315,18 +1573,30 @@ class _FullSurahPageState extends State<FullSurahPage> {
                         _buildBismillah(),
                         SizedBox(height: 30),
                       ],
-                      // ALLE Verse
-                      RichText(
-                        textAlign: widget.language == SurahLanguage.arabic
-                            ? TextAlign.justify
-                            : TextAlign.left,
-                        textDirection: widget.language == SurahLanguage.arabic
-                            ? TextDirection.rtl
-                            : TextDirection.ltr,
-                        text: TextSpan(
-                          children: _buildVerses(allVerses),
-                        ),
-                      ),
+                      // ALLE Verse - einzeln anklickbar
+                      ...allVerses.map((verse) {
+                        final verseNumber = verse['verse_number'] as int;
+                        final key = '${widget.surahNumber}_$verseNumber';
+                        final isHighlighted = highlightedVerses.containsKey(key);
+                        final highlightColor = highlightedVerses[key];
+
+                        return GestureDetector(
+                          onTap: () => _toggleVerseHighlight(verseNumber),
+                          child: Container(
+                            margin: EdgeInsets.symmetric(vertical: 5),
+                            padding: EdgeInsets.all(isHighlighted ? 12 : 8),
+                            decoration: BoxDecoration(
+                              color: isHighlighted ? highlightColor : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: isHighlighted ? Border.all(
+                                color: Colors.black.withOpacity(0.2),
+                                width: 1,
+                              ) : null,
+                            ),
+                            child: _buildSingleVerse(verse),
+                          ),
+                        );
+                      }).toList(),
                       SizedBox(height: 100), // Space at bottom
                     ],
                   ),
@@ -1335,8 +1605,75 @@ class _FullSurahPageState extends State<FullSurahPage> {
             ],
           );
         },
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _buildSingleVerse(Map<String, dynamic> verse) {
+    final text = verse['text'];
+    final verseNumber = verse['verse_number'].toString();
+    
+    // Arabische Versnummer
+    final arabicNumerals = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+    String arabicNumber = verseNumber.split('').map((digit) {
+      return arabicNumerals[int.parse(digit)];
+    }).join();
+
+    if (widget.language == SurahLanguage.arabic) {
+      return RichText(
+        textAlign: TextAlign.justify,
+        textDirection: TextDirection.rtl,
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: text,
+              style: GoogleFonts.amiriQuran(
+                fontSize: 24,
+                color: Colors.black,
+                height: 2.0,
+                letterSpacing: 0.3,
+              ),
+            ),
+            TextSpan(
+              text: ' ﴿$arabicNumber﴾ ',
+              style: GoogleFonts.amiriQuran(
+                fontSize: 20,
+                color: widget.themeColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    } else {
+      return RichText(
+        textAlign: TextAlign.left,
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: text,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+                height: 1.8,
+              ),
+            ),
+            TextSpan(
+              text: ' ﴿$arabicNumber﴾',
+              style: GoogleFonts.amiriQuran(
+                fontSize: 16,
+                color: widget.themeColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Widget _buildBismillah() {
