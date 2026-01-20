@@ -44,32 +44,23 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   Future<void> _initializeMushaf() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedPage = prefs.getInt('mushaf_last_page') ?? 2; // Start ab Seite 3 (Index 2)
-      
-      // Validiere gespeicherte Seite
+      // Start ab Seite 3 (Index 2), nie Seite 0/1
+      final savedPage = prefs.getInt('mushaf_last_page') ?? 2;
       final validPage = savedPage.clamp(2, totalPages - 1); // Minimum ist Seite 3
-      
       setState(() {
         _currentPage = validPage;
         _isLoading = false;
       });
-      
-      // RTL: Physische Seite = totalPages - 1 - logische Seite
-      // Beispiel: Seite 0 (erste Seite) -> physischer Index 603 (ganz rechts)
       final physicalIndex = _convertToPhysicalIndex(_currentPage);
-      
       _pageController = PageController(initialPage: physicalIndex);
-      
-      // Preload aktuelle Seite und Nachbarn
       _preloadPages(_currentPage);
-      
     } catch (e) {
       debugPrint('Fehler beim Initialisieren: $e');
       setState(() {
         _isLoading = false;
-        _currentPage = 0;
+        _currentPage = 2;
       });
-      _pageController = PageController(initialPage: totalPages - 1);
+      _pageController = PageController(initialPage: totalPages - 3);
     }
   }
   
@@ -209,12 +200,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           tooltip: 'Zur Seite springen',
           onPressed: _showPageJumpDialog,
         ),
-        // Info
-        IconButton(
-          icon: const Icon(Icons.info_outline),
-          tooltip: 'Info',
-          onPressed: _showInfoDialog,
-        ),
+        // Info-Button entfernt
       ],
     );
   }
@@ -233,8 +219,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             'assets/mushaf_pages/$pageNum.png',
           ),
           
-          // Initial: Fit to screen
-          initialScale: PhotoViewComputedScale.contained,
+          // Initial: Größer als Standard
+          initialScale: PhotoViewComputedScale.contained * 1.2,
           
           // Min: 80% von contained (etwas rauszoomen möglich)
           minScale: PhotoViewComputedScale.contained * 0.8,

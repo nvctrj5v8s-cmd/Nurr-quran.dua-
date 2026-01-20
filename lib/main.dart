@@ -1130,113 +1130,124 @@ class _QuranPageState extends State<QuranPage> {
   }
 
   Widget _buildSurahCard(int index) {
-              final surah = surahs[index];
-              final surahNumber = surah['number'];
-              final isLastRead = lastReadSurah == surahNumber;
-              final isBookmarked = bookmarkedSurah == surahNumber;
-
-              return GestureDetector(
-                onTap: () async {
-                  Navigator.pop(context); // Schließe Modal
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FullSurahPage(
-                        surahNumber: surah['number'],
-                        themeColor: widget.themeColor,
-                        language: selectedLanguage,
-                      ),
-                    ),
-                  );
-                  _loadBookmarks(); // Refresh bookmarks after returning
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isBookmarked 
-                        ? widget.themeColor.withOpacity(0.15)
-                        : Colors.black.withOpacity(0.85),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(
-                      color: isBookmarked ? Colors.amber : widget.themeColor,
-                      width: isBookmarked ? 3 : 2,
-                    ),
-                    boxShadow: isBookmarked ? [
-                      BoxShadow(
-                        color: Colors.amber.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 1,
-                      ),
-                    ] : [],
+    final surah = surahs[index];
+    final surahNumber = surah['number'];
+    final isLastRead = lastReadSurah == surahNumber;
+    final isBookmarked = bookmarkedSurah == surahNumber;
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(context); // Schließe Modal
+        // Sprung zur Mushaf-Seite
+        int mushafPage = _getMushafPageForSurah(surahNumber);
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MushafReaderPage(
+              themeColor: widget.themeColor,
+              onShowSurahList: _showSurahList,
+              // Startet auf der richtigen Seite
+              key: ValueKey(mushafPage),
+            ),
+          ),
+        );
+        _loadBookmarks();
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 8),
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isBookmarked 
+              ? widget.themeColor.withOpacity(0.15)
+              : Colors.black.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(
+            color: isBookmarked ? Colors.amber : widget.themeColor,
+            width: isBookmarked ? 3 : 2,
+          ),
+          boxShadow: isBookmarked ? [
+            BoxShadow(
+              color: Colors.amber.withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ] : [],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: isBookmarked ? Colors.amber : widget.themeColor,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${surah['number']}',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  child: Row(
+                ),
+              ),
+            ),
+            SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: isBookmarked ? Colors.amber : widget.themeColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${surah['number']}',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                      Expanded(
+                        child: Text(
+                          surah['englishName'] ?? '',
+                          style: TextStyle(
+                            color: isBookmarked ? widget.themeColor : Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    surah['englishName'] ?? '',
-                                    style: TextStyle(
-                                      color: isBookmarked ? widget.themeColor : Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                if (isBookmarked)
-                                  Icon(Icons.bookmark, color: Colors.amber, size: 20),
-                                if (isLastRead && !isBookmarked)
-                                  Icon(Icons.history, color: widget.themeColor.withOpacity(0.7), size: 18),
-                              ],
-                            ),
-                            SizedBox(height: 5),
-                            Text(
-                              '${surah['numberOfAyahs']} Verse • ${surah['revelationType'] ?? ''}',
-                              style: TextStyle(
-                                color: isBookmarked ? Colors.white.withOpacity(0.8) : Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        surah['name'] ?? '',
-                        style: TextStyle(
-                          color: widget.themeColor,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        textDirection: TextDirection.rtl,
-                      ),
+                      if (isBookmarked)
+                        Icon(Icons.bookmark, color: Colors.amber, size: 20),
+                      if (isLastRead && !isBookmarked)
+                        Icon(Icons.history, color: widget.themeColor.withOpacity(0.7), size: 18),
                     ],
                   ),
-                ),
-              );
+                  SizedBox(height: 5),
+                  Text(
+                    '${surah['numberOfAyahs']} Verse • ${surah['revelationType'] ?? ''}',
+                    style: TextStyle(
+                      color: isBookmarked ? Colors.white.withOpacity(0.8) : Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              surah['name'] ?? '',
+              style: TextStyle(
+                color: widget.themeColor,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+              textDirection: TextDirection.rtl,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Mapping Surah → Mushaf-Seite (Beispiel: Surah 1 = Seite 3, Surah 114 = Seite 604)
+  int _getMushafPageForSurah(int surahNumber) {
+    // TODO: Ersetze durch echte Zuordnung falls vorhanden
+    if (surahNumber == 1) return 2; // Seite 3 (Index 2)
+    if (surahNumber == 114) return 603; // Seite 604 (Index 603)
+    // ... Mapping für alle Surahs
+    return 2 + (surahNumber - 1) * 5; // Dummy: jede Surah 5 Seiten Abstand
   }
 
   @override
