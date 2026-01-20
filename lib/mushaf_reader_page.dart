@@ -27,41 +27,27 @@ class MushafReaderPage extends StatefulWidget {
 
 class _MushafReaderPageState extends State<MushafReaderPage> {
   late PageController _pageController;
-  int _currentPage = 0;
+  int _currentPage = 2; // Immer ab Seite 3 starten
   bool _isLoading = true;
-  bool _showUI = true; // UI sichtbar/versteckt
-  
-  /// Madani Mushaf hat 604 Seiten
+  bool _showUI = true;
   static const int totalPages = 604;
-  
+
   @override
   void initState() {
     super.initState();
     _initializeMushaf();
   }
-  
+
   /// Initialisiere Mushaf: Lade letzte Seite und setup PageController
   Future<void> _initializeMushaf() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      // Start ab Seite 3 (Index 2), nie Seite 0/1
-      final savedPage = prefs.getInt('mushaf_last_page') ?? 2;
-      final validPage = savedPage.clamp(2, totalPages - 1); // Minimum ist Seite 3
-      setState(() {
-        _currentPage = validPage;
-        _isLoading = false;
-      });
-      final physicalIndex = _convertToPhysicalIndex(_currentPage);
-      _pageController = PageController(initialPage: physicalIndex);
-      _preloadPages(_currentPage);
-    } catch (e) {
-      debugPrint('Fehler beim Initialisieren: $e');
-      setState(() {
-        _isLoading = false;
-        _currentPage = 2;
-      });
-      _pageController = PageController(initialPage: totalPages - 3);
-    }
+    // Immer ab Seite 3 (Index 2) starten
+    setState(() {
+      _currentPage = 2;
+      _isLoading = false;
+    });
+    final physicalIndex = _convertToPhysicalIndex(_currentPage);
+    _pageController = PageController(initialPage: physicalIndex);
+    _preloadPages(_currentPage);
   }
   
   /// Konvertiere logische Seite (0-603) zu physischem Index für RTL
@@ -319,7 +305,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             _buildNavButton(
               icon: Icons.arrow_forward,
               label: 'السابق',
-              onPressed: _currentPage > 0 ? _goToPreviousPage : null,
+              onPressed: _currentPage > 2 ? _goToPreviousPage : null,
             ),
             
             // Seitenzahl
@@ -382,7 +368,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   /// Gehe zur nächsten Seite (nach links wischen)
   void _goToNextPage() {
     if (_currentPage < totalPages - 1) {
-      final nextLogicalPage = _currentPage + 1;
+      final nextLogicalPage = (_currentPage + 1).clamp(2, totalPages - 1);
+      if (nextLogicalPage < 2) return; // Blockiere Seite 1 und 2
       final nextPhysicalIndex = _convertToPhysicalIndex(nextLogicalPage);
       
       _pageController.animateToPage(
@@ -395,8 +382,9 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Gehe zur vorherigen Seite (nach rechts wischen)
   void _goToPreviousPage() {
-    if (_currentPage > 0) {
-      final prevLogicalPage = _currentPage - 1;
+    if (_currentPage > 2) {
+      final prevLogicalPage = (_currentPage - 1).clamp(2, totalPages - 1);
+      if (prevLogicalPage < 2) return; // Blockiere Seite 1 und 2
       final prevPhysicalIndex = _convertToPhysicalIndex(prevLogicalPage);
       
       _pageController.animateToPage(
@@ -420,7 +408,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           keyboardType: TextInputType.number,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Seitenzahl (1-$totalPages)',
+            labelText: 'Seitenzahl (3-$totalPages)',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.tag),
           ),
@@ -447,20 +435,18 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   /// Springe zu eingegebener Seite
   void _jumpToPage(String input) {
     final pageNumber = int.tryParse(input);
-    
-    if (pageNumber == null || pageNumber < 1 || pageNumber > totalPages) {
+    if (pageNumber == null || pageNumber < 3 || pageNumber > totalPages) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bitte Zahl zwischen 1 und $totalPages eingeben'),
+          content: Text('Bitte Zahl zwischen 3 und $totalPages eingeben'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
-    
     final logicalPage = pageNumber - 1;
+    if (logicalPage < 2) return; // Blockiere Seite 1 und 2
     final physicalIndex = _convertToPhysicalIndex(logicalPage);
-    
     _pageController.jumpToPage(physicalIndex);
     Navigator.pop(context);
   }
