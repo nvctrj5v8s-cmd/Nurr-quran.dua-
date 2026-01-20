@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'mushaf_reader_page.dart';
 
 // ==================== ÜBERSETZUNGEN ====================
 class AppTranslations {
@@ -1068,41 +1069,67 @@ class _QuranPageState extends State<QuranPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF1a1a1a),
-      appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.9),
-        title: Text(
-          '📖 القرآن الكريم',
-          style: GoogleFonts.amiriQuran(
-            color: widget.themeColor,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+  void _showSurahList() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, controller) => Container(
+          decoration: BoxDecoration(
+            color: Color(0xFF1a1a1a),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: widget.themeColor, width: 2),
           ),
-        ),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
             children: [
-              Text(
-                selectedLanguage.flag,
-                style: TextStyle(fontSize: 20),
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.5),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.list, color: widget.themeColor),
+                    SizedBox(width: 10),
+                    Text(
+                      'Surahs',
+                      style: GoogleFonts.amiriQuran(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: widget.themeColor,
+                      ),
+                    ),
+                    Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: isLoading
+                  ? Center(child: CircularProgressIndicator(color: widget.themeColor))
+                  : ListView.builder(
+                      controller: controller,
+                      padding: EdgeInsets.all(15),
+                      itemCount: surahs.length,
+                      itemBuilder: (context, index) => _buildSurahCard(index),
+                    ),
               ),
             ],
           ),
-          onPressed: _showLanguageDialog,
-          tooltip: 'Sprache wählen',
         ),
       ),
-      body: isLoading
-        ? Center(child: CircularProgressIndicator(color: widget.themeColor))
-        : ListView.builder(
-            padding: EdgeInsets.all(15),
-            itemCount: surahs.length,
-            itemBuilder: (context, index) {
+    );
+  }
+
+  Widget _buildSurahCard(int index) {
               final surah = surahs[index];
               final surahNumber = surah['number'];
               final isLastRead = lastReadSurah == surahNumber;
@@ -1110,6 +1137,7 @@ class _QuranPageState extends State<QuranPage> {
 
               return GestureDetector(
                 onTap: () async {
+                  Navigator.pop(context); // Schließe Modal
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -1209,8 +1237,13 @@ class _QuranPageState extends State<QuranPage> {
                   ),
                 ),
               );
-            },
-          ),
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MushafReaderPage(
+      themeColor: widget.themeColor,
+      onShowSurahList: _showSurahList,
     );
   }
 }

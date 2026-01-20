@@ -13,10 +13,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// - Performance: Caching + Preloading
 class MushafReaderPage extends StatefulWidget {
   final Color themeColor;
+  final VoidCallback? onShowSurahList;
   
   const MushafReaderPage({
     super.key,
     this.themeColor = Colors.teal,
+    this.onShowSurahList,
   });
 
   @override
@@ -27,6 +29,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   late PageController _pageController;
   int _currentPage = 0;
   bool _isLoading = true;
+  bool _showUI = true; // UI sichtbar/versteckt
   
   /// Madani Mushaf hat 604 Seiten
   static const int totalPages = 604;
@@ -41,10 +44,10 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   Future<void> _initializeMushaf() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedPage = prefs.getInt('mushaf_last_page') ?? 0;
+      final savedPage = prefs.getInt('mushaf_last_page') ?? 2; // Start ab Seite 3 (Index 2)
       
       // Validiere gespeicherte Seite
-      final validPage = savedPage.clamp(0, totalPages - 1);
+      final validPage = savedPage.clamp(2, totalPages - 1); // Minimum ist Seite 3
       
       setState(() {
         _currentPage = validPage;
@@ -124,7 +127,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5EFE0), // Beige wie altes Papier
+        backgroundColor: Colors.black,
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -157,10 +160,17 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     }
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF5EFE0),
-      appBar: _buildAppBar(),
-      body: _buildPageView(),
-      bottomNavigationBar: _buildBottomBar(),
+      backgroundColor: Colors.black,
+      appBar: _showUI ? _buildAppBar() : null,
+      body: GestureDetector(
+        onTap: () {
+          setState(() {
+            _showUI = !_showUI;
+          });
+        },
+        child: _buildPageView(),
+      ),
+      bottomNavigationBar: _showUI ? _buildBottomBar() : null,
     );
   }
   
@@ -170,6 +180,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       backgroundColor: widget.themeColor,
       foregroundColor: Colors.white,
       elevation: 0,
+      automaticallyImplyLeading: false, // Kein Zurück-Button
       title: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -185,6 +196,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         ],
       ),
       actions: [
+        // Surah-Liste Button (in Ecke)
+        if (widget.onShowSurahList != null)
+          IconButton(
+            icon: const Icon(Icons.list),
+            tooltip: 'Surah Liste',
+            onPressed: widget.onShowSurahList,
+          ),
         // Springe zu Seite
         IconButton(
           icon: const Icon(Icons.search),
@@ -269,7 +287,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       },
       
       backgroundDecoration: const BoxDecoration(
-        color: Color(0xFFF5EFE0),
+        color: Colors.black,
       ),
       
       pageController: _pageController,
