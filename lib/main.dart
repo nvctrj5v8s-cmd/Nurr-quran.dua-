@@ -3382,17 +3382,14 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   String _introBody() {
     switch (appLanguage) {
       case AppLanguage.english:
-        return 'The 99 Names of Allah are not only to be memorized, but to be understood and lived.\n\n'
-            'When you learn a Name, ask: what does this mean for my relationship with Allah?\n\n'
-            'Example: Al-Muhaymin means The Guardian, The Protector. So we seek protection from Allah, trust Him in fear, and return to Him in moments of weakness.';
+        return 'The 99 Names of Allah are not only meant to be memorized. They should also be understood, internalized, and lived by in daily life. Each Name teaches us something about Allah’s attributes and helps us know Him better. When you learn one of His Names, ask yourself: What does this Name mean for my relationship with Allah?\n\n'
+            'For example: Ar-Rahman — The Most Merciful. This Name reminds us never to lose hope in Allah’s mercy. It encourages us to ask Allah for forgiveness and to show mercy to others as well.';
       case AppLanguage.arabic:
-        return 'أسماء الله الحسنى ليست للحفظ فقط، بل للفهم والعمل بها في الحياة.\n\n'
-            'عند تعلم كل اسم اسأل نفسك: ماذا يعني هذا الاسم في علاقتي بالله؟\n\n'
-            'مثال: اسم الله «المهيمن» يعني الحافظ والرقـيب. لذلك نطلب من الله الحماية، ونتوكل عليه عند الخوف، ونلجأ إليه عند الضعف.';
+        return 'أسماءُ اللهِ الحسنى ليست للحفظ فقط، بل ينبغي فهمُها واستحضارُها والعملُ بها في الحياة اليومية. فكلُّ اسمٍ منها يعرّفنا بشيءٍ من صفاتِ الله، ويساعدنا على التقرّب إليه ومعرفته أكثر. وعندما تتعلّم اسمًا من أسماء الله، فاسأل نفسك: ماذا يعني هذا الاسم لعلاقتي بالله؟\n\n'
+            'مثال ذلك: الرحمن — كثير الرحمة، واسع الرحمة. يذكّرنا هذا الاسم ألّا نفقد الأمل أبدًا في رحمة الله، ويشجّعنا على طلب المغفرة منه، وأن نكون رحماء مع الآخرين أيضًا.';
       case AppLanguage.german:
-        return 'Die 99 Namen Allahs soll man nicht nur auswendig lernen, sondern auch verstehen und im Alltag leben.\n\n'
-            'Wenn du einen Namen lernst, frage: Was bedeutet dieser Name fuer meine Beziehung zu Allah?\n\n'
-            'Beispiel: Al-Muhaymin bedeutet Der Beschuetzer und Bewahrer. Darum suchen wir Schutz bei Allah, vertrauen Ihm in Angst und wenden uns in Schwäche an Ihn.';
+        return 'Die 99 Namen Allahs sind nicht nur zum Auswendiglernen da. Sie sollen verstanden, verinnerlicht und im Alltag gelebt werden. Jeder Name zeigt uns etwas über Allahs Eigenschaften und hilft uns, Ihn besser kennenzulernen. Wenn du einen Namen lernst, frage dich: Was bedeutet dieser Name für meine Beziehung zu Allah?\n\n'
+            'Zum Beispiel: Ar-Rahman – der Allerbarmer. Dieser Name erinnert uns daran, niemals die Hoffnung auf Allahs Barmherzigkeit zu verlieren. Er ermutigt uns, Allah um Vergebung zu bitten und auch mit anderen barmherzig umzugehen.';
     }
   }
 
@@ -3411,15 +3408,15 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
     switch (appLanguage) {
       case AppLanguage.english:
         return 'The Prophet Muhammad ﷺ said:\n'
-            '"Allah has ninety-nine names, one hundred minus one; whoever preserves them will enter Paradise."\n'
+            '“Allah has ninety-nine names, one hundred minus one. Whoever comprehends them will enter Paradise.”\n'
             '(Sahih al-Bukhari, Sahih Muslim)';
       case AppLanguage.arabic:
         return 'قال النبي محمد ﷺ:\n'
-            '"إن لله تسعةً وتسعين اسمًا، مائةً إلا واحدًا، من أحصاها دخل الجنة"\n'
-            '(صحيح البخاري، صحيح مسلم)';
+            '«إنَّ للهِ تِسعةً وتسعين اسمًا، مائةً إلا واحدًا، من أحصاها دخل الجنة.»\n'
+            '(رواه البخاري ومسلم)';
       case AppLanguage.german:
         return 'Der Prophet Muhammad ﷺ sagte:\n'
-            '"Allah hat neunundneunzig Namen, hundert bis auf einen; wer sie erfasst (lernt, versteht und bewahrt), wird das Paradies betreten."\n'
+            '„Allah hat neunundneunzig Namen, hundert bis auf einen. Wer sie erfasst, wird das Paradies betreten.“\n'
             '(Sahih al-Bukhari, Sahih Muslim)';
     }
   }
@@ -3460,6 +3457,9 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                 Text(
                   _introBody(),
                   style: const TextStyle(color: Colors.white, height: 1.4),
+                  textDirection: appLanguage == AppLanguage.arabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -3473,7 +3473,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                 const SizedBox(height: 6),
                 Text(
                   _hadithText(),
-                  style: const TextStyle(color: Colors.white70, height: 1.45),
+                  style: const TextStyle(color: Colors.white, height: 1.45),
                   textDirection: appLanguage == AppLanguage.arabic
                       ? TextDirection.rtl
                       : TextDirection.ltr,
