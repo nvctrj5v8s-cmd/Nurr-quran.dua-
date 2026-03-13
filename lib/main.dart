@@ -451,7 +451,7 @@ class _MainPageState extends State<MainPage> {
               [
                 const HomePage(),
                 MushafReaderPage(themeColor: _MyAppState.currentTheme.color),
-                const DuaCategoriesPage(),
+                const NamesOfAllahPage(),
                 const SettingsPage()
               ][tab],
             ],
@@ -466,7 +466,23 @@ class _MainPageState extends State<MainPage> {
             items: [
               BottomNavigationBarItem(icon: const Icon(Icons.home), label: _navLabel('Home', 'Home', 'الرئيسية')),
               BottomNavigationBarItem(icon: const Icon(Icons.book), label: _navLabel('Quran', 'Quran', 'القرآن')),
-              BottomNavigationBarItem(icon: const Icon(Icons.menu_book), label: _navLabel('Dua', 'Dua', 'دعاء')),
+              BottomNavigationBarItem(
+                icon: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white70, width: 1.5),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      '99',
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                label: _navLabel('99 Namen', '99 Names', '99 اسما'),
+              ),
               BottomNavigationBarItem(icon: const Icon(Icons.more_horiz), label: _navLabel('Mehr', 'More', 'المزيد')),
             ],
           ),
@@ -3179,101 +3195,145 @@ class _MasbahaPageState extends State<MasbahaPage> {
   }
 }
 
-class _DuaCategory {
-  final String id;
-  final String de;
-  final String en;
-  final String ar;
-  final IconData icon;
-  final List<String> duas;
+class _AllahName {
+  final int number;
+  final String arabic;
+  final String transliteration;
+  final String meaningDe;
+  final String meaningEn;
+  final String meaningAr;
 
-  const _DuaCategory({
-    required this.id,
-    required this.de,
-    required this.en,
-    required this.ar,
-    required this.icon,
-    required this.duas,
+  const _AllahName({
+    required this.number,
+    required this.arabic,
+    required this.transliteration,
+    required this.meaningDe,
+    required this.meaningEn,
+    required this.meaningAr,
   });
 
-  String title(AppLanguage language) {
+  String meaning(AppLanguage language) {
     switch (language) {
       case AppLanguage.english:
-        return en;
+        return meaningEn;
       case AppLanguage.arabic:
-        return ar;
+        return meaningAr;
       case AppLanguage.german:
-        return de;
+        return meaningDe;
     }
   }
 }
 
-// ==================== DUA PAGE ====================
-class DuaCategoriesPage extends StatefulWidget {
-  const DuaCategoriesPage({super.key});
+class NamesOfAllahPage extends StatefulWidget {
+  const NamesOfAllahPage({super.key});
 
   @override
-  State<DuaCategoriesPage> createState() => _DuaCategoriesPageState();
+  State<NamesOfAllahPage> createState() => _NamesOfAllahPageState();
 }
 
-class _DuaCategoriesPageState extends State<DuaCategoriesPage> {
+class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   AppLanguage appLanguage = AppLanguage.german;
 
-  static const List<_DuaCategory> _categories = [
-    _DuaCategory(
-      id: 'test',
-      de: 'Dua Test',
-      en: 'Test Dua',
-      ar: 'دعاء تجريبي',
-      icon: Icons.science,
-      duas: [
-        'اللَّهُمَّ هَذَا دُعَاءٌ تَجْرِيبِيٌّ.',
-      ],
-    ),
-    _DuaCategory(
-      id: 'forgiveness',
-      de: 'Vergebung',
-      en: 'Forgiveness',
-      ar: 'الاستغفار',
-      icon: Icons.favorite,
-      duas: [
-        'أَسْتَغْفِرُ اللَّهَ رَبِّي مِنْ كُلِّ ذَنْبٍ وَأَتُوبُ إِلَيْهِ',
-        'اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَتُبْ عَلَيَّ',
-      ],
-    ),
-    _DuaCategory(
-      id: 'after_wudu',
-      de: 'Nach Wudu',
-      en: 'After Wudu',
-      ar: 'بعد الوضوء',
-      icon: Icons.water_drop,
-      duas: [
-        'أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
-        'اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ',
-      ],
-    ),
-    _DuaCategory(
-      id: 'morning',
-      de: 'Morgen',
-      en: 'Morning',
-      ar: 'أذكار الصباح',
-      icon: Icons.wb_sunny,
-      duas: [
-        'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-        'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ',
-      ],
-    ),
-    _DuaCategory(
-      id: 'evening',
-      de: 'Abend',
-      en: 'Evening',
-      ar: 'أذكار المساء',
-      icon: Icons.nightlight_round,
-      duas: [
-        'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ',
-        'اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ',
-      ],
-    ),
+  static const List<_AllahName> _names = [
+    _AllahName(number: 1, arabic: 'اللَّه', transliteration: 'Allah', meaningDe: 'Allah', meaningEn: 'Allah', meaningAr: 'الله'),
+    _AllahName(number: 2, arabic: 'الرَّحْمَٰن', transliteration: 'Ar-Rahman', meaningDe: 'Der Allerbarmer', meaningEn: 'The Most Compassionate', meaningAr: 'الرحمن'),
+    _AllahName(number: 3, arabic: 'الرَّحِيم', transliteration: 'Ar-Rahim', meaningDe: 'Der Barmherzige', meaningEn: 'The Most Merciful', meaningAr: 'الرحيم'),
+    _AllahName(number: 4, arabic: 'الْمَلِك', transliteration: 'Al-Malik', meaningDe: 'Der König', meaningEn: 'The King', meaningAr: 'الملك'),
+    _AllahName(number: 5, arabic: 'الْقُدُّوس', transliteration: 'Al-Quddus', meaningDe: 'Der Heilige', meaningEn: 'The Most Holy', meaningAr: 'القدوس'),
+    _AllahName(number: 6, arabic: 'السَّلَام', transliteration: 'As-Salam', meaningDe: 'Der Friede', meaningEn: 'The Source of Peace', meaningAr: 'السلام'),
+    _AllahName(number: 7, arabic: 'الْمُؤْمِن', transliteration: 'Al-Mumin', meaningDe: 'Der Gewährer von Sicherheit', meaningEn: 'The Giver of Security', meaningAr: 'المؤمن'),
+    _AllahName(number: 8, arabic: 'الْمُهَيْمِن', transliteration: 'Al-Muhaymin', meaningDe: 'Der Beschützer', meaningEn: 'The Guardian', meaningAr: 'المهيمن'),
+    _AllahName(number: 9, arabic: 'الْعَزِيز', transliteration: 'Al-Aziz', meaningDe: 'Der Allmächtige', meaningEn: 'The Almighty', meaningAr: 'العزيز'),
+    _AllahName(number: 10, arabic: 'الْجَبَّار', transliteration: 'Al-Jabbar', meaningDe: 'Der Gewaltige', meaningEn: 'The Compeller', meaningAr: 'الجبار'),
+    _AllahName(number: 11, arabic: 'الْمُتَكَبِّر', transliteration: 'Al-Mutakabbir', meaningDe: 'Der Majestätische', meaningEn: 'The Supreme', meaningAr: 'المتكبر'),
+    _AllahName(number: 12, arabic: 'الْخَالِق', transliteration: 'Al-Khaliq', meaningDe: 'Der Schöpfer', meaningEn: 'The Creator', meaningAr: 'الخالق'),
+    _AllahName(number: 13, arabic: 'الْبَارِئ', transliteration: 'Al-Bari', meaningDe: 'Der Erschaffer', meaningEn: 'The Originator', meaningAr: 'البارئ'),
+    _AllahName(number: 14, arabic: 'الْمُصَوِّر', transliteration: 'Al-Musawwir', meaningDe: 'Der Gestalter', meaningEn: 'The Fashioner', meaningAr: 'المصور'),
+    _AllahName(number: 15, arabic: 'الْغَفَّار', transliteration: 'Al-Ghaffar', meaningDe: 'Der Vielvergebende', meaningEn: 'The Constant Forgiver', meaningAr: 'الغفار'),
+    _AllahName(number: 16, arabic: 'الْقَهَّار', transliteration: 'Al-Qahhar', meaningDe: 'Der Allbezwinger', meaningEn: 'The All-Subduer', meaningAr: 'القهار'),
+    _AllahName(number: 17, arabic: 'الْوَهَّاب', transliteration: 'Al-Wahhab', meaningDe: 'Der Schenkende', meaningEn: 'The Bestower', meaningAr: 'الوهاب'),
+    _AllahName(number: 18, arabic: 'الرَّزَّاق', transliteration: 'Ar-Razzaq', meaningDe: 'Der Versorger', meaningEn: 'The Provider', meaningAr: 'الرزاق'),
+    _AllahName(number: 19, arabic: 'الْفَتَّاح', transliteration: 'Al-Fattah', meaningDe: 'Der Öffnende', meaningEn: 'The Opener', meaningAr: 'الفتاح'),
+    _AllahName(number: 20, arabic: 'الْعَلِيم', transliteration: 'Al-Alim', meaningDe: 'Der Allwissende', meaningEn: 'The All-Knowing', meaningAr: 'العليم'),
+    _AllahName(number: 21, arabic: 'الْقَابِض', transliteration: 'Al-Qabid', meaningDe: 'Der Zurückhaltende', meaningEn: 'The Withholder', meaningAr: 'القابض'),
+    _AllahName(number: 22, arabic: 'الْبَاسِط', transliteration: 'Al-Basit', meaningDe: 'Der Ausbreitende', meaningEn: 'The Extender', meaningAr: 'الباسط'),
+    _AllahName(number: 23, arabic: 'الْخَافِض', transliteration: 'Al-Khafid', meaningDe: 'Der Erniedrigende', meaningEn: 'The Reducer', meaningAr: 'الخافض'),
+    _AllahName(number: 24, arabic: 'الرَّافِع', transliteration: 'Ar-Rafi', meaningDe: 'Der Erhöhende', meaningEn: 'The Exalter', meaningAr: 'الرافع'),
+    _AllahName(number: 25, arabic: 'الْمُعِزّ', transliteration: 'Al-Muizz', meaningDe: 'Der Verleiher von Ehre', meaningEn: 'The Honourer', meaningAr: 'المعز'),
+    _AllahName(number: 26, arabic: 'الْمُذِلّ', transliteration: 'Al-Mudhill', meaningDe: 'Der Demütigende', meaningEn: 'The Dishonourer', meaningAr: 'المذل'),
+    _AllahName(number: 27, arabic: 'السَّمِيع', transliteration: 'As-Sami', meaningDe: 'Der Allhörende', meaningEn: 'The All-Hearing', meaningAr: 'السميع'),
+    _AllahName(number: 28, arabic: 'الْبَصِير', transliteration: 'Al-Basir', meaningDe: 'Der Allsehende', meaningEn: 'The All-Seeing', meaningAr: 'البصير'),
+    _AllahName(number: 29, arabic: 'الْحَكَم', transliteration: 'Al-Hakam', meaningDe: 'Der Richter', meaningEn: 'The Judge', meaningAr: 'الحكم'),
+    _AllahName(number: 30, arabic: 'الْعَدْل', transliteration: 'Al-Adl', meaningDe: 'Der Gerechte', meaningEn: 'The Just', meaningAr: 'العدل'),
+    _AllahName(number: 31, arabic: 'اللَّطِيف', transliteration: 'Al-Latif', meaningDe: 'Der Feinfühlige', meaningEn: 'The Subtle One', meaningAr: 'اللطيف'),
+    _AllahName(number: 32, arabic: 'الْخَبِير', transliteration: 'Al-Khabir', meaningDe: 'Der Allkundige', meaningEn: 'The All-Aware', meaningAr: 'الخبير'),
+    _AllahName(number: 33, arabic: 'الْحَلِيم', transliteration: 'Al-Halim', meaningDe: 'Der Nachsichtige', meaningEn: 'The Most Forbearing', meaningAr: 'الحليم'),
+    _AllahName(number: 34, arabic: 'الْعَظِيم', transliteration: 'Al-Azim', meaningDe: 'Der Gewaltige', meaningEn: 'The Magnificent', meaningAr: 'العظيم'),
+    _AllahName(number: 35, arabic: 'الْغَفُور', transliteration: 'Al-Ghafur', meaningDe: 'Der Vergebende', meaningEn: 'The Most Forgiving', meaningAr: 'الغفور'),
+    _AllahName(number: 36, arabic: 'الشَّكُور', transliteration: 'Ash-Shakur', meaningDe: 'Der Dankbare', meaningEn: 'The Most Appreciative', meaningAr: 'الشكور'),
+    _AllahName(number: 37, arabic: 'الْعَلِيّ', transliteration: 'Al-Aliyy', meaningDe: 'Der Allerhöchste', meaningEn: 'The Most High', meaningAr: 'العلي'),
+    _AllahName(number: 38, arabic: 'الْكَبِير', transliteration: 'Al-Kabir', meaningDe: 'Der Große', meaningEn: 'The Most Great', meaningAr: 'الكبير'),
+    _AllahName(number: 39, arabic: 'الْحَفِيظ', transliteration: 'Al-Hafiz', meaningDe: 'Der Bewahrende', meaningEn: 'The Preserver', meaningAr: 'الحفيظ'),
+    _AllahName(number: 40, arabic: 'الْمُقِيت', transliteration: 'Al-Muqit', meaningDe: 'Der Erhalter', meaningEn: 'The Sustainer', meaningAr: 'المقيت'),
+    _AllahName(number: 41, arabic: 'الْحَسِيب', transliteration: 'Al-Hasib', meaningDe: 'Der Abrechnende', meaningEn: 'The Reckoner', meaningAr: 'الحسيب'),
+    _AllahName(number: 42, arabic: 'الْجَلِيل', transliteration: 'Al-Jalil', meaningDe: 'Der Erhabene', meaningEn: 'The Majestic', meaningAr: 'الجليل'),
+    _AllahName(number: 43, arabic: 'الْكَرِيم', transliteration: 'Al-Karim', meaningDe: 'Der Großzügige', meaningEn: 'The Most Generous', meaningAr: 'الكريم'),
+    _AllahName(number: 44, arabic: 'الرَّقِيب', transliteration: 'Ar-Raqib', meaningDe: 'Der Wächter', meaningEn: 'The Watchful', meaningAr: 'الرقيب'),
+    _AllahName(number: 45, arabic: 'الْمُجِيب', transliteration: 'Al-Mujib', meaningDe: 'Der Erhörende', meaningEn: 'The Responsive', meaningAr: 'المجيب'),
+    _AllahName(number: 46, arabic: 'الْوَاسِع', transliteration: 'Al-Wasi', meaningDe: 'Der Umfassende', meaningEn: 'The All-Encompassing', meaningAr: 'الواسع'),
+    _AllahName(number: 47, arabic: 'الْحَكِيم', transliteration: 'Al-Hakim', meaningDe: 'Der Allweise', meaningEn: 'The All-Wise', meaningAr: 'الحكيم'),
+    _AllahName(number: 48, arabic: 'الْوَدُود', transliteration: 'Al-Wadud', meaningDe: 'Der Liebevolle', meaningEn: 'The Most Loving', meaningAr: 'الودود'),
+    _AllahName(number: 49, arabic: 'الْمَجِيد', transliteration: 'Al-Majid', meaningDe: 'Der Ruhmreiche', meaningEn: 'The Most Glorious', meaningAr: 'المجيد'),
+    _AllahName(number: 50, arabic: 'الْبَاعِث', transliteration: 'Al-Baith', meaningDe: 'Der Erwecker', meaningEn: 'The Resurrector', meaningAr: 'الباعث'),
+    _AllahName(number: 51, arabic: 'الشَّهِيد', transliteration: 'Ash-Shahid', meaningDe: 'Der Zeuge', meaningEn: 'The Witness', meaningAr: 'الشهيد'),
+    _AllahName(number: 52, arabic: 'الْحَقّ', transliteration: 'Al-Haqq', meaningDe: 'Die Wahrheit', meaningEn: 'The Truth', meaningAr: 'الحق'),
+    _AllahName(number: 53, arabic: 'الْوَكِيل', transliteration: 'Al-Wakil', meaningDe: 'Der Sachwalter', meaningEn: 'The Trustee', meaningAr: 'الوكيل'),
+    _AllahName(number: 54, arabic: 'الْقَوِيّ', transliteration: 'Al-Qawiyy', meaningDe: 'Der Starke', meaningEn: 'The All-Strong', meaningAr: 'القوي'),
+    _AllahName(number: 55, arabic: 'الْمَتِين', transliteration: 'Al-Matin', meaningDe: 'Der Standhafte', meaningEn: 'The Firm One', meaningAr: 'المتين'),
+    _AllahName(number: 56, arabic: 'الْوَلِيّ', transliteration: 'Al-Waliyy', meaningDe: 'Der Beschützerfreund', meaningEn: 'The Protecting Ally', meaningAr: 'الولي'),
+    _AllahName(number: 57, arabic: 'الْحَمِيد', transliteration: 'Al-Hamid', meaningDe: 'Der Lobenswerte', meaningEn: 'The Praiseworthy', meaningAr: 'الحميد'),
+    _AllahName(number: 58, arabic: 'الْمُحْصِي', transliteration: 'Al-Muhsi', meaningDe: 'Der Zählende', meaningEn: 'The Reckoner of All', meaningAr: 'المحصي'),
+    _AllahName(number: 59, arabic: 'الْمُبْدِئ', transliteration: 'Al-Mubdi', meaningDe: 'Der Anfänger', meaningEn: 'The Originator', meaningAr: 'المبدئ'),
+    _AllahName(number: 60, arabic: 'الْمُعِيد', transliteration: 'Al-Muid', meaningDe: 'Der Wiederhersteller', meaningEn: 'The Restorer', meaningAr: 'المعيد'),
+    _AllahName(number: 61, arabic: 'الْمُحْيِي', transliteration: 'Al-Muhyi', meaningDe: 'Der Lebensgeber', meaningEn: 'The Giver of Life', meaningAr: 'المحيي'),
+    _AllahName(number: 62, arabic: 'الْمُمِيت', transliteration: 'Al-Mumit', meaningDe: 'Der Verursacher des Todes', meaningEn: 'The Bringer of Death', meaningAr: 'المميت'),
+    _AllahName(number: 63, arabic: 'الْحَيّ', transliteration: 'Al-Hayy', meaningDe: 'Der Ewig Lebende', meaningEn: 'The Ever-Living', meaningAr: 'الحي'),
+    _AllahName(number: 64, arabic: 'الْقَيُّوم', transliteration: 'Al-Qayyum', meaningDe: 'Der Beständige', meaningEn: 'The Self-Subsisting', meaningAr: 'القيوم'),
+    _AllahName(number: 65, arabic: 'الْوَاجِد', transliteration: 'Al-Wajid', meaningDe: 'Der Finder', meaningEn: 'The Finder', meaningAr: 'الواجد'),
+    _AllahName(number: 66, arabic: 'الْمَاجِد', transliteration: 'Al-Majid', meaningDe: 'Der Edle', meaningEn: 'The Noble', meaningAr: 'الماجد'),
+    _AllahName(number: 67, arabic: 'الْوَاحِد', transliteration: 'Al-Wahid', meaningDe: 'Der Eine', meaningEn: 'The One', meaningAr: 'الواحد'),
+    _AllahName(number: 68, arabic: 'الصَّمَد', transliteration: 'As-Samad', meaningDe: 'Der Absolute', meaningEn: 'The Eternal Refuge', meaningAr: 'الصمد'),
+    _AllahName(number: 69, arabic: 'الْقَادِر', transliteration: 'Al-Qadir', meaningDe: 'Der Allmächtige', meaningEn: 'The All-Powerful', meaningAr: 'القادر'),
+    _AllahName(number: 70, arabic: 'الْمُقْتَدِر', transliteration: 'Al-Muqtadir', meaningDe: 'Der Vollmächtige', meaningEn: 'The Creator of All Power', meaningAr: 'المقتدر'),
+    _AllahName(number: 71, arabic: 'الْمُقَدِّم', transliteration: 'Al-Muqaddim', meaningDe: 'Der Voranstellende', meaningEn: 'The Expediter', meaningAr: 'المقدم'),
+    _AllahName(number: 72, arabic: 'الْمُؤَخِّر', transliteration: 'Al-Muakhkhir', meaningDe: 'Der Aufschiebende', meaningEn: 'The Delayer', meaningAr: 'المؤخر'),
+    _AllahName(number: 73, arabic: 'الْأَوَّل', transliteration: 'Al-Awwal', meaningDe: 'Der Erste', meaningEn: 'The First', meaningAr: 'الأول'),
+    _AllahName(number: 74, arabic: 'الْآخِر', transliteration: 'Al-Akhir', meaningDe: 'Der Letzte', meaningEn: 'The Last', meaningAr: 'الآخر'),
+    _AllahName(number: 75, arabic: 'الظَّاهِر', transliteration: 'Az-Zahir', meaningDe: 'Der Offenbare', meaningEn: 'The Manifest', meaningAr: 'الظاهر'),
+    _AllahName(number: 76, arabic: 'الْبَاطِن', transliteration: 'Al-Batin', meaningDe: 'Der Verborgene', meaningEn: 'The Hidden', meaningAr: 'الباطن'),
+    _AllahName(number: 77, arabic: 'الْوَالِي', transliteration: 'Al-Wali', meaningDe: 'Der Lenker', meaningEn: 'The Governor', meaningAr: 'الوالي'),
+    _AllahName(number: 78, arabic: 'الْمُتَعَالِي', transliteration: 'Al-Mutaali', meaningDe: 'Der Allerhöchste Erhabene', meaningEn: 'The Most Exalted', meaningAr: 'المتعالي'),
+    _AllahName(number: 79, arabic: 'الْبَرّ', transliteration: 'Al-Barr', meaningDe: 'Der Gütige', meaningEn: 'The Source of Goodness', meaningAr: 'البر'),
+    _AllahName(number: 80, arabic: 'التَّوَّاب', transliteration: 'At-Tawwab', meaningDe: 'Der Reue-Annehmende', meaningEn: 'The Acceptor of Repentance', meaningAr: 'التواب'),
+    _AllahName(number: 81, arabic: 'الْمُنْتَقِم', transliteration: 'Al-Muntaqim', meaningDe: 'Der Vergeltende', meaningEn: 'The Avenger', meaningAr: 'المنتقم'),
+    _AllahName(number: 82, arabic: 'الْعَفُوّ', transliteration: 'Al-Afuww', meaningDe: 'Der Verzeihende', meaningEn: 'The Pardoner', meaningAr: 'العفو'),
+    _AllahName(number: 83, arabic: 'الرَّؤُوف', transliteration: 'Ar-Rauf', meaningDe: 'Der Gütige', meaningEn: 'The Most Kind', meaningAr: 'الرؤوف'),
+    _AllahName(number: 84, arabic: 'مَالِكُ الْمُلْك', transliteration: 'Malik-ul-Mulk', meaningDe: 'Besitzer der Herrschaft', meaningEn: 'Owner of All Sovereignty', meaningAr: 'مالك الملك'),
+    _AllahName(number: 85, arabic: 'ذُو الْجَلَالِ وَالْإِكْرَام', transliteration: 'Dhul-Jalali wal-Ikram', meaningDe: 'Herr von Majestät und Ehre', meaningEn: 'Lord of Glory and Honour', meaningAr: 'ذو الجلال والإكرام'),
+    _AllahName(number: 86, arabic: 'الْمُقْسِط', transliteration: 'Al-Muqsit', meaningDe: 'Der Gerechte', meaningEn: 'The Equitable', meaningAr: 'المقسط'),
+    _AllahName(number: 87, arabic: 'الْجَامِع', transliteration: 'Al-Jami', meaningDe: 'Der Versammler', meaningEn: 'The Gatherer', meaningAr: 'الجامع'),
+    _AllahName(number: 88, arabic: 'الْغَنِيّ', transliteration: 'Al-Ghaniyy', meaningDe: 'Der Unabhängige', meaningEn: 'The Self-Sufficient', meaningAr: 'الغني'),
+    _AllahName(number: 89, arabic: 'الْمُغْنِي', transliteration: 'Al-Mughni', meaningDe: 'Der Bereichernde', meaningEn: 'The Enricher', meaningAr: 'المغني'),
+    _AllahName(number: 90, arabic: 'الْمَانِع', transliteration: 'Al-Mani', meaningDe: 'Der Zurückhaltende', meaningEn: 'The Preventer', meaningAr: 'المانع'),
+    _AllahName(number: 91, arabic: 'الضَّارّ', transliteration: 'Ad-Darr', meaningDe: 'Der Schaden Zulassende', meaningEn: 'The Afflictor', meaningAr: 'الضار'),
+    _AllahName(number: 92, arabic: 'النَّافِع', transliteration: 'An-Nafi', meaningDe: 'Der Nutzen Gebende', meaningEn: 'The Benefactor', meaningAr: 'النافع'),
+    _AllahName(number: 93, arabic: 'النُّور', transliteration: 'An-Nur', meaningDe: 'Das Licht', meaningEn: 'The Light', meaningAr: 'النور'),
+    _AllahName(number: 94, arabic: 'الْهَادِي', transliteration: 'Al-Hadi', meaningDe: 'Der Rechtleitende', meaningEn: 'The Guide', meaningAr: 'الهادي'),
+    _AllahName(number: 95, arabic: 'الْبَدِيع', transliteration: 'Al-Badi', meaningDe: 'Der Einzigartige Schöpfer', meaningEn: 'The Incomparable Originator', meaningAr: 'البديع'),
+    _AllahName(number: 96, arabic: 'الْبَاقِي', transliteration: 'Al-Baqi', meaningDe: 'Der Ewig Bleibende', meaningEn: 'The Everlasting', meaningAr: 'الباقي'),
+    _AllahName(number: 97, arabic: 'الْوَارِث', transliteration: 'Al-Warith', meaningDe: 'Der Erbe', meaningEn: 'The Inheritor', meaningAr: 'الوارث'),
+    _AllahName(number: 98, arabic: 'الرَّشِيد', transliteration: 'Ar-Rashid', meaningDe: 'Der recht Leitende', meaningEn: 'The Guide to the Right Path', meaningAr: 'الرشيد'),
+    _AllahName(number: 99, arabic: 'الصَّبُور', transliteration: 'As-Sabur', meaningDe: 'Der Geduldige', meaningEn: 'The Most Patient', meaningAr: 'الصبور'),
   ];
 
   @override
@@ -3285,24 +3345,36 @@ class _DuaCategoriesPageState extends State<DuaCategoriesPage> {
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     final langCode = prefs.getString('app_language') ?? 'de';
-    if (mounted) {
-      setState(() {
-        appLanguage = AppLanguage.values.firstWhere(
-          (l) => l.code == langCode,
-          orElse: () => AppLanguage.german,
-        );
-      });
+    if (!mounted) {
+      return;
     }
+    setState(() {
+      appLanguage = AppLanguage.values.firstWhere(
+        (l) => l.code == langCode,
+        orElse: () => AppLanguage.german,
+      );
+    });
   }
 
   String _title() {
     switch (appLanguage) {
       case AppLanguage.english:
-        return 'Dua';
+        return '99 Names of Allah';
       case AppLanguage.arabic:
-        return 'صفحة الدعاء';
+        return 'أسماء الله الحسنى';
       case AppLanguage.german:
-        return 'Dua Seite';
+        return '99 Namen Allahs';
+    }
+  }
+
+  String _subtitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Arabic, pronunciation and meaning';
+      case AppLanguage.arabic:
+        return 'الاسم بالعربية مع النطق والمعنى';
+      case AppLanguage.german:
+        return 'Arabisch, Aussprache und Bedeutung';
     }
   }
 
@@ -3313,158 +3385,147 @@ class _DuaCategoriesPageState extends State<DuaCategoriesPage> {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.8),
+              gradient: LinearGradient(
+                colors: [
+                  _MyAppState.currentTheme.color.withOpacity(0.35),
+                  Colors.black.withOpacity(0.9),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
             ),
             child: Row(
               children: [
-                Icon(Icons.menu_book, color: _MyAppState.currentTheme.color, size: 30),
-                const SizedBox(width: 10),
-                Text(
-                  _title(),
-                  style: TextStyle(
-                    color: _MyAppState.currentTheme.color,
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withOpacity(0.6),
+                    border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '99',
+                      style: TextStyle(
+                        color: _MyAppState.currentTheme.color,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _title(),
+                        style: TextStyle(
+                          color: _MyAppState.currentTheme.color,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _subtitle(),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.15,
-              ),
-              itemCount: _categories.length,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(14),
+              itemCount: _names.length,
               itemBuilder: (context, index) {
-                final category = _categories[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => DuaDetailPage(
-                          language: appLanguage,
-                          category: category,
-                        ),
+                final item = _names[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                    boxShadow: [
+                      BoxShadow(
+                        color: _MyAppState.currentTheme.color.withOpacity(0.18),
+                        blurRadius: 8,
+                        spreadRadius: 1,
                       ),
-                    );
-                  },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(category.icon, color: _MyAppState.currentTheme.color, size: 42),
-                        const SizedBox(height: 12),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ],
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 34,
+                        height: 34,
+                        decoration: BoxDecoration(
+                          color: _MyAppState.currentTheme.color,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
                           child: Text(
-                            category.title(appLanguage),
-                            textAlign: TextAlign.center,
+                            '${item.number}',
                             style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
+                              color: Colors.black,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.arabic,
+                              textDirection: TextDirection.rtl,
+                              style: GoogleFonts.notoNaskhArabic(
+                                color: Colors.black,
+                                fontSize: 30,
+                                height: 1.7,
+                                fontWeight: FontWeight.w700,
+                                textStyle: const TextStyle(color: Colors.black),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.transliteration,
+                              style: const TextStyle(
+                                color: Colors.black87,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.meaning(appLanguage),
+                              style: const TextStyle(
+                                color: Colors.black54,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class DuaDetailPage extends StatelessWidget {
-  final AppLanguage language;
-  final _DuaCategory category;
-
-  const DuaDetailPage({
-    super.key,
-    required this.language,
-    required this.category,
-  });
-
-  String _backText() {
-    switch (language) {
-      case AppLanguage.english:
-        return 'Back';
-      case AppLanguage.arabic:
-        return 'رجوع';
-      case AppLanguage.german:
-        return 'Zurück';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: _MyAppState.currentTheme.color,
-        title: Text(category.title(language)),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(14),
-        itemCount: category.duas.length,
-        itemBuilder: (context, index) {
-          final dua = category.duas[index];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
-            ),
-            child: Text(
-              dua,
-              textDirection: TextDirection.rtl,
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: Colors.black,
-                fontSize: 30,
-                height: 1.9,
-                fontWeight: FontWeight.w600,
-                fontFamily: GoogleFonts.amiriQuran().fontFamily,
-              ),
-            ),
-          );
-        },
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.arrow_back),
-            label: Text(_backText()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _MyAppState.currentTheme.color,
-              foregroundColor: Colors.black,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
-        ),
       ),
     );
   }
