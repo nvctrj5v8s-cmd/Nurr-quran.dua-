@@ -3233,6 +3233,8 @@ class NamesOfAllahPage extends StatefulWidget {
 
 class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   AppLanguage appLanguage = AppLanguage.german;
+  bool _hasSeenIntro = false;
+  static const String _introSeenKey = 'names_of_allah_intro_seen_v1';
 
   static const List<_AllahName> _names = [
     _AllahName(number: 1, arabic: 'اللَّه', transliteration: 'Allah', meaningDe: 'Allah', meaningEn: 'Allah', meaningAr: 'الله'),
@@ -3345,6 +3347,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   Future<void> _loadLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     final langCode = prefs.getString('app_language') ?? 'de';
+    final hasSeenIntro = prefs.getBool(_introSeenKey) ?? false;
     if (!mounted) {
       return;
     }
@@ -3353,7 +3356,157 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
         (l) => l.code == langCode,
         orElse: () => AppLanguage.german,
       );
+      _hasSeenIntro = hasSeenIntro;
     });
+
+    if (!hasSeenIntro) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _showIntroDialog(firstTime: true);
+        }
+      });
+    }
+  }
+
+  String _introTitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Why the 99 Names matter';
+      case AppLanguage.arabic:
+        return 'لماذا أسماء الله الحسنى مهمة';
+      case AppLanguage.german:
+        return 'Warum die 99 Namen wichtig sind';
+    }
+  }
+
+  String _introBody() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'The 99 Names of Allah are not only to be memorized, but to be understood and lived.\n\n'
+            'When you learn a Name, ask: what does this mean for my relationship with Allah?\n\n'
+            'Example: Al-Muhaymin means The Guardian, The Protector. So we seek protection from Allah, trust Him in fear, and return to Him in moments of weakness.';
+      case AppLanguage.arabic:
+        return 'أسماء الله الحسنى ليست للحفظ فقط، بل للفهم والعمل بها في الحياة.\n\n'
+            'عند تعلم كل اسم اسأل نفسك: ماذا يعني هذا الاسم في علاقتي بالله؟\n\n'
+            'مثال: اسم الله «المهيمن» يعني الحافظ والرقـيب. لذلك نطلب من الله الحماية، ونتوكل عليه عند الخوف، ونلجأ إليه عند الضعف.';
+      case AppLanguage.german:
+        return 'Die 99 Namen Allahs soll man nicht nur auswendig lernen, sondern auch verstehen und im Alltag leben.\n\n'
+            'Wenn du einen Namen lernst, frage: Was bedeutet dieser Name fuer meine Beziehung zu Allah?\n\n'
+            'Beispiel: Al-Muhaymin bedeutet Der Beschuetzer und Bewahrer. Darum suchen wir Schutz bei Allah, vertrauen Ihm in Angst und wenden uns in Schwäche an Ihn.';
+    }
+  }
+
+  String _hadithTitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Hadith';
+      case AppLanguage.arabic:
+        return 'حديث';
+      case AppLanguage.german:
+        return 'Hadith';
+    }
+  }
+
+  String _hadithText() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'The Prophet Muhammad ﷺ said:\n'
+            '"Allah has ninety-nine names, one hundred minus one; whoever preserves them will enter Paradise."\n'
+            '(Sahih al-Bukhari, Sahih Muslim)';
+      case AppLanguage.arabic:
+        return 'قال النبي محمد ﷺ:\n'
+            '"إن لله تسعةً وتسعين اسمًا، مائةً إلا واحدًا، من أحصاها دخل الجنة"\n'
+            '(صحيح البخاري، صحيح مسلم)';
+      case AppLanguage.german:
+        return 'Der Prophet Muhammad ﷺ sagte:\n'
+            '"Allah hat neunundneunzig Namen, hundert bis auf einen; wer sie erfasst (lernt, versteht und bewahrt), wird das Paradies betreten."\n'
+            '(Sahih al-Bukhari, Sahih Muslim)';
+    }
+  }
+
+  String _continueLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Continue';
+      case AppLanguage.arabic:
+        return 'متابعة';
+      case AppLanguage.german:
+        return 'Weiter';
+    }
+  }
+
+  Future<void> _showIntroDialog({required bool firstTime}) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !firstTime,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF101010),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
+          ),
+          title: Text(
+            _introTitle(),
+            style: TextStyle(
+              color: _MyAppState.currentTheme.color,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _introBody(),
+                  style: const TextStyle(color: Colors.white, height: 1.4),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  _hadithTitle(),
+                  style: TextStyle(
+                    color: _MyAppState.currentTheme.color,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _hadithText(),
+                  style: const TextStyle(color: Colors.white70, height: 1.45),
+                  textDirection: appLanguage == AppLanguage.arabic
+                      ? TextDirection.rtl
+                      : TextDirection.ltr,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                if (firstTime) {
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool(_introSeenKey, true);
+                  if (mounted) {
+                    setState(() => _hasSeenIntro = true);
+                  }
+                }
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
+              child: Text(
+                _continueLabel(),
+                style: TextStyle(
+                  color: _MyAppState.currentTheme.color,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   String _title() {
@@ -3437,6 +3590,37 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                         style: const TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ],
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.topRight,
+                  child: IconButton(
+                    tooltip: _introTitle(),
+                    onPressed: () => _showIntroDialog(firstTime: false),
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: _MyAppState.currentTheme.color,
+                          size: 24,
+                        ),
+                        if (!_hasSeenIntro)
+                          Positioned(
+                            top: -1,
+                            right: -1,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.black, width: 0.8),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
