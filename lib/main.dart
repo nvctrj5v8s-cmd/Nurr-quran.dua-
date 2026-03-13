@@ -34,6 +34,8 @@ enum AppTheme {
   classic(Colors.amber, 'Klassisch (Gold)'),
   green(Colors.green, 'Grün'),
   blue(Colors.blue, 'Blau'),
+  pink(Colors.pink, 'Rosa'),
+  graphite(Color(0xFF424242), 'Grau/Schwarz'),
   purple(Colors.purple, 'Lila'),
   teal(Colors.teal, 'Türkis');
 
@@ -449,7 +451,7 @@ class _MainPageState extends State<MainPage> {
               [
                 const HomePage(),
                 MushafReaderPage(themeColor: _MyAppState.currentTheme.color),
-                const SunnahPage(),
+                const DuaCategoriesPage(),
                 const SettingsPage()
               ][tab],
             ],
@@ -464,7 +466,7 @@ class _MainPageState extends State<MainPage> {
             items: [
               BottomNavigationBarItem(icon: const Icon(Icons.home), label: _navLabel('Home', 'Home', 'الرئيسية')),
               BottomNavigationBarItem(icon: const Icon(Icons.book), label: _navLabel('Quran', 'Quran', 'القرآن')),
-              BottomNavigationBarItem(icon: const Icon(Icons.auto_stories), label: _navLabel('Hadiths', 'Hadiths', 'أحاديث')),
+              BottomNavigationBarItem(icon: const Icon(Icons.menu_book), label: _navLabel('Dua', 'Dua', 'دعاء')),
               BottomNavigationBarItem(icon: const Icon(Icons.more_horiz), label: _navLabel('Mehr', 'More', 'المزيد')),
             ],
           ),
@@ -2221,7 +2223,15 @@ class _SettingsPageState extends State<SettingsPage> {
     final langCode = prefs.getString('app_language') ?? 'de';
     final backgroundAsset = prefs.getString('app_background');
     final savedDhikr = prefs.getString('tasbih_dhikr') ?? dhikrOptions.first;
-    final savedCount = prefs.getInt('tasbih_count') ?? 0;
+    final countsJson = prefs.getString('tasbih_counts_by_dhikr');
+    final countsRaw = countsJson == null
+      ? <String, dynamic>{}
+      : (json.decode(countsJson) as Map<String, dynamic>);
+    final legacyCount = prefs.getInt('tasbih_count') ?? 0;
+    final selected = dhikrOptions.contains(savedDhikr)
+      ? savedDhikr
+      : dhikrOptions.first;
+    final savedCount = (countsRaw[selected] as num?)?.toInt() ?? legacyCount;
 
     setState(() {
       appLanguage = AppLanguage.values.firstWhere(
@@ -2229,9 +2239,7 @@ class _SettingsPageState extends State<SettingsPage> {
         orElse: () => AppLanguage.german,
       );
       appBackground = AppBackground.fromAssetPath(backgroundAsset);
-      selectedDhikr = dhikrOptions.contains(savedDhikr)
-          ? savedDhikr
-          : dhikrOptions.first;
+      selectedDhikr = selected;
       tasbihCount = savedCount;
     });
   }
@@ -2387,11 +2395,11 @@ class _SettingsPageState extends State<SettingsPage> {
   String _settingsTitle() {
     switch (appLanguage) {
       case AppLanguage.english:
-        return 'Settings';
+        return 'More';
       case AppLanguage.arabic:
-        return 'الإعدادات';
+        return 'المزيد';
       case AppLanguage.german:
-        return 'Einstellungen';
+        return 'Mehr';
     }
   }
 
@@ -2912,6 +2920,7 @@ class MasbahaPage extends StatefulWidget {
 class _MasbahaPageState extends State<MasbahaPage> {
   int tasbihCount = 0;
   String selectedDhikr = 'SubhanAllah';
+  Map<String, int> _countsByDhikr = {};
 
   static const List<String> _dhikrOptions = [
     'SubhanAllah',
@@ -2931,11 +2940,22 @@ class _MasbahaPageState extends State<MasbahaPage> {
   Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     final savedDhikr = prefs.getString('tasbih_dhikr') ?? _dhikrOptions.first;
-    final savedCount = prefs.getInt('tasbih_count') ?? 0;
+    final countsJson = prefs.getString('tasbih_counts_by_dhikr');
+    final countsRaw = countsJson == null
+        ? <String, dynamic>{}
+        : (json.decode(countsJson) as Map<String, dynamic>);
+    final parsedCounts = <String, int>{
+      for (final entry in countsRaw.entries)
+        entry.key: (entry.value as num).toInt(),
+    };
+    final selected = _dhikrOptions.contains(savedDhikr)
+        ? savedDhikr
+        : _dhikrOptions.first;
+    final savedCount = parsedCounts[selected] ?? 0;
     if (mounted) {
       setState(() {
-        selectedDhikr =
-            _dhikrOptions.contains(savedDhikr) ? savedDhikr : _dhikrOptions.first;
+        _countsByDhikr = parsedCounts;
+        selectedDhikr = selected;
         tasbihCount = savedCount;
       });
     }
@@ -2943,17 +2963,23 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   Future<void> _saveState() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('tasbih_count', tasbihCount);
+    await prefs.setString('tasbih_counts_by_dhikr', json.encode(_countsByDhikr));
     await prefs.setString('tasbih_dhikr', selectedDhikr);
   }
 
   Future<void> _increment() async {
-    setState(() => tasbihCount++);
+    setState(() {
+      tasbihCount = (_countsByDhikr[selectedDhikr] ?? 0) + 1;
+      _countsByDhikr[selectedDhikr] = tasbihCount;
+    });
     await _saveState();
   }
 
   Future<void> _reset() async {
-    setState(() => tasbihCount = 0);
+    setState(() {
+      tasbihCount = 0;
+      _countsByDhikr[selectedDhikr] = 0;
+    });
     await _saveState();
   }
 
@@ -3050,7 +3076,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
                               if (value != null) {
                                 setState(() {
                                   selectedDhikr = value;
-                                  tasbihCount = 0;
+                                  tasbihCount = _countsByDhikr[value] ?? 0;
                                 });
                                 _saveState();
                               }
@@ -3149,6 +3175,297 @@ class _MasbahaPageState extends State<MasbahaPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _DuaCategory {
+  final String id;
+  final String de;
+  final String en;
+  final String ar;
+  final IconData icon;
+  final List<String> duas;
+
+  const _DuaCategory({
+    required this.id,
+    required this.de,
+    required this.en,
+    required this.ar,
+    required this.icon,
+    required this.duas,
+  });
+
+  String title(AppLanguage language) {
+    switch (language) {
+      case AppLanguage.english:
+        return en;
+      case AppLanguage.arabic:
+        return ar;
+      case AppLanguage.german:
+        return de;
+    }
+  }
+}
+
+// ==================== DUA PAGE ====================
+class DuaCategoriesPage extends StatefulWidget {
+  const DuaCategoriesPage({super.key});
+
+  @override
+  State<DuaCategoriesPage> createState() => _DuaCategoriesPageState();
+}
+
+class _DuaCategoriesPageState extends State<DuaCategoriesPage> {
+  AppLanguage appLanguage = AppLanguage.german;
+
+  static const List<_DuaCategory> _categories = [
+    _DuaCategory(
+      id: 'test',
+      de: 'Dua Test',
+      en: 'Test Dua',
+      ar: 'دعاء تجريبي',
+      icon: Icons.science,
+      duas: [
+        'اللَّهُمَّ هَذَا دُعَاءٌ تَجْرِيبِيٌّ.',
+      ],
+    ),
+    _DuaCategory(
+      id: 'forgiveness',
+      de: 'Vergebung',
+      en: 'Forgiveness',
+      ar: 'الاستغفار',
+      icon: Icons.favorite,
+      duas: [
+        'أَسْتَغْفِرُ اللَّهَ رَبِّي مِنْ كُلِّ ذَنْبٍ وَأَتُوبُ إِلَيْهِ',
+        'اللَّهُمَّ اغْفِرْ لِي وَارْحَمْنِي وَتُبْ عَلَيَّ',
+      ],
+    ),
+    _DuaCategory(
+      id: 'after_wudu',
+      de: 'Nach Wudu',
+      en: 'After Wudu',
+      ar: 'بعد الوضوء',
+      icon: Icons.water_drop,
+      duas: [
+        'أَشْهَدُ أَنْ لَا إِلَٰهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، وَأَشْهَدُ أَنَّ مُحَمَّدًا عَبْدُهُ وَرَسُولُهُ',
+        'اللَّهُمَّ اجْعَلْنِي مِنَ التَّوَّابِينَ وَاجْعَلْنِي مِنَ الْمُتَطَهِّرِينَ',
+      ],
+    ),
+    _DuaCategory(
+      id: 'morning',
+      de: 'Morgen',
+      en: 'Morning',
+      ar: 'أذكار الصباح',
+      icon: Icons.wb_sunny,
+      duas: [
+        'أَصْبَحْنَا وَأَصْبَحَ الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ',
+        'اللَّهُمَّ بِكَ أَصْبَحْنَا وَبِكَ أَمْسَيْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ النُّشُورُ',
+      ],
+    ),
+    _DuaCategory(
+      id: 'evening',
+      de: 'Abend',
+      en: 'Evening',
+      ar: 'أذكار المساء',
+      icon: Icons.nightlight_round,
+      duas: [
+        'أَمْسَيْنَا وَأَمْسَى الْمُلْكُ لِلَّهِ رَبِّ الْعَالَمِينَ',
+        'اللَّهُمَّ بِكَ أَمْسَيْنَا وَبِكَ أَصْبَحْنَا وَبِكَ نَحْيَا وَبِكَ نَمُوتُ وَإِلَيْكَ الْمَصِيرُ',
+      ],
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final langCode = prefs.getString('app_language') ?? 'de';
+    if (mounted) {
+      setState(() {
+        appLanguage = AppLanguage.values.firstWhere(
+          (l) => l.code == langCode,
+          orElse: () => AppLanguage.german,
+        );
+      });
+    }
+  }
+
+  String _title() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Dua';
+      case AppLanguage.arabic:
+        return 'صفحة الدعاء';
+      case AppLanguage.german:
+        return 'Dua Seite';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.8),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.menu_book, color: _MyAppState.currentTheme.color, size: 30),
+                const SizedBox(width: 10),
+                Text(
+                  _title(),
+                  style: TextStyle(
+                    color: _MyAppState.currentTheme.color,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.15,
+              ),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => DuaDetailPage(
+                          language: appLanguage,
+                          category: category,
+                        ),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(category.icon, color: _MyAppState.currentTheme.color, size: 42),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            category.title(appLanguage),
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DuaDetailPage extends StatelessWidget {
+  final AppLanguage language;
+  final _DuaCategory category;
+
+  const DuaDetailPage({
+    super.key,
+    required this.language,
+    required this.category,
+  });
+
+  String _backText() {
+    switch (language) {
+      case AppLanguage.english:
+        return 'Back';
+      case AppLanguage.arabic:
+        return 'رجوع';
+      case AppLanguage.german:
+        return 'Zurück';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: _MyAppState.currentTheme.color,
+        title: Text(category.title(language)),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(14),
+        itemCount: category.duas.length,
+        itemBuilder: (context, index) {
+          final dua = category.duas[index];
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+            ),
+            child: Text(
+              dua,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: 30,
+                height: 1.9,
+                fontWeight: FontWeight.w600,
+                fontFamily: GoogleFonts.amiriQuran().fontFamily,
+              ),
+            ),
+          );
+        },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.arrow_back),
+            label: Text(_backText()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _MyAppState.currentTheme.color,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -217,11 +217,11 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           // Decode at device-appropriate width for better speed/memory.
           imageProvider: ResizeImage(AssetImage(imagePath), width: targetWidth),
           
-          // Initial: Größer als Standard
-          initialScale: PhotoViewComputedScale.contained * 1.2,
+          // Start at contained size so horizontal swipe switches pages directly.
+          initialScale: PhotoViewComputedScale.contained,
           
-          // Min: 80% von contained (etwas rauszoomen möglich)
-          minScale: PhotoViewComputedScale.contained * 0.8,
+          // Keep min at contained to avoid accidental underscale panning.
+          minScale: PhotoViewComputedScale.contained,
           
           // Max: 3x zoom
           maxScale: PhotoViewComputedScale.covered * 3.0,
