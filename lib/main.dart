@@ -3234,6 +3234,8 @@ class NamesOfAllahPage extends StatefulWidget {
 class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   AppLanguage appLanguage = AppLanguage.german;
   bool _hasSeenIntro = false;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
   static const String _introSeenKey = 'names_of_allah_intro_seen_v1';
 
   static const String _detailsRawDe = '''
@@ -3859,18 +3861,129 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
     }
   }
 
-  String _detailFor(_AllahName item) {
+  String _searchHint() {
     switch (appLanguage) {
       case AppLanguage.english:
-        return _detailsEn[item.number] ?? item.meaningEn;
+        return 'Search by Arabic, transliteration or meaning';
       case AppLanguage.arabic:
-        return _detailsAr[item.number] ?? item.meaningAr;
+        return 'ابحث بالعربية أو بالنطق أو بالمعنى';
       case AppLanguage.german:
-        return _detailsDe[item.number] ?? item.meaningDe;
+        return 'Suche nach Arabisch, Aussprache oder Bedeutung';
+    }
+  }
+
+  String _noResultsLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'No names found for this search.';
+      case AppLanguage.arabic:
+        return 'لم يتم العثور على أسماء بهذه الكلمة.';
+      case AppLanguage.german:
+        return 'Keine Namen zu dieser Suche gefunden.';
+    }
+  }
+
+  String _normalizeSearch(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r"[\u2018\u2019\u201B\u2032'`\-_.\s]+"), '');
+  }
+
+  static String _nameKey(String value) {
+    return value
+        .toLowerCase()
+        .replaceAll(RegExp(r"[^a-z0-9\u0600-\u06FF]+"), '');
+  }
+
+  static Map<String, int> _buildDetailIndexByName() {
+    final map = <String, int>{};
+    final regex = RegExp(r'^\s*(\d+)\.\s*(.+?)\s*[—–]\s*');
+    for (final line in _detailsRawEn.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      final match = regex.firstMatch(trimmed);
+      if (match == null) continue;
+      final index = int.tryParse(match.group(1) ?? '');
+      final rawName = match.group(2)?.trim();
+      if (index == null || rawName == null || rawName.isEmpty) continue;
+      map[_nameKey(rawName)] = index;
+    }
+    return map;
+  }
+
+  static final Map<String, int> _detailIndexByName = _buildDetailIndexByName();
+
+  bool _isAllah(_AllahName item) {
+    return _nameKey(item.transliteration) == 'allah';
+  }
+
+  int? _detailIndexFor(_AllahName item) {
+    if (_isAllah(item)) {
+      return null;
+    }
+    return _detailIndexByName[_nameKey(item.transliteration)];
+  }
+
+  int _displayNumberFor(_AllahName item) {
+    return _detailIndexFor(item) ?? item.number;
+  }
+
+  List<_AllahName> _orderedNames() {
+    final ordered = [..._names];
+    ordered.sort((a, b) {
+      final aIndex = _detailIndexFor(a);
+      final bIndex = _detailIndexFor(b);
+      if (aIndex == null && bIndex == null) return 0;
+      if (aIndex == null) return -1;
+      if (bIndex == null) return 1;
+      return aIndex.compareTo(bIndex);
+    });
+    return ordered;
+  }
+
+  List<_AllahName> _filteredNames() {
+    final query = _normalizeSearch(_searchQuery.trim());
+    final ordered = _orderedNames();
+    if (query.isEmpty) {
+      return ordered;
+    }
+
+    return ordered.where((item) {
+      final detailIndex = _detailIndexFor(item);
+      final haystack = <String>[
+        _displayNumberFor(item).toString(),
+        item.arabic,
+        item.transliteration,
+        item.meaningDe,
+        item.meaningEn,
+        item.meaningAr,
+        detailIndex == null ? '' : (_detailsDe[detailIndex] ?? ''),
+        detailIndex == null ? '' : (_detailsEn[detailIndex] ?? ''),
+        detailIndex == null ? '' : (_detailsAr[detailIndex] ?? ''),
+      ].map(_normalizeSearch).join('|');
+      return haystack.contains(query);
+    }).toList();
+  }
+
+  String _detailFor(_AllahName item) {
+    final detailIndex = _detailIndexFor(item);
+    if (detailIndex == null) {
+      return '';
+    }
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return _detailsEn[detailIndex] ?? item.meaningEn;
+      case AppLanguage.arabic:
+        return _detailsAr[detailIndex] ?? item.meaningAr;
+      case AppLanguage.german:
+        return _detailsDe[detailIndex] ?? item.meaningDe;
     }
   }
 
   void _showNameDetail(_AllahName item) {
+    if (_isAllah(item)) {
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -3901,7 +4014,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                       ),
                       child: Center(
                         child: Text(
-                          '${item.number}',
+                          '${_displayNumberFor(item)}',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
@@ -3966,7 +4079,14 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final filtered = _filteredNames();
     return SafeArea(
       child: Column(
         children: [
@@ -4060,14 +4180,83 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
               ],
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              style: const TextStyle(color: Colors.white),
+              textDirection:
+                  appLanguage == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
+              decoration: InputDecoration(
+                hintText: _searchHint(),
+                hintStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: Icon(Icons.search, color: _MyAppState.currentTheme.color),
+                suffixIcon: _searchQuery.trim().isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Clear',
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                        },
+                        icon: Icon(Icons.close, color: _MyAppState.currentTheme.color),
+                      )
+                    : null,
+                filled: true,
+                fillColor: Colors.black.withOpacity(0.55),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: _MyAppState.currentTheme.color,
+                    width: 1.8,
+                  ),
+                ),
+              ),
+            ),
+          ),
           Expanded(
-            child: ListView.builder(
+            child: filtered.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 22),
+                      child: Text(
+                        _noResultsLabel(),
+                        textAlign: TextAlign.center,
+                        textDirection: appLanguage == AppLanguage.arabic
+                            ? TextDirection.rtl
+                            : TextDirection.ltr,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  )
+                : ListView.builder(
               padding: const EdgeInsets.all(14),
-              itemCount: _names.length,
+              itemCount: filtered.length,
               itemBuilder: (context, index) {
-                final item = _names[index];
+                final item = filtered[index];
                 return GestureDetector(
-                  onTap: () => _showNameDetail(item),
+                  onTap: _isAllah(item) ? null : () => _showNameDetail(item),
                   child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
@@ -4095,7 +4284,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                         ),
                         child: Center(
                           child: Text(
-                            '${item.number}',
+                            '${_displayNumberFor(item)}',
                             style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
@@ -4129,13 +4318,14 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              item.meaning(appLanguage),
-                              style: const TextStyle(
-                                color: Colors.black54,
-                                fontSize: 15,
+                            if (!_isAllah(item))
+                              Text(
+                                item.meaning(appLanguage),
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 15,
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ),

@@ -144,58 +144,65 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: _showUI ? _buildAppBar() : null,
-      body: GestureDetector(
-        onTap: () {
-          setState(() {
-            _showUI = !_showUI;
-          });
-        },
-        child: _buildPageView(),
-      ),
-      bottomNavigationBar: _showUI ? _buildBottomBar() : null,
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: () => setState(() => _showUI = !_showUI),
+          child: _buildPageView(),
+        ),
+        if (_showUI) ...[
+          Positioned(
+            top: 0, left: 0, right: 0,
+            child: _buildAppBarOverlay(),
+          ),
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            child: _buildBottomBar(),
+          ),
+        ],
+      ],
     );
   }
   
-  /// AppBar mit Seitenzahl und Aktionen
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: widget.themeColor,
-      foregroundColor: Colors.white,
-      elevation: 0,
-      automaticallyImplyLeading: false, // Kein Zurück-Button
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.menu_book, size: 24),
-          const SizedBox(width: 10),
-          Text(
-            'مصحف - صفحة $_currentPage',
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+  /// Overlay AppBar mit Seitenzahl und Aktionen
+  Widget _buildAppBarOverlay() {
+    return Container(
+      color: widget.themeColor,
+      child: SafeArea(
+        bottom: false,
+        child: SizedBox(
+          height: kToolbarHeight,
+          child: Row(
+            children: [
+              const SizedBox(width: 16),
+              const Icon(Icons.menu_book, color: Colors.white, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'مصحف - صفحة $_currentPage',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              if (widget.onShowSurahList != null)
+                IconButton(
+                  icon: const Icon(Icons.list, color: Colors.white),
+                  tooltip: 'Surah Liste',
+                  onPressed: widget.onShowSurahList,
+                ),
+              IconButton(
+                icon: const Icon(Icons.search, color: Colors.white),
+                tooltip: 'Zur Seite springen',
+                onPressed: _showPageJumpDialog,
+              ),
+            ],
           ),
-        ],
-      ),
-      actions: [
-        // Surah-Liste Button (in Ecke)
-        if (widget.onShowSurahList != null)
-          IconButton(
-            icon: const Icon(Icons.list),
-            tooltip: 'Surah Liste',
-            onPressed: widget.onShowSurahList,
-          ),
-        // Springe zu Seite
-        IconButton(
-          icon: const Icon(Icons.search),
-          tooltip: 'Zur Seite springen',
-          onPressed: _showPageJumpDialog,
         ),
-        // Info-Button entfernt
-      ],
+      ),
     );
   }
   
@@ -298,43 +305,41 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           ),
         ],
       ),
-      child: SafeArea(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Vorherige Seite (nach rechts in RTL)
-            _buildNavButton(
-              icon: Icons.arrow_forward,
-              label: 'السابق',
-              onPressed: _currentPage > 1 ? _goToPreviousPage : null,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Vorherige Seite (nach rechts in RTL)
+          _buildNavButton(
+            icon: Icons.arrow_forward,
+            label: 'السابق',
+            onPressed: _currentPage > 1 ? _goToPreviousPage : null,
+          ),
+          
+          // Seitenzahl
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.white, width: 2),
             ),
-            
-            // Seitenzahl
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-              child: Text(
-                '$_currentPage / $totalPages',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: widget.themeColor,
-                ),
+            child: Text(
+              '$_currentPage / $totalPages',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: widget.themeColor,
               ),
             ),
-            
-            // Nächste Seite (nach links in RTL)
-            _buildNavButton(
-              icon: Icons.arrow_back,
-              label: 'التالي',
-              onPressed: _currentPage < totalPages ? _goToNextPage : null,
-            ),
-          ],
-        ),
+          ),
+          
+          // Nächste Seite (nach links in RTL)
+          _buildNavButton(
+            icon: Icons.arrow_back,
+            label: 'التالي',
+            onPressed: _currentPage < totalPages ? _goToNextPage : null,
+          ),
+        ],
       ),
     );
   }
