@@ -3236,6 +3236,334 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   bool _hasSeenIntro = false;
   static const String _introSeenKey = 'names_of_allah_intro_seen_v1';
 
+  static const String _detailsRawDe = '''
+1. Ar-Rahman (الرَّحْمٰن) – Der Allerbarmer: Allah umfasst Seine Schöpfung mit unermesslicher, allumfassender Barmherzigkeit.
+2. Ar-Rahim (الرَّحِيم) – Der Barmherzige: Allah schenkt Seinen Dienern fortwährende und besondere Barmherzigkeit.
+3. Al-Malik (الْمَلِك) – Der König: Allah ist der wahre Herrscher über alles. Niemand besitzt Herrschaft wie Er.
+4. Al-Quddus (الْقُدُّوس) – Der Allheilige / Der Reine: Allah ist vollkommen rein von jedem Mangel und jeder Unvollkommenheit.
+5. As-Salam (السَّلَام) – Der Friede / Die Quelle des Friedens: Von Allah kommt wahrer Frieden, Sicherheit und Unversehrtheit.
+6. Al-Mu’min (الْمُؤْمِن) – Der Sicherheit Gebende: Allah gibt Schutz, Sicherheit und bestätigt die Wahrheit.
+7. Al-Muhaymin (الْمُهَيْمِن) – Der Wächter / Der Bewahrende: Allah wacht über alles, bewahrt alles und entgeht nichts.
+8. Al-‘Aziz (الْعَزِيز) – Der Allmächtige: Allah ist unbesiegbar, mächtig und unübertrefflich in Stärke.
+9. Al-Jabbar (الْجَبَّار) – Der Erhabene, Der Wiederherstellende: Allah setzt Seinen Willen durch und heilt, richtet und stellt wieder her.
+10. Al-Mutakabbir (الْمُتَكَبِّر) – Der Majestätische / Der Überragend Große: Allah allein besitzt wahre Größe und Erhabenheit.
+11. Al-Khaliq (الْخَالِق) – Der Schöpfer: Allah erschafft alles aus Seinem Willen heraus.
+12. Al-Bari’ (الْبَارِئ) – Der Erschaffer / Der Hervorbringer: Allah bringt die Schöpfung passend und vollkommen hervor.
+13. Al-Musawwir (الْمُصَوِّر) – Der Gestalter: Allah gibt jeder Schöpfung ihre Form, Gestalt und ihr Aussehen.
+14. Al-Ghaffar (الْغَفَّار) – Der Vielvergebende: Allah vergibt immer wieder, selbst wenn der Mensch oft Fehler macht.
+15. Al-Qahhar (الْقَهَّار) – Der Allbezwingende: Alles untersteht Allahs Macht; nichts kann sich Seiner Herrschaft entziehen.
+16. Al-Wahhab (الْوَهَّاب) – Der Schenkende: Allah gibt großzügig, ohne Gegenleistung zu brauchen.
+17. Ar-Razzaq (الرَّزَّاق) – Der Versorger: Allah versorgt alle Geschöpfe mit allem, was sie brauchen.
+18. Al-Fattah (الْفَتَّاح) – Der Öffnende / Der Entscheider: Allah öffnet Wege, Türen der Barmherzigkeit und entscheidet gerecht.
+19. Al-‘Alim (الْعَلِيم) – Der Allwissende: Allah weiß alles – das Sichtbare, das Verborgene, das Vergangene und das Zukünftige.
+20. Al-Qabid (الْقَابِض) – Der Verengende / Zurückhaltende: Allah hält zurück oder verengt nach Seiner Weisheit.
+21. Al-Basit (الْبَاسِط) – Der Ausweitende: Allah erweitert Versorgung, Erleichterung und Gnade, wie Er will.
+22. Al-Khafid (الْخَافِض) – Der Erniedrigende: Allah erniedrigt, wen Er nach Seiner Gerechtigkeit und Weisheit will.
+23. Ar-Rafi‘ (الرَّافِع) – Der Erhöhende: Allah erhöht Rang, Ehre und Stellung, wem Er will.
+24. Al-Mu‘izz (الْمُعِزُّ) – Der Ehre Gebende: Allah verleiht wahre Würde und Ansehen.
+25. Al-Mudhill / Al-Muzill (ٱلْمُذِلُّ) – Der Erniedrigende: Allah nimmt Ehre von wem Er will, in vollkommener Gerechtigkeit.
+26. As-Sami‘ (السَّمِيع) – Der Allhörende: Allah hört jedes Wort, jeden Laut und jedes stille Bittgebet.
+27. Al-Basir (الْبَصِير) – Der Allsehende: Allah sieht alles, offen und verborgen.
+28. Al-Hakam (الْحَكَم) – Der Richter: Allah urteilt vollkommen gerecht und ohne Fehler.
+29. Al-‘Adl (الْعَدْل) – Der Gerechteste: Allah ist in jeder Entscheidung vollkommen gerecht.
+30. Al-Latif (اللَّطِيف) – Der Feine / Der Sanftgütige: Allah kennt die feinsten Dinge und ist in Seiner Güte sanft zu Seinen Dienern.
+31. Al-Khabir (الْخَبِير) – Der Allkundige: Allah kennt die innersten Realitäten und Hintergründe aller Dinge.
+32. Al-Halim (الْحَلِيم) – Der Nachsichtige: Allah straft nicht voreilig und zeigt große Geduld.
+33. Al-‘Azim (الْعَظِيم) – Der Großartige: Allah ist unermesslich groß in Wesen, Macht und Majestät.
+34. Al-Ghafur (الْغَفُور) – Der Allvergebende: Allah vergibt Sünden umfassend und bedeckt Fehler.
+35. Ash-Shakur (الشَّكُور) – Der Dankbar Anerkennende: Allah würdigt selbst kleine gute Taten und belohnt sie vielfach.
+36. Al-‘Aliyy (الْعَلِيُّ) – Der Allerhöchste: Allah ist hoch erhaben über alles Geschaffene.
+37. Al-Kabir (الْكَبِير) – Der Allergrößte: Allah ist größer als alles, was man sich vorstellen kann.
+38. Al-Hafiz / Al-Hafidh (الْحَفِيظ) – Der Bewahrer: Allah schützt und bewahrt Seine Schöpfung.
+39. Al-Muqit (المُقيِت) – Der Erhalter / Ernährer: Allah gibt Kraft, Unterhalt und das, wodurch Geschöpfe bestehen.
+40. Al-Hasib (اﻟْﺣَسِيب) – Der Abrechnende / Der Genügende: Allah genügt Seinen Dienern und rechnet alles genau ab.
+41. Al-Jalil (الْجَلِيل) – Der Majestätische: Allah besitzt höchste Erhabenheit und Würde.
+42. Al-Karim (الْكَرِيم) – Der Großzügige: Allah gibt edel, reichlich und aus Gnade.
+43. Ar-Raqib (الرَّقِيب) – Der Wachende: Allah beobachtet alles und entgeht nichts.
+44. Al-Mujib (ٱلْمُجِيب) – Der Erhörende: Allah antwortet auf Bittgebete und Anrufungen.
+45. Al-Wasi‘ (الْوَاسِعُ) – Der Allumfassende: Allahs Wissen, Barmherzigkeit und Macht umfassen alles.
+46. Al-Hakim (الْحَكِيم) – Der Allweise: Allah handelt immer mit vollkommener Weisheit.
+47. Al-Wadud (الْوَدُود) – Der Liebevolle: Allah liebt Seine rechtschaffenen Diener und schenkt ihnen Liebe.
+48. Al-Majid (الْمَجِيد) – Der Glorreiche: Allah ist vollkommen in Ehre, Ruhm und Größe.
+49. Al-Ba‘ith (الْبَاعِث) – Der Erweckende: Allah wird die Toten auferwecken und ins Leben zurückbringen.
+50. Ash-Shahid (الشَّهِيد) – Der Zeuge: Allah ist über alles Zeuge. Nichts geschieht außerhalb Seines Wissens.
+51. Al-Haqq (الْحَقُّ) – Die Wahrheit: Allah ist die absolute Wahrheit; Sein Wort und Sein Versprechen sind wahr.
+52. Al-Wakil (الْوَكِيل) – Der Sachwalter / Der Vertrauenswürdige Helfer: Auf Allah kann man sich vollkommen verlassen.
+53. Al-Qawiyy (الْقَوِيُّ) – Der Allstarke: Allah besitzt vollkommene Stärke, ohne Schwäche.
+54. Al-Matin (الْمَتِين) – Der Unerschütterliche / Der Feste: Allahs Kraft ist beständig und vollkommen fest.
+55. Al-Waliyy (الْوَلِيُّ) – Der Schutzherr / Nahe Helfer: Allah ist der Beschützer und Unterstützer der Gläubigen.
+56. Al-Hamid (الْحَمِيد) – Der Preiswürdige: Allah ist in Sich selbst aller Lobpreisung würdig.
+57. Al-Muhsi (الْمُحْصِي) – Der Alles Zählende: Allah kennt und erfasst alles bis ins Kleinste.
+58. Al-Mubdi’ (الْمُبْدِئ) – Der Anfänger / Ursprunggeber: Allah beginnt die Schöpfung aus dem Nichts.
+59. Al-Mu‘id (ٱلْمُعِيد) – Der Wiederbringende: Allah bringt die Schöpfung nach ihrem Ende erneut zurück.
+60. Al-Muhyi (الْمُحْيِي) – Der Leben Gebende: Allah schenkt Leben, wem und wann Er will.
+61. Al-Mumit (اَلْمُمِيت) – Der den Tod Bestimmende: Allah bestimmt den Tod und lässt sterben.
+62. Al-Hayy (الْحَيُّ) – Der Ewig Lebendige: Allah lebt ewig, vollkommen und ohne Ende.
+63. Al-Qayyum (الْقَيُّوم) – Der Beständige / Der Erhaltende: Allah besteht aus Sich selbst und erhält alles andere.
+64. Al-Wajid (الْوَاجِدُ) – Der Findende / Der, Dem nichts fehlt: Allah findet alles, weiß alles und fehlt an nichts.
+65. Al-Majid (الْمَاجِدُ) – Der Ruhmvolle: Allah ist reich an Ehre, Adel und Vollkommenheit.
+66. Al-Wahid (الْوَاحِدُ) – Der Eine: Allah ist einzig in Seinem Wesen, ohne Partner.
+67. Al-Ahad (اَلاَحَدُ) – Der Einzig Eine: Allah ist absolut einzigartig und unvergleichbar.
+68. As-Samad (الصَّمَدُ) – Der Unabhängige, Zu Dem alle sich wenden: Allah braucht niemanden, aber alle brauchen Ihn.
+69. Al-Qadir (الْقَادِرُ) – Der Allmächtige: Allah hat vollkommene Macht über alles.
+70. Al-Muqtadir (الْمُقْتَدِرُ) – Der Vollkommen Mächtige: Allahs Macht ist vollkommen wirksam und unbeschränkt.
+71. Al-Muqaddim (الْمُقَدِّمُ) – Der Voranstellende: Allah bringt nach Seiner Weisheit voran, wen oder was Er will.
+72. Al-Mu’akhkhir (الْمُؤَخِّرُ) – Der Zurückstellende: Allah hält nach Seiner Weisheit zurück oder verzögert.
+73. Al-Awwal (الأوَّلُ) – Der Erste: Allah war vor allem; nichts ist vor Ihm.
+74. Al-Akhir (الآخِرُ) – Der Letzte: Allah bleibt nach allem; nichts ist nach Ihm.
+75. Az-Zahir (الظَّاهِرُ) – Der Offenkundige / Der Hocherhabene: Allah ist über allem erhaben und Seine Zeichen sind klar sichtbar.
+76. Al-Batin (الْبَاطِنُ) – Der Verborgene: Allah ist dem innersten Verstehen verborgen, und nichts Verborgenes entgeht Ihm.
+77. Al-Wali (الْوَالِي) – Der Herrscher / Verwalter: Allah lenkt und regiert alle Angelegenheiten.
+78. Al-Muta‘ali (الْمُتَعَالِي) – Der Höchsterhabene: Allah ist weit über jede Unvollkommenheit und jedes Geschöpf erhaben.
+79. Al-Barr (الْبَرُّ) – Der Gütige / Der Wohltätige: Allah ist vollkommen gut und handelt mit Güte gegenüber Seinen Dienern.
+80. At-Tawwab (التَّوَابُ) – Der Reue-Annehmende: Allah nimmt Reue immer wieder an.
+81. Al-Muntaqim (الْمُنْتَقِمُ) – Der Vergeltende: Allah übt gerechte Vergeltung gegen Unrecht, wenn Er will.
+82. Al-‘Afuww (العَفُوُّ) – Der Verzeihende: Allah löscht Sünden aus und vergibt großzügig.
+83. Ar-Ra’uf (الرَّؤُوف) – Der Allgütige / Der Mitleidsvolle: Allah ist äußerst mild und gütig zu Seinen Dienern.
+84. Malik-ul-Mulk (مَالِكُ الْمُلْك) – Der Besitzer aller Herrschaft: Jede Macht und jedes Reich gehören in Wahrheit Allah allein.
+85. Dhul-Jalali wal-Ikram (ذُوالْجَلاَلِ وَالإكْرَام) – Der Besitzer von Majestät und Ehre: Allah vereint vollkommene Erhabenheit, Würde und Großzügigkeit.
+86. Al-Muqsit (الْمُقْسِط) – Der Gerechte: Allah stellt Gerechtigkeit vollkommen her.
+87. Al-Jami‘ (الْجَامِعُ) – Der Versammelnde: Allah sammelt die Menschen am Tag des Gerichts und vereint, was Er will.
+88. Al-Ghaniyy (ٱلْغَنيُّ) – Der Unabhängige / Reiche: Allah ist auf nichts angewiesen.
+89. Al-Mughni (ٱلْمُغْنِيُّ) – Der Bereichernde: Allah macht reich, genügsam und unabhängig, wem Er will.
+90. Al-Mani‘ (اَلْمَانِعُ) – Der Verwehrende: Allah hält nach Seiner Weisheit zurück, was Er will.
+91. Ad-Darr (الضَّار) – Der, in Dessen Hand Schaden liegt: Nichts trifft jemanden außer mit Allahs Zulassung und Weisheit.
+92. An-Nafi‘ (النَّافِع) – Der Nutzen Schenkende: Jeder wahre Nutzen kommt letztlich von Allah.
+93. An-Nur (النُّور) – Das Licht: Allah ist das Licht der Himmel und der Erde und der Geber von Rechtleitung.
+94. Al-Hadi (الْهَادِي) – Der Rechtleitende: Allah führt, wen Er will, zum rechten Weg.
+95. Al-Badi‘ (الْبَدِيع) – Der Einzigartige Erschaffer: Allah erschafft auf unvergleichliche Weise ohne Vorbild.
+96. Al-Baqi (اَلْبَاقِي) – Der Ewig Bleibende: Allah vergeht nie; Seine Existenz ist ohne Ende.
+97. Al-Warith (الْوَارِث) – Der Erbe: Alles kehrt letztlich zu Allah zurück.
+98. Ar-Rashid (الرَّشِيد) – Der Rechtleitende mit vollkommener Weisheit: Allah führt stets auf die vollkommen richtige Weise.
+99. As-Sabur (الصَّبُور) – Der Geduldige / Der Langmütige: Allah straft nicht übereilt und gibt den Menschen Zeit.
+''';
+
+  static const String _detailsRawAr = '''
+1. الرحمن: واسع الرحمة التي شملت جميع الخلق.
+2. الرحيم: الرحيم بعباده رحمةً خاصة، يرحمهم ويهديهم ويغفر لهم.
+3. الملك: المالك المتصرف في كل شيء، له السلطان الكامل.
+4. القدوس: المنزَّه عن كل نقص وعيب.
+5. السلام: السالم من كل نقص، ومنه الأمن والسلام.
+6. المؤمن: الذي يمنح الأمان ويصدق وعده لعباده.
+7. المهيمن: الرقيب الحافظ لكل شيء.
+8. العزيز: القوي الغالب الذي لا يُغلب.
+9. الجبار: العالي القاهر، ويجبر كسر عباده ويصلح أحوالهم.
+10. المتكبر: المتفرد بالعظمة والكبرياء الحقة.
+11. الخالق: الذي أوجد الخلق من العدم.
+12. البارئ: الذي خلق الخلق وأبرزهم على ما أراد.
+13. المصور: الذي أعطى كل مخلوق صورته وهيئته.
+14. الغفار: كثير المغفرة لعباده.
+15. القهار: الذي قهر كل شيء وخضع له كل شيء.
+16. الوهاب: كثير العطاء بلا مقابل.
+17. الرزاق: الذي يرزق جميع خلقه.
+18. الفتاح: الذي يفتح أبواب الرحمة والرزق والحكم بين عباده بالحق.
+19. العليم: الذي أحاط علمه بكل شيء.
+20. القابض: الذي يقبض الرزق أو يضيقه بحكمته.
+21. الباسط: الذي يوسع الرزق والرحمة لمن يشاء.
+22. الخافض: الذي يخفض من يشاء بحكمته وعدله.
+23. الرافع: الذي يرفع من يشاء مكانةً وقدرًا.
+24. المعز: الذي يمنح العزة لمن يشاء.
+25. المذل: الذي يذل من يشاء بعدله.
+26. السميع: الذي يسمع كل شيء، السر والجهر.
+27. البصير: الذي يرى كل شيء، الظاهر والخفي.
+28. الحكم: الذي يحكم بين عباده بالعدل والحق.
+29. العدل: الكامل في عدله، لا يظلم أحدًا.
+30. اللطيف: الذي يلطف بعباده ويعلم دقائق الأمور.
+31. الخبير: الذي يعلم بواطن الأمور وخفاياها.
+32. الحليم: الذي لا يعجل بالعقوبة مع قدرته.
+33. العظيم: العظيم في ذاته وصفاته وقدره.
+34. الغفور: كثير المغفرة والستر للذنوب.
+35. الشكور: الذي يقبل القليل من العمل ويعطي عليه الكثير من الثواب.
+36. العلي: العالي فوق خلقه بقدره وقهره.
+37. الكبير: العظيم الجليل الذي كل شيء دونه صغير.
+38. الحفيظ: الحافظ لعباده وأعمالهم وكل شيء.
+39. المقيت: الذي يوصل القوت والرزق ويحفظ به الأبدان.
+40. الحسيب: الكافي لعباده، والذي يحاسب الخلق على أعمالهم.
+41. الجليل: المتصف بالجلال والعظمة والكمال.
+42. الكريم: كثير الخير والعطاء والإحسان.
+43. الرقيب: المطلع على كل شيء، لا يغيب عنه شيء.
+44. المجيب: الذي يجيب دعاء عباده.
+45. الواسع: الواسع في رحمته وعلمه وقدرته.
+46. الحكيم: الذي يضع الأشياء في مواضعها بحكمة تامة.
+47. الودود: المحب لعباده المؤمنين، والمحبوب إليهم.
+48. المجيد: العظيم في مجده وشرفه وكماله.
+49. الباعث: الذي يبعث الخلق بعد الموت.
+50. الشهيد: الذي لا يغيب عنه شيء، وهو شاهد على كل شيء.
+51. الحق: الثابت الحق في ذاته ووعده وقوله.
+52. الوكيل: الذي يُعتمد عليه في كل الأمور، وكفى به وكيلًا.
+53. القوي: الكامل في القوة، لا يعجزه شيء.
+54. المتين: الشديد القوي الذي لا يلحقه ضعف.
+55. الولي: الناصر والمتولي لأمور عباده المؤمنين.
+56. الحميد: المستحق للحمد كله.
+57. المحصي: الذي أحصى كل شيء عددًا وعلمًا.
+58. المبدئ: الذي بدأ الخلق أول مرة.
+59. المعيد: الذي يعيد الخلق بعد الموت.
+60. المحيي: الذي يهب الحياة لمن يشاء.
+61. المميت: الذي يقدر الموت على من يشاء.
+62. الحي: الكامل في حياته، حياته أزلية أبدية.
+63. القيوم: القائم بنفسه، المقيم لغيره، الذي تقوم به السماوات والأرض.
+64. الواجد: الغني الذي لا يفتقر إلى أحد، ولا يعجزه شيء.
+65. الماجد: الكامل في الشرف والمجد والعظمة.
+66. الواحد: المنفرد في ذاته وصفاته وأفعاله.
+67. الأحد: المتفرد الذي لا نظير له ولا شبيه.
+68. الصمد: الذي تصمد إليه الخلائق في حوائجها، وهو غني عن الجميع.
+69. القادر: الذي له القدرة الكاملة على كل شيء.
+70. المقتدر: البالغ كمال القدرة والنفوذ في كل أمر.
+71. المقدم: الذي يقدم من يشاء ويقربه بحكمته.
+72. المؤخر: الذي يؤخر من يشاء بحكمته.
+73. الأول: الذي ليس قبله شيء.
+74. الآخر: الذي ليس بعده شيء.
+75. الظاهر: العالي فوق كل شيء، الظاهر بآياته.
+76. الباطن: الذي لا تدركه الأبصار، وهو العالم بخفايا الأمور.
+77. الوالي: المتولي لجميع الخلق بالتدبير والتصرف.
+78. المتعالي: المتنزه عن صفات النقص، العالي جدًا فوق خلقه.
+79. البر: كثير الإحسان واللطف بعباده.
+80. التواب: الذي يوفق للتوبة ويقبلها من عباده.
+81. المنتقم: الذي ينتقم من الظالمين بعدله.
+82. العفو: الذي يمحو الذنوب ويتجاوز عنها.
+83. الرؤوف: شديد الرحمة واللطف بعباده.
+84. مالك الملك: الذي له الملك كله، يعطيه من يشاء وينزعه ممن يشاء.
+85. ذو الجلال والإكرام: صاحب العظمة والكبرياء والكرم.
+86. المقسط: العادل الذي يقيم القسط بين عباده.
+87. الجامع: الذي يجمع الخلائق ليوم لا ريب فيه.
+88. الغني: الذي لا يحتاج إلى أحد، وكل الخلق محتاجون إليه.
+89. المغني: الذي يغني من يشاء بفضله.
+90. المانع: الذي يمنع ما يشاء بحكمته.
+91. الضار: الذي لا يقع ضر إلا بإذنه وحكمته.
+92. النافع: الذي بيده النفع كله.
+93. النور: نور السماوات والأرض، ومنوِّر القلوب بالهداية.
+94. الهادي: الذي يهدي من يشاء إلى الصراط المستقيم.
+95. البديع: الذي أبدع الخلق على غير مثال سابق.
+96. الباقي: الذي لا يزول ولا يفنى.
+97. الوارث: الذي يرث الأرض ومن عليها، وإليه يرجع كل شيء.
+98. الرشيد: الذي يهدي إلى الصواب، وكل تدبيره رشد وحكمة.
+99. الصبور: الذي لا يعجل بالعقوبة، مع كمال قدرته.
+''';
+
+  static const String _detailsRawEn = '''
+1. Ar-Rahman — The Most Compassionate: His mercy is vast and encompasses all creation.
+2. Ar-Rahim — The Most Merciful: He shows special mercy to His servants.
+3. Al-Malik — The King: He is the true sovereign over everything.
+4. Al-Quddus — The Most Holy / The Most Pure: He is completely free from every imperfection.
+5. As-Salam — The Source of Peace: True peace, safety, and perfection come from Him.
+6. Al-Mu’min — The Giver of Security: He grants safety, faith, and reassurance.
+7. Al-Muhaymin — The Guardian / The Preserver: He watches over and protects all things.
+8. Al-‘Aziz — The Almighty: He is mighty, honored, and never overcome.
+9. Al-Jabbar — The Compeller / The Restorer: His will is irresistible, and He also restores what is broken.
+10. Al-Mutakabbir — The Supreme / The Majestic: True greatness and majesty belong to Him alone.
+11. Al-Khaliq — The Creator: He creates all things from nothing.
+12. Al-Bari’ — The Originator: He brings creation into existence in perfect order.
+13. Al-Musawwir — The Fashioner: He gives every created thing its form and appearance.
+14. Al-Ghaffar — The Ever-Forgiving: He forgives again and again.
+15. Al-Qahhar — The All-Subduer: Everything is under His complete power.
+16. Al-Wahhab — The Bestower: He gives generously without needing anything in return.
+17. Ar-Razzaq — The Provider: He provides sustenance for all creation.
+18. Al-Fattah — The Opener / The Judge: He opens doors of mercy, victory, and provision, and judges with truth.
+19. Al-‘Alim — The All-Knowing: He knows everything, seen and unseen.
+20. Al-Qabid — The Withholder: He withholds or constricts by His wisdom.
+21. Al-Basit — The Expander: He expands provision, mercy, and ease as He wills.
+22. Al-Khafid — The Humbler: He lowers whom He wills in justice and wisdom.
+23. Ar-Rafi‘ — The Exalter: He raises whom He wills in rank and honor.
+24. Al-Mu‘izz — The Giver of Honor: He grants true dignity and strength.
+25. Al-Mudhill — The Giver of Humiliation: He humbles whom He wills in justice.
+26. As-Sami‘ — The All-Hearing: He hears every sound, word, and prayer.
+27. Al-Basir — The All-Seeing: He sees everything, open and hidden.
+28. Al-Hakam — The Judge: His judgment is perfect and final.
+29. Al-‘Adl — The Utterly Just: He is perfectly fair and never unjust.
+30. Al-Latif — The Most Subtle / The Most Gentle: He knows the finest details and is gentle with His servants.
+31. Al-Khabir — The All-Aware: He knows the reality and inner details of everything.
+32. Al-Halim — The Most Forbearing: He does not hasten to punish despite having full power.
+33. Al-‘Azim — The Magnificent: He is immense in greatness and majesty.
+34. Al-Ghafur — The Great Forgiver: He forgives sins fully and covers faults.
+35. Ash-Shakur — The Most Appreciative: He rewards even small good deeds abundantly.
+36. Al-‘Aliyy — The Most High: He is exalted above all creation.
+37. Al-Kabir — The Most Great: He is greater than everything.
+38. Al-Hafiz — The Preserver: He protects and preserves all things.
+39. Al-Muqit — The Sustainer: He nourishes and maintains His creation.
+40. Al-Hasib — The Reckoner / The Sufficient: He is enough for His servants and takes account of all things.
+41. Al-Jalil — The Majestic: He possesses absolute grandeur and dignity.
+42. Al-Karim — The Most Generous: He gives nobly, abundantly, and kindly.
+43. Ar-Raqib — The Watchful: Nothing escapes His watch.
+44. Al-Mujib — The Responsive: He answers prayers and calls upon Him.
+45. Al-Wasi‘ — The All-Encompassing: His mercy, knowledge, and power are vast.
+46. Al-Hakim — The All-Wise: Everything He does is with perfect wisdom.
+47. Al-Wadud — The Most Loving: He loves His righteous servants and bestows love upon them.
+48. Al-Majid — The Most Glorious: He is full of glory, honor, and nobility.
+49. Al-Ba‘ith — The Resurrector: He will raise the dead.
+50. Ash-Shahid — The Witness: He witnesses all things; nothing is hidden from Him.
+51. Al-Haqq — The Truth: He is the absolute truth, and His promise is true.
+52. Al-Wakil — The Trustee / The Disposer of Affairs: He is the One fully relied upon in all matters.
+53. Al-Qawiyy — The Most Strong: His strength is perfect and complete.
+54. Al-Matin — The Firm / The Steadfast: His power is unshakable and enduring.
+55. Al-Waliyy — The Protecting Friend: He is the guardian and ally of the believers.
+56. Al-Hamid — The Praiseworthy: He is worthy of all praise.
+57. Al-Muhsi — The All-Enumerating: He counts and knows everything completely.
+58. Al-Mubdi’ — The Originator: He begins creation.
+59. Al-Mu‘id — The Restorer: He brings creation back after its end.
+60. Al-Muhyi — The Giver of Life: He gives life to whom He wills.
+61. Al-Mumit — The Bringer of Death: He decrees death for whom He wills.
+62. Al-Hayy — The Ever-Living: His life is perfect, eternal, and without end.
+63. Al-Qayyum — The Self-Subsisting / Sustainer of All: He exists by Himself and sustains everything else.
+64. Al-Wajid — The Finder / The Self-Sufficient: Nothing is beyond Him, and He lacks nothing.
+65. Al-Majid — The Noble / The Glorious: He is perfect in honor and splendor.
+66. Al-Wahid — The One: He is one, without partner.
+67. Al-Ahad — The Unique One: He is absolutely unique and incomparable.
+68. As-Samad — The Eternal Refuge: All creation depends on Him, while He depends on none.
+69. Al-Qadir — The All-Powerful: He has complete power over everything.
+70. Al-Muqtadir — The Determiner / The Omnipotent: His power is fully effective and irresistible.
+71. Al-Muqaddim — The Expediter: He brings forward whom or what He wills.
+72. Al-Mu’akhkhir — The Delayer: He delays whom or what He wills by wisdom.
+73. Al-Awwal — The First: Nothing was before Him.
+74. Al-Akhir — The Last: Nothing will remain after Him except by His will.
+75. Az-Zahir — The Manifest / The Most High: He is above all things, and His signs are clear.
+76. Al-Batin — The Hidden: He is beyond full human grasp, and nothing hidden escapes Him.
+77. Al-Wali — The Governor: He manages and governs all affairs.
+78. Al-Muta‘ali — The Most Exalted: He is far above every imperfection.
+79. Al-Barr — The Source of Goodness: He is perfectly kind and good to His servants.
+80. At-Tawwab — The Accepter of Repentance: He repeatedly accepts repentance from His servants.
+81. Al-Muntaqim — The Avenger: He takes just retribution against wrongdoing when He wills.
+82. Al-‘Afuww — The Pardoner: He erases sins and overlooks faults.
+83. Ar-Ra’uf — The Most Kind: He is extremely gentle and compassionate with His servants.
+84. Malik-ul-Mulk — The Owner of All Sovereignty: All dominion and authority truly belong to Him.
+85. Dhul-Jalali wal-Ikram — Lord of Majesty and Honor: He possesses perfect majesty, nobility, and generosity.
+86. Al-Muqsit — The Equitable / The Just: He establishes perfect justice.
+87. Al-Jami‘ — The Gatherer: He gathers creation together, especially on the Day of Judgment.
+88. Al-Ghaniyy — The Self-Sufficient / The Rich: He is free of all need.
+89. Al-Mughni — The Enricher: He grants sufficiency and wealth to whom He wills.
+90. Al-Mani‘ — The Withholder / The Preventer: He withholds what He wills in wisdom.
+91. Ad-Darr — The Bringer of Harm: No harm occurs except by His permission and wisdom.
+92. An-Nafi‘ — The Bestower of Benefit: All true benefit ultimately comes from Him.
+93. An-Nur — The Light: He is the light of the heavens and the earth, and the giver of guidance.
+94. Al-Hadi — The Guide: He guides whom He wills to the straight path.
+95. Al-Badi‘ — The Incomparable Originator: He creates in a unique way without any prior example.
+96. Al-Baqi — The Everlasting: He remains forever and never perishes.
+97. Al-Warith — The Inheritor: Everything ultimately returns to Him.
+98. Ar-Rashid — The Guide to the Right Way: His guidance and decree are perfectly right and wise.
+99. As-Sabur — The Most Patient / The Forbearing: He does not hasten punishment despite full power to do so.
+''';
+
+  static Map<int, String> _parseDetails(String raw) {
+    final map = <int, String>{};
+    final regex = RegExp(r'^\s*(\d+)\.\s*(.+)$');
+    for (final line in raw.split('\n')) {
+      final trimmed = line.trim();
+      if (trimmed.isEmpty) continue;
+      final match = regex.firstMatch(trimmed);
+      if (match != null) {
+        final index = int.tryParse(match.group(1) ?? '');
+        final value = match.group(2)?.trim();
+        if (index != null && value != null && value.isNotEmpty) {
+          map[index] = value;
+        }
+      }
+    }
+    return map;
+  }
+
+  static final Map<int, String> _detailsDe = _parseDetails(_detailsRawDe);
+  static final Map<int, String> _detailsAr = _parseDetails(_detailsRawAr);
+  static final Map<int, String> _detailsEn = _parseDetails(_detailsRawEn);
+
   static const List<_AllahName> _names = [
     _AllahName(number: 1, arabic: 'اللَّه', transliteration: 'Allah', meaningDe: 'Allah', meaningEn: 'Allah', meaningAr: 'الله'),
     _AllahName(number: 2, arabic: 'الرَّحْمَٰن', transliteration: 'Ar-Rahman', meaningDe: 'Der Allerbarmer', meaningEn: 'The Most Compassionate', meaningAr: 'الرحمن'),
@@ -3531,6 +3859,112 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
     }
   }
 
+  String _detailFor(_AllahName item) {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return _detailsEn[item.number] ?? item.meaningEn;
+      case AppLanguage.arabic:
+        return _detailsAr[item.number] ?? item.meaningAr;
+      case AppLanguage.german:
+        return _detailsDe[item.number] ?? item.meaningDe;
+    }
+  }
+
+  void _showNameDetail(_AllahName item) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: false,
+      builder: (context) {
+        return Container(
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.62,
+          ),
+          decoration: BoxDecoration(
+            color: const Color(0xFF111111),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 8, 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        color: _MyAppState.currentTheme.color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${item.number}',
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.transliteration,
+                            style: TextStyle(
+                              color: _MyAppState.currentTheme.color,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            item.arabic,
+                            textDirection: TextDirection.rtl,
+                            style: GoogleFonts.notoNaskhArabic(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(color: Colors.white24, height: 1),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+                  child: Text(
+                    _detailFor(item),
+                    textDirection: appLanguage == AppLanguage.arabic
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -3632,7 +4066,9 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
               itemCount: _names.length,
               itemBuilder: (context, index) {
                 final item = _names[index];
-                return Container(
+                return GestureDetector(
+                  onTap: () => _showNameDetail(item),
+                  child: Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
@@ -3704,6 +4140,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 );
               },
