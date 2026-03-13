@@ -27,61 +27,102 @@ class MushafReaderPage extends StatefulWidget {
 
 class _MushafReaderPageState extends State<MushafReaderPage> {
   late PageController _pageController;
-  int _currentPage = 2; // Immer ab Seite 3 starten
-  bool _isLoading = true;
+  int _currentPage = 1;
   bool _showUI = true;
-  static const int totalPages = 604;
+  static const int totalAssetPages = 604;
+  static const int skippedAssetPages = 2;
+  static const int totalPages = totalAssetPages - skippedAssetPages;
+  static const int pageNumberingVersion = 2;
 
   @override
   void initState() {
     super.initState();
+    _pageController = PageController(initialPage: _convertToPhysicalIndex(1));
     _initializeMushaf();
   }
 
-  /// Initialisiere Mushaf: Lade letzte Seite und setup PageController
-  Future<void> _initializeMushaf() async {
-    // Immer ab Seite 3 (Index 2) starten
+  /// Initialisiere Mushaf sofort ohne separate Warteansicht.
+  void _initializeMushaf() {
+    _loadSavedPage();
+  }
+  
+  Future<void> _loadSavedPage() async {
+    int savedPage = 1;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rawPage = prefs.getInt('mushaf_last_page');
+      final version = prefs.getInt('mushaf_page_numbering_version') ?? 1;
+
+      if (rawPage != null) {
+        savedPage = version >= pageNumberingVersion
+            ? rawPage.clamp(1, totalPages)
+            : (rawPage - 1).clamp(1, totalPages);
+      }
+    } catch (e) {
+      debugPrint('Fehler beim Laden der Seite: $e');
+    }
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
-      _currentPage = 2;
-      _isLoading = false;
+      _currentPage = savedPage;
     });
-    final physicalIndex = _convertToPhysicalIndex(_currentPage);
-    _pageController = PageController(initialPage: physicalIndex);
-    _preloadPages(_currentPage);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final physicalIndex = _convertToPhysicalIndex(savedPage);
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(physicalIndex);
+      }
+      _preloadPages(savedPage);
+    });
   }
   
-  /// Konvertiere logische Seite (0-603) zu physischem Index für RTL
-  int _convertToPhysicalIndex(int logicalPage) {
-    return totalPages - 1 - logicalPage;
+  /// Konvertiere sichtbare Seite (1-602) zu physischem Index für RTL.
+  int _convertToPhysicalIndex(int visiblePage) {
+    return totalPages - visiblePage;
   }
-  
-  /// Konvertiere physischen Index zu logischer Seite
+
+  /// Konvertiere physischen Index zu sichtbarer Seite.
   int _convertToLogicalPage(int physicalIndex) {
-    return totalPages - 1 - physicalIndex;
+    return totalPages - physicalIndex;
   }
   
   /// Preload aktuelle Seite + 2 Nachbarn für smooth scrolling
-  void _preloadPages(int logicalPage) {
+  void _preloadPages(int visiblePage) {
     final pagesToPreload = [
-      logicalPage - 1, // vorherige
-      logicalPage,     // aktuelle
-      logicalPage + 1, // nächste
+      visiblePage - 1,
+      visiblePage,
+      visiblePage + 1,
     ];
     
     for (final page in pagesToPreload) {
-      if (page >= 0 && page < totalPages) {
+      if (page >= 1 && page <= totalPages) {
         final pageNum = _formatPageNumber(page);
-        final imageUrl = 'https://tanzil.net/pub/img/pages/hafs/$pageNum.png';
-        // Preload in Flutter's Image Cache
-        precacheImage(NetworkImage(imageUrl), context);
+        final imagePath = 'assets/mushaf_pages/$pageNum.png';
+        final mediaQuery = MediaQuery.of(context);
+        final targetWidth =
+            (mediaQuery.size.width * mediaQuery.devicePixelRatio)
+                .clamp(900.0, 1800.0)
+                .round();
+        // Preload in Flutter's Image Cache with resized decode for faster startup.
+        precacheImage(
+          ResizeImage(AssetImage(imagePath), width: targetWidth),
+          context,
+        );
       }
     }
   }
   
   /// Formatiere Seitenzahl für URL
-  String _formatPageNumber(int logicalPage) {
-    final pageNumber = logicalPage + 1; // 1-basiert
-    return pageNumber.toString().padLeft(3, '0');
+  String _formatPageNumber(int visiblePage) {
+    final assetPageNumber = visiblePage + skippedAssetPages;
+    return assetPageNumber.toString().padLeft(3, '0');
   }
   
   /// Speichere aktuelle Seite persistent
@@ -89,6 +130,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('mushaf_last_page', _currentPage);
+      await prefs.setInt('mushaf_page_numbering_version', pageNumberingVersion);
     } catch (e) {
       debugPrint('Fehler beim Speichern: $e');
     }
@@ -102,40 +144,6 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: widget.themeColor,
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'مصحف يُفتح...',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: widget.themeColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Mushaf wird geladen...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.brown.shade700,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-    
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: _showUI ? _buildAppBar() : null,
@@ -164,7 +172,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           const Icon(Icons.menu_book, size: 24),
           const SizedBox(width: 10),
           Text(
-            'مصحف - صفحة ${_currentPage + 1}',
+            'مصحف - صفحة $_currentPage',
             style: const TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -196,14 +204,18 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     return PhotoViewGallery.builder(
       scrollPhysics: const BouncingScrollPhysics(),
       builder: (BuildContext context, int physicalIndex) {
-        final logicalPage = _convertToLogicalPage(physicalIndex);
-        final pageNum = _formatPageNumber(logicalPage);
+        final visiblePage = _convertToLogicalPage(physicalIndex);
+        final pageNum = _formatPageNumber(visiblePage);
+        final imagePath = 'assets/mushaf_pages/$pageNum.png';
+        final mediaQuery = MediaQuery.of(context);
+        final targetWidth =
+            (mediaQuery.size.width * mediaQuery.devicePixelRatio)
+                .clamp(900.0, 1800.0)
+                .round();
         
         return PhotoViewGalleryPageOptions(
-          // Lade von lokalem Asset (falls vorhanden) sonst Placeholder
-          imageProvider: AssetImage(
-            'assets/mushaf_pages/$pageNum.png',
-          ),
+          // Decode at device-appropriate width for better speed/memory.
+          imageProvider: ResizeImage(AssetImage(imagePath), width: targetWidth),
           
           // Initial: Größer als Standard
           initialScale: PhotoViewComputedScale.contained * 1.2,
@@ -213,10 +225,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           
           // Max: 3x zoom
           maxScale: PhotoViewComputedScale.covered * 3.0,
+
+          // Keep rendering lightweight on lower-end devices.
+          filterQuality: FilterQuality.low,
           
           // Hero animation für smooth transitions
           heroAttributes: PhotoViewHeroAttributes(
-            tag: 'mushaf_page_$logicalPage',
+            tag: 'mushaf_page_$visiblePage',
           ),
           
           // Error placeholder
@@ -228,7 +243,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
                   Icon(Icons.broken_image, size: 64, color: Colors.brown.shade400),
                   const SizedBox(height: 16),
                   Text(
-                    'Seite ${logicalPage + 1} konnte nicht geladen werden',
+                    'Seite $visiblePage konnte nicht geladen werden',
                     style: const TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
@@ -241,21 +256,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       
       itemCount: totalPages,
       loadingBuilder: (context, event) {
-        if (event == null) {
-          return Center(
-            child: CircularProgressIndicator(color: widget.themeColor),
-          );
-        }
-        
-        final progress = event.cumulativeBytesLoaded / 
-                        (event.expectedTotalBytes ?? 1);
-        
-        return Center(
-          child: CircularProgressIndicator(
-            value: progress,
-            color: widget.themeColor,
-          ),
-        );
+        return const SizedBox.shrink();
       },
       
       backgroundDecoration: const BoxDecoration(
@@ -266,17 +267,17 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       
       // Callback wenn Seite gewechselt wird
       onPageChanged: (physicalIndex) {
-        final logicalPage = _convertToLogicalPage(physicalIndex);
+        final visiblePage = _convertToLogicalPage(physicalIndex);
         
         setState(() {
-          _currentPage = logicalPage;
+          _currentPage = visiblePage;
         });
         
         // Speichere neue Seite
         _savePage();
         
         // Preload Nachbarseiten
-        _preloadPages(logicalPage);
+        _preloadPages(visiblePage);
       },
       
       scrollDirection: Axis.horizontal,
@@ -305,7 +306,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             _buildNavButton(
               icon: Icons.arrow_forward,
               label: 'السابق',
-              onPressed: _currentPage > 2 ? _goToPreviousPage : null,
+              onPressed: _currentPage > 1 ? _goToPreviousPage : null,
             ),
             
             // Seitenzahl
@@ -317,7 +318,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
                 border: Border.all(color: Colors.white, width: 2),
               ),
               child: Text(
-                '${_currentPage + 1} / $totalPages',
+                '$_currentPage / $totalPages',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -330,7 +331,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             _buildNavButton(
               icon: Icons.arrow_back,
               label: 'التالي',
-              onPressed: _currentPage < totalPages - 1 ? _goToNextPage : null,
+              onPressed: _currentPage < totalPages ? _goToNextPage : null,
             ),
           ],
         ),
@@ -367,9 +368,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Gehe zur nächsten Seite (nach links wischen)
   void _goToNextPage() {
-    if (_currentPage < totalPages - 1) {
-      final nextLogicalPage = (_currentPage + 1).clamp(2, totalPages - 1);
-      if (nextLogicalPage < 2) return; // Blockiere Seite 1 und 2
+    if (_currentPage < totalPages) {
+      final nextLogicalPage = (_currentPage + 1).clamp(1, totalPages);
       final nextPhysicalIndex = _convertToPhysicalIndex(nextLogicalPage);
       
       _pageController.animateToPage(
@@ -382,9 +382,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Gehe zur vorherigen Seite (nach rechts wischen)
   void _goToPreviousPage() {
-    if (_currentPage > 2) {
-      final prevLogicalPage = (_currentPage - 1).clamp(2, totalPages - 1);
-      if (prevLogicalPage < 2) return; // Blockiere Seite 1 und 2
+    if (_currentPage > 1) {
+      final prevLogicalPage = (_currentPage - 1).clamp(1, totalPages);
       final prevPhysicalIndex = _convertToPhysicalIndex(prevLogicalPage);
       
       _pageController.animateToPage(
@@ -397,7 +396,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Dialog: Springe zu bestimmter Seite
   void _showPageJumpDialog() {
-    final controller = TextEditingController(text: '${_currentPage + 1}');
+    final controller = TextEditingController(text: '$_currentPage');
     
     showDialog(
       context: context,
@@ -408,7 +407,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           keyboardType: TextInputType.number,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Seitenzahl (3-$totalPages)',
+            labelText: 'Seitenzahl (1-$totalPages)',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.tag),
           ),
@@ -435,64 +434,18 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   /// Springe zu eingegebener Seite
   void _jumpToPage(String input) {
     final pageNumber = int.tryParse(input);
-    if (pageNumber == null || pageNumber < 3 || pageNumber > totalPages) {
+    if (pageNumber == null || pageNumber < 1 || pageNumber > totalPages) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bitte Zahl zwischen 3 und $totalPages eingeben'),
+          content: Text('Bitte Zahl zwischen 1 und $totalPages eingeben'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
-    final logicalPage = pageNumber - 1;
-    if (logicalPage < 2) return; // Blockiere Seite 1 und 2
-    final physicalIndex = _convertToPhysicalIndex(logicalPage);
+    final physicalIndex = _convertToPhysicalIndex(pageNumber);
     _pageController.jumpToPage(physicalIndex);
     Navigator.pop(context);
   }
   
-  /// Info Dialog
-  void _showInfoDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('مصحف - Info'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoRow('📖', 'Madani Mushaf'),
-            _buildInfoRow('📄', '$totalPages Seiten'),
-            _buildInfoRow('👆', 'Wischen zum Blättern'),
-            _buildInfoRow('🔍', 'Pinch/Doppeltipp zum Zoomen'),
-            _buildInfoRow('💾', 'Seite wird automatisch gespeichert'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildInfoRow(String emoji, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 20)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
