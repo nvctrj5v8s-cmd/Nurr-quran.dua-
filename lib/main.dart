@@ -692,9 +692,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _checkAndResetDaily() async {
     final prefs = await SharedPreferences.getInstance();
     final now = DateTime.now();
-    final trackingDate = now.hour >= 23
-      ? DateTime(now.year, now.month, now.day).add(const Duration(days: 1))
-      : DateTime(now.year, now.month, now.day);
+    final trackingDate = DateTime(now.year, now.month, now.day);
     final heuteString =
       '${trackingDate.year}-${trackingDate.month.toString().padLeft(2, '0')}-${trackingDate.day.toString().padLeft(2, '0')}';
     final gespeichertesDatum = prefs.getString('gebet_datum') ?? '';
