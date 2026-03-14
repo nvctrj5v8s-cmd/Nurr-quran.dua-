@@ -4237,7 +4237,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       case AppLanguage.english:
         return 'in ${hours}h ${minutes}m';
       case AppLanguage.arabic:
-        return 'بعد ${hours}س ${minutes}د';
+        return 'بعد $hoursس $minutesد';
       case AppLanguage.german:
         return 'in ${hours}h ${minutes}min';
     }

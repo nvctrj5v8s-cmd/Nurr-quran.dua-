@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Standortzugriff wird benötigt, um lokale Gebetszeiten zu berechnen.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Standortzugriff wird benötigt, um lokale Gebetszeiten zu berechnen.</string>
 </dict>
 </plist>
