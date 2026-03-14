@@ -4317,19 +4317,24 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   }
 
   Future<Position> _resolvePosition() async {
-    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      throw Exception(_locationUnavailableLabel());
-    }
+    // isLocationServiceEnabled / checkPermission are not implemented in
+    // geolocator_web.  On web the browser shows its own permission prompt when
+    // getCurrentPosition is called, so we can skip those checks entirely.
+    if (!kIsWeb) {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception(_locationUnavailableLabel());
+      }
 
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
 
-    if (permission == LocationPermission.denied ||
-        permission == LocationPermission.deniedForever) {
-      throw Exception(_locationUnavailableLabel());
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        throw Exception(_locationUnavailableLabel());
+      }
     }
 
     return Geolocator.getCurrentPosition(
