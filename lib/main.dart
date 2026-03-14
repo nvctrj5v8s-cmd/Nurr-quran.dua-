@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -4147,7 +4148,8 @@ class PrayerTimesPage extends StatefulWidget {
 }
 
 class _PrayerTimesPageState extends State<PrayerTimesPage> {
-  bool _isLoading = true;
+  bool _isLoading = false;
+  bool _awaitingUserTrigger = true;
   String? _errorMessage;
   String _locationLabel = '';
   DateTime? _lastUpdated;
@@ -4159,7 +4161,12 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   @override
   void initState() {
     super.initState();
-    _loadPrayerTimes();
+    // On web (iOS Safari etc.) geolocation must be triggered by a user gesture.
+    // Auto-load only for native apps.
+    if (!kIsWeb) {
+      _awaitingUserTrigger = false;
+      _loadPrayerTimes();
+    }
   }
 
   String _title() {
@@ -4357,10 +4364,33 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     }
   }
 
+  String _loadLocationLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Determine location & load prayer times';
+      case AppLanguage.arabic:
+        return 'تحديد الموقع وتحميل أوقات الصلاة';
+      case AppLanguage.german:
+        return 'Standort bestimmen & Gebetszeiten laden';
+    }
+  }
+
+  String _locationInfoLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Your location is only used to calculate local prayer times and is never stored or transmitted.';
+      case AppLanguage.arabic:
+        return 'يُستخدم موقعك فقط لحساب أوقات الصلاة المحلية ولا يتم تخزينه أو إرساله.';
+      case AppLanguage.german:
+        return 'Dein Standort wird nur zur Berechnung der lokalen Gebetszeiten genutzt und nie gespeichert oder weitergegeben.';
+    }
+  }
+
   Future<void> _loadPrayerTimes() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _awaitingUserTrigger = false;
     });
 
     try {
@@ -4509,7 +4539,36 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  if (_isLoading)
+                  if (_awaitingUserTrigger)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 8),
+                      child: Column(
+                        children: [
+                          Icon(Icons.location_on_outlined,
+                              color: _MyAppState.currentTheme.color, size: 64),
+                          const SizedBox(height: 16),
+                          Text(
+                            _locationInfoLabel(),
+                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadPrayerTimes,
+                            icon: const Icon(Icons.my_location),
+                            label: Text(_loadLocationLabel(),
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _MyAppState.currentTheme.color,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 60),
                       child: Center(child: CircularProgressIndicator()),
