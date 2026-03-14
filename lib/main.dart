@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geolocator/geolocator.dart';
 import 'mushaf_reader_page.dart';
 
 // ==================== SPRACH-MODELL ====================
@@ -53,7 +54,15 @@ enum AppTheme {
 
 enum AppBackground {
   defaultImage('assets/images/hintergrund.jpg', 'Hintergrund 1'),
-  altImage('assets/images/hintergrund2.jpg', 'Hintergrund 2');
+  altImage('assets/images/hintergrund2.jpg', 'Hintergrund 2'),
+  bg3('assets/images/863ad44b341008c996f680d61ff457bc.jpg', 'Hintergrund 3'),
+  bg4('assets/images/978ffb16be030a299ad164e390480d92.jpg', 'Hintergrund 4'),
+  bg5('assets/images/9620bb06bbfd9c9cbbca520b5b7f6c10.jpg', 'Hintergrund 5'),
+  bg6('assets/images/c9bd77df1796b47bd0345867734dccda.jpg', 'Hintergrund 6'),
+  bg7('assets/images/c69be9ea90230e3d4fc366b353738728.jpg', 'Hintergrund 7'),
+  bg8('assets/images/d0d20b27b7272e5f95ee8c3a13d62ed2.jpg', 'Hintergrund 8'),
+  bg9('assets/images/e398611a35f42d3e50bc4ebd19960c6a.jpg', 'Hintergrund 9'),
+  bg10('assets/images/ff2686056f5ff73715363eeb3e9ec772.jpg', 'Hintergrund 10');
 
   final String assetPath;
   final String label;
@@ -449,8 +458,12 @@ class _MainPageState extends State<MainPage> {
                 height: double.infinity,
               ),
               [
-                const HomePage(),
-                MushafReaderPage(themeColor: _MyAppState.currentTheme.color),
+                HomePage(appLanguage: _appLanguage),
+                MushafReaderPage(
+                  themeColor: _MyAppState.currentTheme.color,
+                  uiLanguageCode: _appLanguage.code,
+                ),
+                PrayerTimesPage(appLanguage: _appLanguage),
                 const NamesOfAllahPage(),
                 const SettingsPage()
               ][tab],
@@ -466,6 +479,7 @@ class _MainPageState extends State<MainPage> {
             items: [
               BottomNavigationBarItem(icon: const Icon(Icons.home), label: _navLabel('Home', 'Home', 'الرئيسية')),
               BottomNavigationBarItem(icon: const Icon(Icons.book), label: _navLabel('Quran', 'Quran', 'القرآن')),
+              BottomNavigationBarItem(icon: const Icon(Icons.access_time_filled), label: _navLabel('Gebetszeiten', 'Prayer Times', 'أوقات الصلاة')),
               BottomNavigationBarItem(
                 icon: Container(
                   width: 24,
@@ -494,7 +508,9 @@ class _MainPageState extends State<MainPage> {
 
 // ==================== HOME PAGE ====================
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final AppLanguage appLanguage;
+
+  const HomePage({super.key, required this.appLanguage});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -504,6 +520,11 @@ class _HomePageState extends State<HomePage> {
   int hadithIndex = 0;
   AppLanguage appLanguage = AppLanguage.german;
   List<bool> gebete = [false, false, false, false, false];
+  static const String _prayerHistoryKey = 'gebet_history_v1';
+  static const String _prayerFeedbackPendingKey = 'prayer_feedback_pending_v1';
+  static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
+  static const bool _previewPrayerFeedbackOnTap = false;
+  bool _isFeedbackDialogOpen = false;
   final gebetNamen = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   final Map<AppLanguage, List<String>> hadithsByLanguage = {
     AppLanguage.german: [
@@ -579,6 +600,17 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  String get _prayerTrackerHint {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Deine Statistik findest du in Mehr.';
+      case AppLanguage.english:
+        return 'You can view your prayer stats in More.';
+      case AppLanguage.arabic:
+        return 'يمكنك رؤية إحصائيات صلاتك في قسم المزيد.';
+    }
+  }
+
   String get _masbahaTitle {
     switch (appLanguage) {
       case AppLanguage.german:
@@ -604,22 +636,28 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    _checkAndResetDaily();
-    _loadGebete();
-    _loadAppLanguage();
-    _setDailyHadith();
+    appLanguage = widget.appLanguage;
+    _initializeHome();
   }
 
-  Future<void> _loadAppLanguage() async {
-    final prefs = await SharedPreferences.getInstance();
-    final langCode = prefs.getString('app_language') ?? 'de';
-    setState(() {
-      appLanguage = AppLanguage.values.firstWhere(
-        (lang) => lang.code == langCode,
-        orElse: () => AppLanguage.german,
-      );
-    });
+  @override
+  void didUpdateWidget(covariant HomePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.appLanguage != widget.appLanguage) {
+      setState(() {
+        appLanguage = widget.appLanguage;
+      });
+      _setDailyHadith();
+    }
+  }
+
+  Future<void> _initializeHome() async {
+    await _checkAndResetDaily();
+    await _loadGebete();
     _setDailyHadith();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPendingPrayerFeedback();
+    });
   }
 
   void _setDailyHadith() {
@@ -632,11 +670,58 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _checkAndResetDaily() async {
     final prefs = await SharedPreferences.getInstance();
-    final heute = DateTime.now();
-    final heuteString = '${heute.year}-${heute.month}-${heute.day}';
+    final now = DateTime.now();
+    final trackingDate = now.hour >= 23
+      ? DateTime(now.year, now.month, now.day).add(const Duration(days: 1))
+      : DateTime(now.year, now.month, now.day);
+    final heuteString =
+      '${trackingDate.year}-${trackingDate.month.toString().padLeft(2, '0')}-${trackingDate.day.toString().padLeft(2, '0')}';
     final gespeichertesDatum = prefs.getString('gebet_datum') ?? '';
 
     if (gespeichertesDatum != heuteString) {
+      if (gespeichertesDatum.isNotEmpty) {
+        final historyJson = prefs.getString(_prayerHistoryKey);
+        final historyRaw = historyJson == null
+            ? <String, dynamic>{}
+            : (json.decode(historyJson) as Map<String, dynamic>);
+
+        final previousPrayers = List<bool>.generate(
+          5,
+          (i) => prefs.getBool('gebet_$i') ?? false,
+        );
+        final completed =
+            previousPrayers.where((isChecked) => isChecked).length;
+
+        historyRaw[gespeichertesDatum] = {
+          'completed': completed,
+          'total': previousPrayers.length,
+          'prayers': previousPrayers,
+        };
+
+        final keys = historyRaw.keys.toList()
+          ..sort((a, b) => DateTime.tryParse(a)?.compareTo(DateTime.tryParse(b) ?? DateTime(1900)) ?? -1);
+        while (keys.length > 120) {
+          historyRaw.remove(keys.removeAt(0));
+        }
+
+        await prefs.setString(_prayerHistoryKey, json.encode(historyRaw));
+
+        final prayerFeedbackEnabled =
+            prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
+        if (prayerFeedbackEnabled) {
+          await prefs.setString(
+            _prayerFeedbackPendingKey,
+            json.encode({
+              'date': gespeichertesDatum,
+              'completed': completed,
+              'total': previousPrayers.length,
+            }),
+          );
+        } else {
+          await prefs.remove(_prayerFeedbackPendingKey);
+        }
+      }
+
       for (int i = 0; i < 5; i++) {
         await prefs.setBool('gebet_$i', false);
       }
@@ -656,9 +741,255 @@ class _HomePageState extends State<HomePage> {
   Future<void> _saveGebet(int index, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('gebet_$index', value);
+    final updated = List<bool>.from(gebete);
+    updated[index] = value;
+    final completed = updated.where((isChecked) => isChecked).length;
     setState(() {
-      gebete[index] = value;
+      gebete = updated;
     });
+
+    if (_previewPrayerFeedbackOnTap && value) {
+      await _showPrayerFeedbackDialog(completed);
+    }
+  }
+
+  String _prayerFeedbackTitle(int completed) {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        if (completed >= 5) {
+          return 'Mashallah! You completed all five prayers today.';
+        }
+        if (completed >= 3) {
+          return 'Mashallah! You completed $completed prayers today.';
+        }
+        return 'Do not give up, my brother / my sister.';
+      case AppLanguage.arabic:
+        if (completed >= 5) {
+          return 'ما شاء الله! لقد أديت الصلوات الخمس كلها اليوم.';
+        }
+        if (completed >= 3) {
+          return 'ما شاء الله! لقد أديت $completed صلوات اليوم.';
+        }
+        return 'يا أخي / يا أختي، لا تستسلم.';
+      case AppLanguage.german:
+        if (completed >= 5) {
+          return 'Mashallah! Du hast heute alle fünf Gebete verrichtet – das ist wirklich lobenswert!';
+        }
+        if (completed >= 3) {
+          return 'Mashallah! Du hast heute $completed Gebete verrichtet. Sehr gut!';
+        }
+        return 'Mein Bruder / meine Schwester, lass uns nicht aufgeben!';
+    }
+  }
+
+  String _prayerFeedbackBody(int completed) {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        if (completed >= 5) {
+          return 'Prayer is the heart of our faith. It purifies the soul and brings closeness to Allah. Through your regular prayers, you strengthen your faith, preserve peace in your heart, and fulfill one of the most important pillars of Islam.\n\nKeep going, my brother / my sister. Allah sees everything and loves your steadfastness.';
+        }
+        if (completed >= 3) {
+          return 'Remember that keeping the prayer complete is what matters most. Every prayer brings you closer to Allah, purifies your heart, and grants inner peace.\n\nHold on to it, my brother / my sister. You are on a good path, and Allah is always with you.';
+        }
+        return 'Prayer is the connection to Allah and one of the most important ways to purify our soul and find inner peace. Even if you prayed only $completed today, it is never too late to return to regular prayer.\n\nAllah is merciful and loves every step we take toward Him. Hold on to your prayer, stay steadfast, and do not give up. You can do it! 💛';
+      case AppLanguage.arabic:
+        if (completed >= 5) {
+          return 'هذا أمر جميل حقًا!\n\nالصلاة هي قلب إيماننا، وهي تطهّر النفس وتقرّبك من الله. ومن خلال محافظتك على الصلاة تقوّي إيمانك، وتحفظ السكينة في قلبك، وتؤدي واحدة من أعظم أركان الإسلام.\n\nاستمر يا أخي / يا أختي، فالله يرى كل شيء ويحب ثباتك.';
+        }
+        if (completed >= 3) {
+          return 'أحسنت جدًا!\n\nتذكّر أن المحافظة على الصلاة كاملة هي الأهم. كل صلاة تقربك إلى الله، وتطهّر قلبك، وتمنحك السكينة.\n\nتمسّك بها يا أخي / يا أختي، فأنت على طريق جميل، والله معك دائمًا.';
+        }
+        return 'الصلاة هي الصلة بالله وأهم وسيلة لتطهير النفس ونيل السكينة. وحتى إن صليت $completed فقط اليوم، فليس متأخرًا أبدًا أن تعود إلى الصلاة المنتظمة.\n\nالله رحيم ويحب كل خطوة نخطوها إليه. تمسّك بصلاتك، واثبت، ولا تستسلم، فأنت تستطيع!';
+      case AppLanguage.german:
+        if (completed >= 5) {
+          return 'Das Gebet ist das Herzstück unseres Glaubens, es reinigt die Seele und bringt Nähe zu Allah. Durch deine regelmäßigen Gebete stärkst du deinen Glauben, bewahrst Frieden in deinem Herzen und erfüllst eine der wichtigsten Säulen des Islam.\n\nMach weiter so, mein Bruder / meine Schwester – Allah sieht alles und liebt deine Standhaftigkeit.';
+        }
+        if (completed >= 3) {
+          return 'Denke daran, das Gebet vollständig zu halten, ist das Wichtigste. Jedes Gebet bringt dich Allah näher, reinigt dein Herz und schenkt dir inneren Frieden.\n\nHalte daran fest, mein Bruder / meine Schwester – du bist auf einem guten Weg, und Allah ist immer bei dir.';
+        }
+        return 'Das Gebet ist die Verbindung zu Allah und das wichtigste Mittel, unsere Seele zu reinigen und inneren Frieden zu finden. Selbst wenn du heute nur $completed Gebete verrichtet hast, ist es nie zu spät, wieder regelmäßig zu beten.\n\nAllah ist barmherzig und liebt jeden Schritt, den wir zu Ihm machen. Halte dich an dein Gebet, sei standhaft und gib nicht auf, du schaffst das!';
+    }
+  }
+
+  String _prayerFeedbackButtonLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Continue';
+      case AppLanguage.arabic:
+        return 'متابعة';
+      case AppLanguage.german:
+        return 'Weiter';
+    }
+  }
+
+  String _feedbackDateLabel(String dateKey) {
+    final date = DateTime.tryParse(dateKey);
+    if (date == null) {
+      return dateKey;
+    }
+    final formatted = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Date: $formatted';
+      case AppLanguage.arabic:
+        return 'التاريخ: $formatted';
+      case AppLanguage.german:
+        return 'Datum: $formatted';
+    }
+  }
+
+  String _openPrayerStatsLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Open prayer statistics';
+      case AppLanguage.arabic:
+        return 'فتح إحصائيات الصلاة';
+      case AppLanguage.german:
+        return 'Gebetsstatistik öffnen';
+    }
+  }
+
+  Future<List<MapEntry<String, Map<String, dynamic>>>> _loadPrayerHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getString(_prayerHistoryKey);
+    final historyRaw = historyJson == null
+        ? <String, dynamic>{}
+        : (json.decode(historyJson) as Map<String, dynamic>);
+
+    final parsedHistory = <MapEntry<String, Map<String, dynamic>>>[];
+    for (final entry in historyRaw.entries) {
+      if (entry.value is Map<String, dynamic>) {
+        parsedHistory.add(MapEntry(entry.key, entry.value as Map<String, dynamic>));
+      } else if (entry.value is Map) {
+        parsedHistory.add(MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)));
+      }
+    }
+    parsedHistory.sort((a, b) {
+      final aDate = DateTime.tryParse(a.key) ?? DateTime(1900);
+      final bDate = DateTime.tryParse(b.key) ?? DateTime(1900);
+      return bDate.compareTo(aDate);
+    });
+    return parsedHistory;
+  }
+
+  Future<void> _openPrayerStatisticsPage() async {
+    final history = await _loadPrayerHistory();
+    if (!mounted) {
+      return;
+    }
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PrayerStatisticsPage(
+          appLanguage: appLanguage,
+          prayerHistory: history,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showPrayerFeedbackDialog(int completed, {String? dateKey}) async {
+    if (!mounted || _isFeedbackDialogOpen) {
+      return;
+    }
+    _isFeedbackDialogOpen = true;
+    await showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.black.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
+          ),
+          title: Column(
+            crossAxisAlignment: appLanguage == AppLanguage.arabic
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
+            children: [
+              Text(
+                _prayerFeedbackTitle(completed),
+                style: TextStyle(
+                  color: _MyAppState.currentTheme.color,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: appLanguage == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+              ),
+              if (dateKey != null && dateKey.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    _feedbackDateLabel(dateKey),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Text(
+              _prayerFeedbackBody(completed),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                height: 1.5,
+              ),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _MyAppState.currentTheme.color,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                _prayerFeedbackButtonLabel(),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    _isFeedbackDialogOpen = false;
+  }
+
+  Future<void> _showPendingPrayerFeedback() async {
+    if (_previewPrayerFeedbackOnTap) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final pendingRaw = prefs.getString(_prayerFeedbackPendingKey);
+    if (pendingRaw == null || pendingRaw.isEmpty) {
+      return;
+    }
+
+    final pending = json.decode(pendingRaw) as Map<String, dynamic>;
+    final completed = (pending['completed'] as num?)?.toInt() ?? 0;
+    final date = '${pending['date'] ?? ''}'.trim();
+
+    await prefs.remove(_prayerFeedbackPendingKey);
+
+    if (!mounted) {
+      return;
+    }
+
+    await _showPrayerFeedbackDialog(
+      completed,
+      dateKey: date.isEmpty ? null : date,
+    );
   }
 
   @override
@@ -685,6 +1016,15 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.white,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _prayerTrackerHint,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 15),
@@ -721,6 +1061,27 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                         ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Align(
+                    alignment: appLanguage == AppLanguage.arabic
+                        ? Alignment.centerLeft
+                        : Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: _openPrayerStatisticsPage,
+                      icon: Icon(
+                        Icons.calendar_month,
+                        color: _MyAppState.currentTheme.color,
+                        size: 18,
+                      ),
+                      label: Text(
+                        _openPrayerStatsLabel(),
+                        style: TextStyle(
+                          color: _MyAppState.currentTheme.color,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -835,7 +1196,9 @@ class _HomePageState extends State<HomePage> {
 
 // ==================== QURAN PAGE ====================
 class QuranPage extends StatefulWidget {
-  const QuranPage({super.key});
+  final AppLanguage appLanguage;
+
+  const QuranPage({super.key, required this.appLanguage});
 
   @override
   State<QuranPage> createState() => _QuranPageState();
@@ -1024,6 +1387,7 @@ class _QuranPageState extends State<QuranPage> {
                               builder: (context) => SurahDetailPage(
                                 surahNumber: surah['number'],
                                 language: selectedLanguage,
+                                appLanguage: widget.appLanguage,
                               ),
                             ),
                           );
@@ -1106,10 +1470,12 @@ class _QuranPageState extends State<QuranPage> {
 class SurahDetailPage extends StatefulWidget {
   final int surahNumber;
   final QuranLanguage language;
+  final AppLanguage appLanguage;
   const SurahDetailPage({
     super.key,
     required this.surahNumber,
     required this.language,
+    required this.appLanguage,
   });
 
   @override
@@ -1122,13 +1488,50 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
   int currentPage = 0;
   String surahName = '';
   String surahNameArabic = '';
+  AppLanguage _appLanguage = AppLanguage.german;
 
   final int ayahsPerPage = 15;
 
   @override
   void initState() {
     super.initState();
+    _appLanguage = widget.appLanguage;
     loadSurah();
+  }
+
+  bool get _isArabicUi => _appLanguage == AppLanguage.arabic;
+
+  String _pageIndicatorLabel() {
+    switch (_appLanguage) {
+      case AppLanguage.english:
+        return 'Page ${currentPage + 1} of $totalPages';
+      case AppLanguage.arabic:
+        return 'الصفحة ${currentPage + 1} من $totalPages';
+      case AppLanguage.german:
+        return 'Seite ${currentPage + 1} von $totalPages';
+    }
+  }
+
+  String _nextButtonLabel() {
+    switch (_appLanguage) {
+      case AppLanguage.english:
+        return 'Next';
+      case AppLanguage.arabic:
+        return 'التالي';
+      case AppLanguage.german:
+        return 'Weiter';
+    }
+  }
+
+  String _previousButtonLabel() {
+    switch (_appLanguage) {
+      case AppLanguage.english:
+        return 'Previous';
+      case AppLanguage.arabic:
+        return 'السابق';
+      case AppLanguage.german:
+        return 'Zurück';
+    }
   }
 
   Future<void> loadSurah() async {
@@ -1325,7 +1728,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Seite ${currentPage + 1} von $totalPages',
+                            _pageIndicatorLabel(),
                             style: const TextStyle(
                               color: Color(0xFFD4AF37),
                               fontSize: 16,
@@ -1476,14 +1879,14 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: widget.language == QuranLanguage.arabic
+                        children: _isArabicUi
                             ? [
                                 ElevatedButton.icon(
                                   onPressed: currentPage < totalPages - 1
                                       ? goToNextPage
                                       : null,
                                   icon: const Icon(Icons.arrow_forward),
-                                  label: const Text('التالي'),
+                                  label: Text(_nextButtonLabel()),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         const Color(0xFFD4AF37),
@@ -1504,7 +1907,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                       ? goToPreviousPage
                                       : null,
                                   icon: const Icon(Icons.arrow_back),
-                                  label: const Text('السابق'),
+                                  label: Text(_previousButtonLabel()),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         const Color(0xFFD4AF37),
@@ -1527,7 +1930,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                       ? goToPreviousPage
                                       : null,
                                   icon: const Icon(Icons.arrow_back),
-                                  label: const Text('Zurück'),
+                                  label: Text(_previousButtonLabel()),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         const Color(0xFFD4AF37),
@@ -1548,7 +1951,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                       ? goToNextPage
                                       : null,
                                   icon: const Icon(Icons.arrow_forward),
-                                  label: const Text('Weiter'),
+                                  label: Text(_nextButtonLabel()),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor:
                                         const Color(0xFFD4AF37),
@@ -2298,6 +2701,11 @@ class _SettingsPageState extends State<SettingsPage> {
   AppBackground appBackground = AppBackground.defaultImage;
   int tasbihCount = 0;
   String selectedDhikr = 'SubhanAllah';
+  List<MapEntry<String, Map<String, dynamic>>> _prayerHistory = [];
+
+  static const String _prayerHistoryKey = 'gebet_history_v1';
+  static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
+  bool _prayerFeedbackEnabled = true;
 
   static const List<String> dhikrOptions = [
     'SubhanAllah',
@@ -2324,10 +2732,29 @@ class _SettingsPageState extends State<SettingsPage> {
       ? <String, dynamic>{}
       : (json.decode(countsJson) as Map<String, dynamic>);
     final legacyCount = prefs.getInt('tasbih_count') ?? 0;
+    final historyJson = prefs.getString(_prayerHistoryKey);
+    final historyRaw = historyJson == null
+        ? <String, dynamic>{}
+        : (json.decode(historyJson) as Map<String, dynamic>);
+    final prayerFeedbackEnabled =
+      prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
     final selected = dhikrOptions.contains(savedDhikr)
       ? savedDhikr
       : dhikrOptions.first;
     final savedCount = (countsRaw[selected] as num?)?.toInt() ?? legacyCount;
+    final parsedHistory = <MapEntry<String, Map<String, dynamic>>>[];
+    for (final entry in historyRaw.entries) {
+      if (entry.value is Map<String, dynamic>) {
+        parsedHistory.add(MapEntry(entry.key, entry.value as Map<String, dynamic>));
+      } else if (entry.value is Map) {
+        parsedHistory.add(MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)));
+      }
+    }
+    parsedHistory.sort((a, b) {
+      final aDate = DateTime.tryParse(a.key) ?? DateTime(1900);
+      final bDate = DateTime.tryParse(b.key) ?? DateTime(1900);
+      return bDate.compareTo(aDate);
+    });
 
     setState(() {
       appLanguage = AppLanguage.values.firstWhere(
@@ -2337,6 +2764,97 @@ class _SettingsPageState extends State<SettingsPage> {
       appBackground = AppBackground.fromAssetPath(backgroundAsset);
       selectedDhikr = selected;
       tasbihCount = savedCount;
+      _prayerHistory = parsedHistory;
+      _prayerFeedbackEnabled = prayerFeedbackEnabled;
+    });
+  }
+
+  String _prayerStatsTitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Prayer Statistics';
+      case AppLanguage.arabic:
+        return 'إحصائيات الصلاة';
+      case AppLanguage.german:
+        return 'Gebetsstatistik';
+    }
+  }
+
+  String _prayerStatsSubtitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Calendar view of your recent prayer days';
+      case AppLanguage.arabic:
+        return 'عرض تقويمي لأيام صلاتك الأخيرة';
+      case AppLanguage.german:
+        return 'Kalenderansicht deiner letzten Gebetstage';
+    }
+  }
+
+  String _prayerStatsEmptyLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'No prayer days saved yet. Your own entries will appear here.';
+      case AppLanguage.arabic:
+        return 'لا توجد أيام صلاة محفوظة بعد. ستظهر بياناتك أنت فقط هنا.';
+      case AppLanguage.german:
+        return 'Noch keine Gebetstage gespeichert. Hier erscheinen nur deine eigenen Daten.';
+    }
+  }
+
+  String _prayerStatsOpenHint() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Tap to open calendar';
+      case AppLanguage.arabic:
+        return 'اضغط لفتح التقويم';
+      case AppLanguage.german:
+        return 'Tippe, um den Kalender zu öffnen';
+    }
+  }
+
+  String _prayerReminderTitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Daily Prayer Message';
+      case AppLanguage.arabic:
+        return 'رسالة الصلاة اليومية';
+      case AppLanguage.german:
+        return 'Taegliche Gebetsnachricht';
+    }
+  }
+
+  String _prayerReminderSubtitle() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Show the motivation message after the day changes';
+      case AppLanguage.arabic:
+        return 'اعرض رسالة التحفيز بعد تغيّر اليوم';
+      case AppLanguage.german:
+        return 'Zeige die Motivationsnachricht nach dem Tageswechsel';
+    }
+  }
+
+
+  String _prayerStatsDoneLabel(int completed, int total) {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return '$completed of $total prayers';
+      case AppLanguage.arabic:
+        return '$completed من $total صلوات';
+      case AppLanguage.german:
+        return '$completed von $total Gebeten';
+    }
+  }
+
+  Future<void> _changePrayerFeedbackEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_prayerFeedbackEnabledKey, value);
+    if (!value) {
+      await prefs.remove('prayer_feedback_pending_v1');
+    }
+    setState(() {
+      _prayerFeedbackEnabled = value;
     });
   }
 
@@ -2545,6 +3063,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final statsHistory = _prayerHistory;
+    final isPreview = _prayerHistory.isEmpty;
+    final completedTotal = statsHistory.fold<int>(
+      0,
+      (sum, entry) => sum + ((entry.value['completed'] as num?)?.toInt() ?? 0),
+    );
+    final totalPrayers = statsHistory.fold<int>(
+      0,
+      (sum, entry) => sum + ((entry.value['total'] as num?)?.toInt() ?? 0),
+    );
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: SafeArea(
@@ -2730,6 +3259,109 @@ class _SettingsPageState extends State<SettingsPage> {
                           ],
                         );
                       },
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  GestureDetector(
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PrayerStatisticsPage(
+                            appLanguage: appLanguage,
+                            prayerHistory: _prayerHistory,
+                          ),
+                        ),
+                      );
+                      _loadSettings();
+                    },
+                    child: _buildCard(
+                      child: Row(
+                        children: [
+                          Icon(Icons.query_stats,
+                              color: _MyAppState.currentTheme.color, size: 32),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _prayerStatsTitle(),
+                                  style: TextStyle(
+                                    color: _MyAppState.currentTheme.color,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _prayerStatsSubtitle(),
+                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _prayerStatsDoneLabel(completedTotal, totalPrayers),
+                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                ),
+                                if (isPreview)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 6),
+                                    child: Text(
+                                      _prayerStatsEmptyLabel(),
+                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                    ),
+                                  ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  _prayerStatsOpenHint(),
+                                  style: TextStyle(
+                                    color: _MyAppState.currentTheme.color,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.arrow_forward_ios,
+                              color: _MyAppState.currentTheme.color, size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCard(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _prayerReminderTitle(),
+                                style: TextStyle(
+                                  color: _MyAppState.currentTheme.color,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                _prayerReminderSubtitle(),
+                                style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Switch(
+                          value: _prayerFeedbackEnabled,
+                          activeThumbColor: _MyAppState.currentTheme.color,
+                          onChanged: _changePrayerFeedbackEnabled,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -3004,6 +3636,961 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 }
 
+class PrayerStatisticsPage extends StatefulWidget {
+  final AppLanguage appLanguage;
+  final List<MapEntry<String, Map<String, dynamic>>> prayerHistory;
+
+  const PrayerStatisticsPage({
+    super.key,
+    required this.appLanguage,
+    required this.prayerHistory,
+  });
+
+  @override
+  State<PrayerStatisticsPage> createState() => _PrayerStatisticsPageState();
+}
+
+class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
+  late DateTime _currentMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _currentMonth = DateTime(now.year, now.month, 1);
+  }
+
+  String _title() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Prayer Statistics';
+      case AppLanguage.arabic:
+        return 'إحصائيات الصلاة';
+      case AppLanguage.german:
+        return 'Gebetsstatistik';
+    }
+  }
+
+  String _subtitle() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Monthly prayer calendar';
+      case AppLanguage.arabic:
+        return 'تقويم الصلاة الشهري';
+      case AppLanguage.german:
+        return 'Monatlicher Gebetskalender';
+    }
+  }
+
+  String _previewLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'No prayer days saved yet. Your own entries will appear here.';
+      case AppLanguage.arabic:
+        return 'لا توجد أيام صلاة محفوظة بعد. ستظهر بياناتك أنت فقط هنا.';
+      case AppLanguage.german:
+        return 'Noch keine Gebetstage gespeichert. Hier erscheinen nur deine eigenen Daten.';
+    }
+  }
+
+  String _monthLabel(DateTime date) {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return const [
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
+        ][date.month - 1];
+      case AppLanguage.arabic:
+        return const [
+          'يناير',
+          'فبراير',
+          'مارس',
+          'ابريل',
+          'مايو',
+          'يونيو',
+          'يوليو',
+          'اغسطس',
+          'سبتمبر',
+          'اكتوبر',
+          'نوفمبر',
+          'ديسمبر',
+        ][date.month - 1];
+      case AppLanguage.german:
+        return const [
+          'Januar',
+          'Februar',
+          'März',
+          'April',
+          'Mai',
+          'Juni',
+          'Juli',
+          'August',
+          'September',
+          'Oktober',
+          'November',
+          'Dezember',
+        ][date.month - 1];
+    }
+  }
+
+  String _weekdayShortLabel(int weekday) {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return const ['M', 'T', 'W', 'T', 'F', 'S', 'S'][weekday - 1];
+      case AppLanguage.arabic:
+        return const ['ن', 'ث', 'ر', 'خ', 'ج', 'س', 'ح'][weekday - 1];
+      case AppLanguage.german:
+        return const ['M', 'D', 'M', 'D', 'F', 'S', 'S'][weekday - 1];
+    }
+  }
+
+  String _dateKey(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  void _showDayDetailDialog(DateTime date, Map<String, dynamic> entry) {
+    final completed = (entry['completed'] as num?)?.toInt() ?? 0;
+    final total = (entry['total'] as num?)?.toInt() ?? 5;
+    final rawPrayers = entry['prayers'];
+    final prayerList = rawPrayers is List
+        ? rawPrayers.map((e) => e == true).toList()
+        : null;
+
+    final prayerNames = switch (widget.appLanguage) {
+      AppLanguage.german => [
+          'Fajr – Morgengebet',
+          'Dhuhr – Mittagsgebet',
+          'Asr – Nachmittagsgebet',
+          'Maghrib – Abendgebet',
+          'Isha – Nachtgebet',
+        ],
+      AppLanguage.english => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
+      AppLanguage.arabic => ['الفجر', 'الظهر', 'العصر', 'المغرب', 'العشاء'],
+    };
+
+    final title = '${date.day}. ${_monthLabel(date)} ${date.year}';
+    final closeLabel = switch (widget.appLanguage) {
+      AppLanguage.german => 'Schließen',
+      AppLanguage.english => 'Close',
+      AppLanguage.arabic => 'إغلاق',
+    };
+
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black.withOpacity(0.95),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: _MyAppState.currentTheme.color,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: widget.appLanguage == AppLanguage.arabic
+              ? TextAlign.right
+              : TextAlign.left,
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ...List.generate(5, (i) {
+              final done = prayerList != null && i < prayerList.length
+                  ? prayerList[i]
+                  : i < completed;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  children: [
+                    Icon(
+                      done
+                          ? Icons.check_circle_rounded
+                          : Icons.cancel_rounded,
+                      color:
+                          done ? const Color(0xFF45B97C) : const Color(0xFFD95D39),
+                      size: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      prayerNames[i],
+                      style: TextStyle(
+                        color: done ? const Color(0xFF45B97C) : const Color(0xFFD95D39),
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 8),
+            const Divider(color: Colors.white24),
+            Text(
+              '$completed / $total',
+              style: TextStyle(
+                color: _MyAppState.currentTheme.color,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              closeLabel,
+              style: TextStyle(color: _MyAppState.currentTheme.color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _prayerDayColor(int completed) {
+    if (completed >= 5) {
+      return const Color(0xFF45B97C);
+    }
+    if (completed >= 3) {
+      return const Color(0xFFE3B341);
+    }
+    return const Color(0xFFD95D39);
+  }
+
+  IconData _prayerDayIcon(int completed) {
+    if (completed >= 5) return Icons.star_rounded;
+    if (completed >= 3) return Icons.star_half_rounded;
+    return Icons.star_border_rounded;
+  }
+
+  List<DateTime?> _calendarCells(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    final leading = firstDay.weekday - 1;
+    final total = leading + lastDay.day;
+    final trailing = (7 - (total % 7)) % 7;
+    final cells = <DateTime?>[];
+
+    for (int index = 0; index < leading; index++) {
+      cells.add(null);
+    }
+
+    for (int day = 1; day <= lastDay.day; day++) {
+      cells.add(DateTime(month.year, month.month, day));
+    }
+
+    for (int index = 0; index < trailing; index++) {
+      cells.add(null);
+    }
+
+    return cells;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isPreview = widget.prayerHistory.isEmpty;
+    final effectiveHistory = widget.prayerHistory;
+    final historyMap = {for (final entry in effectiveHistory) entry.key: entry.value};
+    final cells = _calendarCells(_currentMonth);
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.75),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _title(),
+                          style: TextStyle(
+                            color: _MyAppState.currentTheme.color,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _subtitle(),
+                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: _MyAppState.currentTheme.color.withOpacity(0.35),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _currentMonth = DateTime(
+                                    _currentMonth.year,
+                                    _currentMonth.month - 1,
+                                    1,
+                                  );
+                                });
+                              },
+                              icon: const Icon(Icons.chevron_left, color: Colors.white),
+                            ),
+                            Expanded(
+                              child: Text(
+                                '${_monthLabel(_currentMonth)} ${_currentMonth.year}',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _MyAppState.currentTheme.color,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  _currentMonth = DateTime(
+                                    _currentMonth.year,
+                                    _currentMonth.month + 1,
+                                    1,
+                                  );
+                                });
+                              },
+                              icon: const Icon(Icons.chevron_right, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        if (isPreview)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              _previewLabel(),
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        Row(
+                          children: List.generate(7, (index) {
+                            final weekday = index + 1;
+                            return Expanded(
+                              child: Center(
+                                child: Text(
+                                  _weekdayShortLabel(weekday),
+                                  style: const TextStyle(
+                                    color: Colors.white60,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 10),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: cells.length,
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 7,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 0.78,
+                          ),
+                          itemBuilder: (context, index) {
+                            final date = cells[index];
+                            if (date == null) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final entry = historyMap[_dateKey(date)];
+                            final completed = (entry?['completed'] as num?)?.toInt();
+                            final total = (entry?['total'] as num?)?.toInt() ?? 5;
+                            final hasData = completed != null;
+                            final dayColor = hasData
+                                ? _prayerDayColor(completed)
+                                : Colors.white10;
+
+                            return GestureDetector(
+                              onTap: hasData
+                                  ? () => _showDayDetailDialog(date, entry!)
+                                  : null,
+                              child: Container(
+                              decoration: BoxDecoration(
+                                color: dayColor.withOpacity(hasData ? 0.9 : 0.15),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: hasData ? dayColor : Colors.white12,
+                                  width: 1.4,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Text(
+                                        '${date.day}',
+                                        style: TextStyle(
+                                          color: hasData ? Colors.black87 : Colors.white70,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      hasData ? _prayerDayIcon(completed) : Icons.circle,
+                                      size: hasData ? 20 : 8,
+                                      color: hasData ? Colors.black87 : Colors.white24,
+                                    ),
+                                    Text(
+                                      hasData ? '$completed/$total' : '-',
+                                      style: TextStyle(
+                                        color: hasData ? Colors.black87 : Colors.white54,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),  // Container
+                            );  // GestureDetector
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PrayerTimesPage extends StatefulWidget {
+  final AppLanguage appLanguage;
+
+  const PrayerTimesPage({super.key, required this.appLanguage});
+
+  @override
+  State<PrayerTimesPage> createState() => _PrayerTimesPageState();
+}
+
+class _PrayerTimesPageState extends State<PrayerTimesPage> {
+  bool _isLoading = true;
+  String? _errorMessage;
+  String _locationLabel = '';
+  DateTime? _lastUpdated;
+  Map<String, String> _timings = {};
+  String? _nextPrayerName;
+  String? _nextPrayerTime;
+  String? _remainingLabel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrayerTimes();
+  }
+
+  String _title() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Prayer Times';
+      case AppLanguage.arabic:
+        return 'أوقات الصلاة';
+      case AppLanguage.german:
+        return 'Gebetszeiten';
+    }
+  }
+
+  String _subtitle() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Based on your current location';
+      case AppLanguage.arabic:
+        return 'بناءً على موقعك الحالي';
+      case AppLanguage.german:
+        return 'Basierend auf deinem aktuellen Standort';
+    }
+  }
+
+  String _refreshLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Refresh';
+      case AppLanguage.arabic:
+        return 'تحديث';
+      case AppLanguage.german:
+        return 'Aktualisieren';
+    }
+  }
+
+  String _locationUnavailableLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Location unavailable';
+      case AppLanguage.arabic:
+        return 'الموقع غير متاح';
+      case AppLanguage.german:
+        return 'Standort nicht verfügbar';
+    }
+  }
+
+  String _nextPrayerLabel() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Next prayer';
+      case AppLanguage.arabic:
+        return 'الصلاة القادمة';
+      case AppLanguage.german:
+        return 'Nächstes Gebet';
+    }
+  }
+
+  String _updatedLabel(DateTime date) {
+    final hh = date.hour.toString().padLeft(2, '0');
+    final mm = date.minute.toString().padLeft(2, '0');
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Updated at $hh:$mm';
+      case AppLanguage.arabic:
+        return 'آخر تحديث $hh:$mm';
+      case AppLanguage.german:
+        return 'Aktualisiert um $hh:$mm';
+    }
+  }
+
+  String _inLabel(Duration duration) {
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'in ${hours}h ${minutes}m';
+      case AppLanguage.arabic:
+        return 'بعد ${hours}س ${minutes}د';
+      case AppLanguage.german:
+        return 'in ${hours}h ${minutes}min';
+    }
+  }
+
+  String _timeParseError() {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return 'Could not load prayer times right now.';
+      case AppLanguage.arabic:
+        return 'تعذر تحميل أوقات الصلاة الآن.';
+      case AppLanguage.german:
+        return 'Gebetszeiten konnten gerade nicht geladen werden.';
+    }
+  }
+
+  String _localizedPrayerName(String key) {
+    switch (widget.appLanguage) {
+      case AppLanguage.english:
+        return key;
+      case AppLanguage.arabic:
+        switch (key) {
+          case 'Fajr':
+            return 'الفجر';
+          case 'Dhuhr':
+            return 'الظهر';
+          case 'Asr':
+            return 'العصر';
+          case 'Maghrib':
+            return 'المغرب';
+          case 'Isha':
+            return 'العشاء';
+          default:
+            return key;
+        }
+      case AppLanguage.german:
+        switch (key) {
+          case 'Fajr':
+            return 'Fajr';
+          case 'Dhuhr':
+            return 'Dhuhr';
+          case 'Asr':
+            return 'Asr';
+          case 'Maghrib':
+            return 'Maghrib';
+          case 'Isha':
+            return 'Isha';
+          default:
+            return key;
+        }
+    }
+  }
+
+  String _normalizeTime(String raw) {
+    final match = RegExp(r'(\d{1,2}):(\d{2})').firstMatch(raw);
+    if (match == null) {
+      return raw;
+    }
+    final hour = int.tryParse(match.group(1) ?? '0') ?? 0;
+    final minute = int.tryParse(match.group(2) ?? '0') ?? 0;
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  DateTime _toDateTimeToday(String hhmm) {
+    final parts = hhmm.split(':');
+    final now = DateTime.now();
+    final h = int.tryParse(parts.first) ?? 0;
+    final m = int.tryParse(parts.last) ?? 0;
+    return DateTime(now.year, now.month, now.day, h, m);
+  }
+
+  Future<Position> _resolvePosition() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception(_locationUnavailableLabel());
+    }
+
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      throw Exception(_locationUnavailableLabel());
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
+  }
+
+  void _computeNextPrayer(Map<String, String> timings) {
+    final order = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+    final now = DateTime.now();
+
+    for (final prayer in order) {
+      final time = timings[prayer];
+      if (time == null) {
+        continue;
+      }
+      final dateTime = _toDateTimeToday(time);
+      if (dateTime.isAfter(now)) {
+        _nextPrayerName = _localizedPrayerName(prayer);
+        _nextPrayerTime = time;
+        _remainingLabel = _inLabel(dateTime.difference(now));
+        return;
+      }
+    }
+
+    final fajrTime = timings['Fajr'];
+    if (fajrTime != null) {
+      final tomorrow = _toDateTimeToday(fajrTime).add(const Duration(days: 1));
+      _nextPrayerName = _localizedPrayerName('Fajr');
+      _nextPrayerTime = fajrTime;
+      _remainingLabel = _inLabel(tomorrow.difference(now));
+    }
+  }
+
+  Future<void> _loadPrayerTimes() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final position = await _resolvePosition();
+      final uri = Uri.parse(
+        'https://api.aladhan.com/v1/timings?latitude=${position.latitude}&longitude=${position.longitude}&method=3',
+      );
+      final response = await http.get(uri);
+
+      if (response.statusCode != 200) {
+        throw Exception(_timeParseError());
+      }
+
+      final payload = json.decode(response.body) as Map<String, dynamic>;
+      final data = payload['data'] as Map<String, dynamic>?;
+      final rawTimings = data?['timings'] as Map<String, dynamic>?;
+      if (rawTimings == null) {
+        throw Exception(_timeParseError());
+      }
+
+      final parsed = <String, String>{
+        'Fajr': _normalizeTime('${rawTimings['Fajr'] ?? ''}'),
+        'Dhuhr': _normalizeTime('${rawTimings['Dhuhr'] ?? ''}'),
+        'Asr': _normalizeTime('${rawTimings['Asr'] ?? ''}'),
+        'Maghrib': _normalizeTime('${rawTimings['Maghrib'] ?? ''}'),
+        'Isha': _normalizeTime('${rawTimings['Isha'] ?? ''}'),
+      };
+
+      _computeNextPrayer(parsed);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _timings = parsed;
+        _lastUpdated = DateTime.now();
+        _locationLabel =
+            '${position.latitude.toStringAsFixed(3)}, ${position.longitude.toStringAsFixed(3)}';
+        _isLoading = false;
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  Widget _buildTimingCard(String prayer, String time) {
+    final color = _MyAppState.currentTheme.color;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.24), Colors.black.withOpacity(0.45)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.4)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.access_time_filled, color: color),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              _localizedPrayerName(prayer),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Text(
+            time,
+            style: TextStyle(
+              color: color,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.72),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _title(),
+                    style: TextStyle(
+                      color: _MyAppState.currentTheme.color,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _subtitle(),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                  if (_locationLabel.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      _locationLabel,
+                      style: const TextStyle(color: Colors.white60, fontSize: 12),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (_isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 60),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_errorMessage != null)
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.72),
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.redAccent.withOpacity(0.45)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: _loadPrayerTimes,
+                            child: Text(_refreshLabel()),
+                          ),
+                        ],
+                      ),
+                    )
+                  else ...[
+                    if (_nextPrayerName != null && _nextPrayerTime != null)
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.72),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.notifications_active,
+                                color: _MyAppState.currentTheme.color),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _nextPrayerLabel(),
+                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  ),
+                                  Text(
+                                    '$_nextPrayerName • $_nextPrayerTime',
+                                    style: TextStyle(
+                                      color: _MyAppState.currentTheme.color,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  if (_remainingLabel != null)
+                                    Text(
+                                      _remainingLabel!,
+                                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ..._timings.entries.map((entry) {
+                      return _buildTimingCard(entry.key, entry.value);
+                    }),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (_lastUpdated != null)
+                          Text(
+                            _updatedLabel(_lastUpdated!),
+                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                          ),
+                        TextButton.icon(
+                          onPressed: _loadPrayerTimes,
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: Text(_refreshLabel()),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ==================== MASBAHA PAGE ====================
 class MasbahaPage extends StatefulWidget {
   final AppLanguage language;
@@ -3017,6 +4604,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
   int tasbihCount = 0;
   String selectedDhikr = 'SubhanAllah';
   Map<String, int> _countsByDhikr = {};
+  bool _hasSeenIntro = false;
   static const String _introSeenKey = 'masbaha_intro_seen_v1';
 
   static const List<String> _dhikrOptions = [
@@ -3112,7 +4700,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   Remembering Allah regularly brings peace to the heart and strengthens the connection between the believer and their Lord.''';
       case AppLanguage.arabic:
-    return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وقرب العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
+    return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وتقريبِ العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
 
   ﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اذْكُرُوا اللَّهَ ذِكْرًا كَثِيرًا﴾
   — سورة الأحزاب، الآية 41
@@ -3161,10 +4749,89 @@ class _MasbahaPageState extends State<MasbahaPage> {
     }
   }
 
+  Future<void> _showIntroDialog({required bool firstTime}) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: !firstTime,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.black.withOpacity(0.95),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
+          ),
+          title: Text(
+            _introTitle(),
+            style: TextStyle(
+              color: _MyAppState.currentTheme.color,
+              fontWeight: FontWeight.bold,
+              fontSize: 22,
+            ),
+            textAlign:
+                widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+          ),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Text(
+                _introBody(),
+                textDirection:
+                    widget.language == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
+                textAlign:
+                    widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 15,
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _MyAppState.currentTheme.color,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                _introContinueLabel(),
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (firstTime) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_introSeenKey, true);
+      if (mounted) {
+        setState(() {
+          _hasSeenIntro = true;
+        });
+      }
+    }
+  }
+
   Future<void> _showIntroIfFirstTime() async {
     final prefs = await SharedPreferences.getInstance();
     final alreadySeen = prefs.getBool(_introSeenKey) ?? false;
-    if (alreadySeen || !mounted) {
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _hasSeenIntro = alreadySeen;
+    });
+
+    if (alreadySeen) {
       return;
     }
 
@@ -3173,63 +4840,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
         return;
       }
 
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) {
-          return AlertDialog(
-            backgroundColor: Colors.black.withOpacity(0.95),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
-            ),
-            title: Text(
-              _introTitle(),
-              style: TextStyle(
-                color: _MyAppState.currentTheme.color,
-                fontWeight: FontWeight.bold,
-                fontSize: 22,
-              ),
-              textAlign: widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
-            ),
-            content: SizedBox(
-              width: 520,
-              child: SingleChildScrollView(
-                child: Text(
-                  _introBody(),
-                  textDirection: widget.language == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
-                  textAlign: widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    height: 1.45,
-                  ),
-                ),
-              ),
-            ),
-            actions: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _MyAppState.currentTheme.color,
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-                child: Text(
-                  _introContinueLabel(),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          );
-        },
-      );
-
-      await prefs.setBool(_introSeenKey, true);
+      await _showIntroDialog(firstTime: true);
     });
   }
 
@@ -3336,6 +4947,35 @@ class _MasbahaPageState extends State<MasbahaPage> {
                               color: _MyAppState.currentTheme.color,
                               fontSize: 24,
                               fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            tooltip: _introTitle(),
+                            onPressed: () => _showIntroDialog(firstTime: false),
+                            icon: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: _MyAppState.currentTheme.color,
+                                  size: 24,
+                                ),
+                                if (!_hasSeenIntro)
+                                  Positioned(
+                                    top: -1,
+                                    right: -1,
+                                    child: Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: Colors.redAccent,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.black, width: 0.8),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],

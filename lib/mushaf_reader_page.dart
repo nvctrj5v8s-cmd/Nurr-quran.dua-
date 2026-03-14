@@ -14,11 +14,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MushafReaderPage extends StatefulWidget {
   final Color themeColor;
   final VoidCallback? onShowSurahList;
+  final String uiLanguageCode;
   
   const MushafReaderPage({
     super.key,
     this.themeColor = Colors.teal,
     this.onShowSurahList,
+    this.uiLanguageCode = 'de',
   });
 
   @override
@@ -33,6 +35,75 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   static const int skippedAssetPages = 2;
   static const int totalPages = totalAssetPages - skippedAssetPages;
   static const int pageNumberingVersion = 2;
+
+  bool get _isArabicUi => widget.uiLanguageCode == 'ar';
+  bool get _isEnglishUi => widget.uiLanguageCode == 'en';
+
+  String _titlePrefix() {
+    if (_isArabicUi) return 'المصحف - صفحة';
+    if (_isEnglishUi) return 'Mushaf - Page';
+    return 'Mushaf - Seite';
+  }
+
+  String _surahListTooltip() {
+    if (_isArabicUi) return 'قائمة السور';
+    if (_isEnglishUi) return 'Surah list';
+    return 'Surenliste';
+  }
+
+  String _jumpTooltip() {
+    if (_isArabicUi) return 'الانتقال إلى صفحة';
+    if (_isEnglishUi) return 'Jump to page';
+    return 'Zur Seite springen';
+  }
+
+  String _previousLabel() {
+    if (_isArabicUi) return 'السابق';
+    if (_isEnglishUi) return 'Previous';
+    return 'Zurück';
+  }
+
+  String _nextLabel() {
+    if (_isArabicUi) return 'التالي';
+    if (_isEnglishUi) return 'Next';
+    return 'Weiter';
+  }
+
+  String _jumpDialogTitle() {
+    if (_isArabicUi) return 'إلى صفحة';
+    if (_isEnglishUi) return 'Go to page';
+    return 'Zu Seite';
+  }
+
+  String _pageNumberFieldLabel() {
+    if (_isArabicUi) return 'رقم الصفحة (1-$totalPages)';
+    if (_isEnglishUi) return 'Page number (1-$totalPages)';
+    return 'Seitenzahl (1-$totalPages)';
+  }
+
+  String _cancelLabel() {
+    if (_isArabicUi) return 'إلغاء';
+    if (_isEnglishUi) return 'Cancel';
+    return 'Abbrechen';
+  }
+
+  String _goLabel() {
+    if (_isArabicUi) return 'انتقال';
+    if (_isEnglishUi) return 'Go';
+    return 'Los';
+  }
+
+  String _invalidPageSnackBar() {
+    if (_isArabicUi) return 'الرجاء إدخال رقم بين 1 و $totalPages';
+    if (_isEnglishUi) return 'Please enter a number between 1 and $totalPages';
+    return 'Bitte Zahl zwischen 1 und $totalPages eingeben';
+  }
+
+  String _imageLoadError(int visiblePage) {
+    if (_isArabicUi) return 'تعذر تحميل الصفحة $visiblePage';
+    if (_isEnglishUi) return 'Page $visiblePage could not be loaded';
+    return 'Seite $visiblePage konnte nicht geladen werden';
+  }
 
   @override
   void initState() {
@@ -179,7 +250,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'مصحف - صفحة $_currentPage',
+                  '${_titlePrefix()} $_currentPage',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -191,12 +262,12 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
               if (widget.onShowSurahList != null)
                 IconButton(
                   icon: const Icon(Icons.list, color: Colors.white),
-                  tooltip: 'Surah Liste',
+                  tooltip: _surahListTooltip(),
                   onPressed: widget.onShowSurahList,
                 ),
               IconButton(
                 icon: const Icon(Icons.search, color: Colors.white),
-                tooltip: 'Zur Seite springen',
+                tooltip: _jumpTooltip(),
                 onPressed: _showPageJumpDialog,
               ),
             ],
@@ -250,7 +321,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
                   Icon(Icons.broken_image, size: 64, color: Colors.brown.shade400),
                   const SizedBox(height: 16),
                   Text(
-                    'Seite $visiblePage konnte nicht geladen werden',
+                    _imageLoadError(visiblePage),
                     style: const TextStyle(fontSize: 16),
                     textAlign: TextAlign.center,
                   ),
@@ -311,7 +382,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           // Vorherige Seite (nach rechts in RTL)
           _buildNavButton(
             icon: Icons.arrow_forward,
-            label: 'السابق',
+            label: _previousLabel(),
             onPressed: _currentPage > 1 ? _goToPreviousPage : null,
           ),
           
@@ -336,7 +407,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           // Nächste Seite (nach links in RTL)
           _buildNavButton(
             icon: Icons.arrow_back,
-            label: 'التالي',
+            label: _nextLabel(),
             onPressed: _currentPage < totalPages ? _goToNextPage : null,
           ),
         ],
@@ -406,13 +477,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('إلى صفحة'),
+        title: Text(_jumpDialogTitle()),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Seitenzahl (1-$totalPages)',
+            labelText: _pageNumberFieldLabel(),
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.tag),
           ),
@@ -421,7 +492,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('إلغاء'),
+            child: Text(_cancelLabel()),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -429,7 +500,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
               foregroundColor: Colors.white,
             ),
             onPressed: () => _jumpToPage(controller.text),
-            child: const Text('انتقال'),
+            child: Text(_goLabel()),
           ),
         ],
       ),
@@ -442,7 +513,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     if (pageNumber == null || pageNumber < 1 || pageNumber > totalPages) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bitte Zahl zwischen 1 und $totalPages eingeben'),
+          content: Text(_invalidPageSnackBar()),
           backgroundColor: Colors.red,
         ),
       );
