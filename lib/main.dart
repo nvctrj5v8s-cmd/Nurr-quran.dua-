@@ -523,6 +523,7 @@ class _HomePageState extends State<HomePage> {
   static const String _prayerHistoryKey = 'gebet_history_v1';
   static const String _prayerFeedbackPendingKey = 'prayer_feedback_pending_v1';
   static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
+  static const String _prayerHistoryMigrationKey = 'prayer_history_migration_v2';
   static const bool _previewPrayerFeedbackOnTap = false;
   bool _isFeedbackDialogOpen = false;
   final gebetNamen = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -652,12 +653,31 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeHome() async {
+    await _runPrayerHistoryMigration();
     await _checkAndResetDaily();
     await _loadGebete();
     _setDailyHadith();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showPendingPrayerFeedback();
     });
+  }
+
+  Future<void> _runPrayerHistoryMigration() async {
+    final prefs = await SharedPreferences.getInstance();
+    final migrationDone = prefs.getBool(_prayerHistoryMigrationKey) ?? false;
+    if (migrationDone) {
+      return;
+    }
+
+    // One-time cleanup so existing installs start with their own fresh data.
+    await prefs.remove(_prayerHistoryKey);
+    await prefs.remove(_prayerFeedbackPendingKey);
+    await prefs.remove('gebet_datum');
+    for (int i = 0; i < 5; i++) {
+      await prefs.remove('gebet_$i');
+    }
+
+    await prefs.setBool(_prayerHistoryMigrationKey, true);
   }
 
   void _setDailyHadith() {
