@@ -579,6 +579,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  String get _masbahaTitle {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Tasbih / Masbaha';
+      case AppLanguage.english:
+        return 'Tasbih / Masbaha';
+      case AppLanguage.arabic:
+        return 'السبحة / الذكر';
+    }
+  }
+
+  String get _masbahaSubtitle {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Tippe, um deine Dhikr zu zaehlen';
+      case AppLanguage.english:
+        return 'Tap to count your Dhikr';
+      case AppLanguage.arabic:
+        return 'اضغط لعد الاذكار';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -744,6 +766,64 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            const SizedBox(height: 25),
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MasbahaPage(language: appLanguage),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _MyAppState.currentTheme.color, width: 4),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.touch_app,
+                      color: _MyAppState.currentTheme.color,
+                      size: 34,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _masbahaTitle,
+                            style: TextStyle(
+                              color: _MyAppState.currentTheme.color,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            _masbahaSubtitle,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: _MyAppState.currentTheme.color,
+                      size: 20,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -2937,6 +3017,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
   int tasbihCount = 0;
   String selectedDhikr = 'SubhanAllah';
   Map<String, int> _countsByDhikr = {};
+  static const String _introSeenKey = 'masbaha_intro_seen_v1';
 
   static const List<String> _dhikrOptions = [
     'SubhanAllah',
@@ -2951,6 +3032,203 @@ class _MasbahaPageState extends State<MasbahaPage> {
   void initState() {
     super.initState();
     _loadState();
+    _showIntroIfFirstTime();
+  }
+
+  String _introTitle() {
+    switch (widget.language) {
+      case AppLanguage.german:
+        return 'Erinnerung an Allah (Dhikr)';
+      case AppLanguage.english:
+        return 'Remembrance of Allah (Dhikr)';
+      case AppLanguage.arabic:
+        return 'ذكر الله (الذِّكر)';
+    }
+  }
+
+  String _introBody() {
+    switch (widget.language) {
+      case AppLanguage.german:
+        return '''Das Gedenken an Allah (Dhikr) gehoert zu den wichtigsten Taten im Islam. Durch Dhikr erinnert sich der Glaeubige an seinen Schoepfer, staerkt seinen Glauben und erhaelt grossen Lohn. Allah lobt diejenigen, die Ihn haeufig gedenken:
+
+"O ihr, die ihr glaubt, gedenkt Allahs in haeufigem Gedenken."
+- Qur'an 33:41
+
+Der Gesandte Allahs Muhammad ﷺ lehrte viele kurze Worte des Dhikr, die leicht zu sprechen sind, aber einen grossen Lohn bringen.
+
+Zu den bekanntesten gehoeren:
+
+Subhanallah (Gepriesen sei Allah)
+Alhamdulillah (Alles Lob gebuehrt Allah)
+Allahu Akbar (Allah ist der Groesste)
+
+Der Prophet ﷺ sagte:
+
+"Wer nach jedem Pflichtgebet 33-mal Subhanallah, 33-mal Alhamdulillah und 34-mal Allahu Akbar sagt, dem werden seine Suenden vergeben, auch wenn sie so zahlreich sind wie der Schaum des Meeres."
+- Ueberliefert in Sahih Muslim
+
+In einer anderen Ueberlieferung sagte der Prophet ﷺ:
+
+"Zwei Worte sind leicht auf der Zunge, schwer auf der Waage und geliebt beim Allerbarmer:
+Subhanallahi wa bihamdihi, Subhanallahil-'Azim."
+- Ueberliefert in Sahih al-Bukhari und Sahih Muslim
+
+Dhikr kann mit den Fingern oder mit einer Zaehlhilfe (Masbaha) gezaehlt werden. Diese Funktion in der App hilft dir dabei, deine Dhikr zu zaehlen und eine Uebersicht darueber zu behalten, wie oft du bestimmte Worte des Gedenkens gesagt hast.
+
+Dhikr kann fast ueberall gemacht werden - zum Beispiel nach dem Gebet, vor dem Schlafen, auf dem Weg zur Arbeit oder Schule, beim Warten auf den Bus oder in ruhigen Momenten des Tages. So kannst du deinen Tag immer wieder mit der Erinnerung an Allah fuellen.''';
+      case AppLanguage.english:
+        return '''The remembrance of Allah (Dhikr) is one of the greatest acts of worship in Islam. Through Dhikr, a believer remembers their Lord, strengthens their faith, and grows closer to Allah. Allah commands the believers in the Qur'an:
+
+"O you who believe, remember Allah with much remembrance."
+- Surah Al-Ahzab (33:41)
+
+Allah also tells us that remembering Him brings peace to the heart:
+
+"Indeed, in the remembrance of Allah do hearts find rest."
+- Surah Ar-Ra'd (13:28)
+
+The Prophet Muhammad ﷺ taught his followers simple words of remembrance that are easy to say but bring great reward.
+
+Among the most well-known are:
+
+Subhanallah (Glory be to Allah)
+Alhamdulillah (All praise is due to Allah)
+Allahu Akbar (Allah is the Greatest)
+
+The Prophet ﷺ said:
+
+"Whoever says Subhanallah 33 times, Alhamdulillah 33 times, and Allahu Akbar 34 times after every obligatory prayer will have his sins forgiven, even if they are like the foam of the sea."
+- Narrated in Sahih Muslim
+
+The Prophet ﷺ also said:
+
+"Two words are light on the tongue, heavy on the scale, and beloved to the Most Merciful:
+Subhanallahi wa bihamdihi, Subhanallahil-'Azim."
+- Narrated in Sahih al-Bukhari and Sahih Muslim
+
+A Muslim can remember Allah at many moments throughout the day - after prayer, before sleep, while traveling to work or school, while waiting for the bus, or during quiet moments.
+
+Dhikr can be counted using the fingers or a prayer counter (Masbaha). This feature in the app helps you keep track of your Dhikr and see how many times you have remembered Allah.
+
+Remembering Allah regularly brings peace to the heart and strengthens the connection between the believer and their Lord.''';
+      case AppLanguage.arabic:
+        return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وقرب العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
+
+﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اذْكُرُوا اللَّهَ ذِكْرًا كَثِيرًا﴾
+- سورة الأحزاب، الآية 41
+
+كما بيّن الله سبحانه أن ذكره سببٌ لطمأنينة القلوب وسكون النفوس، فقال:
+
+﴿أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ﴾
+- سورة الرعد، الآية 28
+
+وقد علَّم النبي محمد ﷺ أمّتَه أذكارًا يسيرةً على اللسان، عظيمةً في الأجر عند الله، ومن أشهرها:
+
+سبحان الله
+الحمد لله
+الله أكبر
+
+قال رسول الله ﷺ:
+
+«مَن سبَّح اللهَ دبرَ كلِّ صلاةٍ ثلاثًا وثلاثين، وحمِد اللهَ ثلاثًا وثلاثين، وكبَّر اللهَ أربعًا وثلاثين، غُفِرَت له خطاياه وإن كانت مثل زبد البحر».
+- رواه صحيح مسلم
+
+وقال النبي ﷺ أيضًا:
+
+«كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ:
+سُبْحَانَ اللَّهِ وَبِحَمْدِهِ،
+سُبْحَانَ اللَّهِ الْعَظِيمِ».
+- رواه صحيح البخاري وصحيح مسلم
+
+ويستطيع المسلم أن يذكر الله في أوقاتٍ كثيرة من يومه، مثل بعد الصلاة، وقبل النوم، وأثناء الطريق إلى العمل أو الدراسة، أو عند انتظار الحافلة، أو في أوقات الفراغ.
+
+ويمكن عدّ الأذكار بالأصابع أو باستخدام السبحة. وتساعدك هذه الميزة في التطبيق على عدّ الأذكار وتسجيلها، حتى تتمكّن من معرفة عدد المرات التي ذكرت فيها الله ومتابعة ذكرك بشكلٍ منتظم.
+
+فالذكر عبادة عظيمة، يقرّب العبد من ربّه ويملأ القلب بالسكينة والطمأنينة.''';
+    }
+  }
+
+  String _introContinueLabel() {
+    switch (widget.language) {
+      case AppLanguage.german:
+        return 'Verstanden';
+      case AppLanguage.english:
+        return 'Got it';
+      case AppLanguage.arabic:
+        return 'فهمت';
+    }
+  }
+
+  Future<void> _showIntroIfFirstTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final alreadySeen = prefs.getBool(_introSeenKey) ?? false;
+    if (alreadySeen || !mounted) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) {
+        return;
+      }
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: Colors.black.withOpacity(0.95),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
+            ),
+            title: Text(
+              _introTitle(),
+              style: TextStyle(
+                color: _MyAppState.currentTheme.color,
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
+              textAlign: widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+            ),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Text(
+                  _introBody(),
+                  textDirection: widget.language == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
+                  textAlign: widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _MyAppState.currentTheme.color,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  _introContinueLabel(),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      await prefs.setBool(_introSeenKey, true);
+    });
   }
 
   Future<void> _loadState() async {
@@ -3883,6 +4161,17 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
     }
   }
 
+  String _tapForMeaningLabel() {
+    switch (appLanguage) {
+      case AppLanguage.english:
+        return 'Tap to view the full meaning';
+      case AppLanguage.arabic:
+        return 'اضغط لرؤية المعنى الكامل';
+      case AppLanguage.german:
+        return 'Tippe, um die volle Bedeutung zu sehen';
+    }
+  }
+
   String _normalizeSearch(String value) {
     return value
         .toLowerCase()
@@ -4319,12 +4608,30 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                             ),
                             const SizedBox(height: 4),
                             if (!_isAllah(item))
-                              Text(
-                                item.meaning(appLanguage),
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 15,
-                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.meaning(appLanguage),
+                                    style: const TextStyle(
+                                      color: Colors.black54,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _tapForMeaningLabel(),
+                                    style: TextStyle(
+                                      color: _MyAppState.currentTheme.color,
+                                      fontSize: 13,
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    textDirection: appLanguage == AppLanguage.arabic
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
+                                  ),
+                                ],
                               ),
                           ],
                         ),
