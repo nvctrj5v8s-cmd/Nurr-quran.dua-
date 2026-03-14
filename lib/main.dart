@@ -4316,6 +4316,62 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     return DateTime(now.year, now.month, now.day, h, m);
   }
 
+  Future<Map<String, dynamic>> _resolveCoordinatesFromIp() async {
+    final response = await http.get(Uri.parse('https://ipapi.co/json/'));
+    if (response.statusCode != 200) {
+      throw Exception(_locationUnavailableLabel());
+    }
+
+    final payload = json.decode(response.body) as Map<String, dynamic>;
+    final latitude = (payload['latitude'] as num?)?.toDouble();
+    final longitude = (payload['longitude'] as num?)?.toDouble();
+    if (latitude == null || longitude == null) {
+      throw Exception(_locationUnavailableLabel());
+    }
+
+    final city = '${payload['city'] ?? ''}'.trim();
+    final country = '${payload['country_name'] ?? ''}'.trim();
+    final label = [city, country]
+        .where((part) => part.isNotEmpty)
+        .join(', ');
+
+    return {
+      'latitude': latitude,
+      'longitude': longitude,
+      'label': label.isEmpty
+          ? '${latitude.toStringAsFixed(3)}, ${longitude.toStringAsFixed(3)}'
+          : '$label (IP)',
+    };
+  }
+
+  Future<Map<String, dynamic>> _resolveCoordinates() async {
+    // Web fallback: if browser/plugin geolocation fails, use IP location.
+    if (kIsWeb) {
+      try {
+        final position = await Geolocator.getCurrentPosition(
+          locationSettings:
+              const LocationSettings(accuracy: LocationAccuracy.high),
+        );
+        return {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+          'label':
+              '${position.latitude.toStringAsFixed(3)}, ${position.longitude.toStringAsFixed(3)}',
+        };
+      } catch (_) {
+        return _resolveCoordinatesFromIp();
+      }
+    }
+
+    final position = await _resolvePosition();
+    return {
+      'latitude': position.latitude,
+      'longitude': position.longitude,
+      'label':
+          '${position.latitude.toStringAsFixed(3)}, ${position.longitude.toStringAsFixed(3)}',
+    };
+  }
+
   Future<Position> _resolvePosition() async {
     // isLocationServiceEnabled / checkPermission are not implemented in
     // geolocator_web.  On web the browser shows its own permission prompt when
@@ -4399,9 +4455,12 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     });
 
     try {
-      final position = await _resolvePosition();
+      final coords = await _resolveCoordinates();
+      final latitude = (coords['latitude'] as num).toDouble();
+      final longitude = (coords['longitude'] as num).toDouble();
+      final label = '${coords['label'] ?? ''}'.trim();
       final uri = Uri.parse(
-        'https://api.aladhan.com/v1/timings?latitude=${position.latitude}&longitude=${position.longitude}&method=3',
+        'https://api.aladhan.com/v1/timings?latitude=$latitude&longitude=$longitude&method=3',
       );
       final response = await http.get(uri);
 
@@ -4433,8 +4492,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
       setState(() {
         _timings = parsed;
         _lastUpdated = DateTime.now();
-        _locationLabel =
-            '${position.latitude.toStringAsFixed(3)}, ${position.longitude.toStringAsFixed(3)}';
+        _locationLabel = label;
         _isLoading = false;
       });
     } catch (error) {
