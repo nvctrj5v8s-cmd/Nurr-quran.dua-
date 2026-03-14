@@ -593,7 +593,7 @@ class _HomePageState extends State<HomePage> {
   String get _masbahaSubtitle {
     switch (appLanguage) {
       case AppLanguage.german:
-        return 'Tippe, um deine Dhikr zu zaehlen';
+        return 'Tippe, um deine Dhikr zu zählen';
       case AppLanguage.english:
         return 'Tap to count your Dhikr';
       case AppLanguage.arabic:
@@ -3049,102 +3049,104 @@ class _MasbahaPageState extends State<MasbahaPage> {
   String _introBody() {
     switch (widget.language) {
       case AppLanguage.german:
-        return '''Das Gedenken an Allah (Dhikr) gehoert zu den wichtigsten Taten im Islam. Durch Dhikr erinnert sich der Glaeubige an seinen Schoepfer, staerkt seinen Glauben und erhaelt grossen Lohn. Allah lobt diejenigen, die Ihn haeufig gedenken:
+    return '''Das Gedenken an Allah (Dhikr) gehört zu den wichtigsten Taten im Islam. Durch Dhikr erinnert sich der Gläubige an seinen Schöpfer, stärkt seinen Glauben und erhält großen Lohn. Allah lobt diejenigen, die Ihn häufig gedenken:
 
-"O ihr, die ihr glaubt, gedenkt Allahs in haeufigem Gedenken."
-- Qur'an 33:41
+  „O ihr, die ihr glaubt, gedenkt Allahs in häufigem Gedenken.“
+  — Qur'an 33:41
 
-Der Gesandte Allahs Muhammad ﷺ lehrte viele kurze Worte des Dhikr, die leicht zu sprechen sind, aber einen grossen Lohn bringen.
+  Der Gesandte Allahs Muhammad ﷺ lehrte viele kurze Worte des Dhikr, die leicht zu sprechen sind, aber einen großen Lohn bringen.
 
-Zu den bekanntesten gehoeren:
+  Zu den bekanntesten gehören:
 
-Subhanallah (Gepriesen sei Allah)
-Alhamdulillah (Alles Lob gebuehrt Allah)
-Allahu Akbar (Allah ist der Groesste)
+  Subhanallah (Gepriesen sei Allah)
+  Alhamdulillah (Alles Lob gebührt Allah)
+  Allahu Akbar (Allah ist der Größte)
 
-Der Prophet ﷺ sagte:
+  Der Prophet ﷺ sagte:
 
-"Wer nach jedem Pflichtgebet 33-mal Subhanallah, 33-mal Alhamdulillah und 34-mal Allahu Akbar sagt, dem werden seine Suenden vergeben, auch wenn sie so zahlreich sind wie der Schaum des Meeres."
-- Ueberliefert in Sahih Muslim
+  „Wer nach jedem Pflichtgebet 33-mal Subhanallah, 33-mal Alhamdulillah und 34-mal Allahu Akbar sagt, dem werden seine Sünden vergeben, auch wenn sie so zahlreich sind wie der Schaum des Meeres.“
+  — Überliefert in Sahih Muslim
 
-In einer anderen Ueberlieferung sagte der Prophet ﷺ:
+  In einer anderen Überlieferung sagte der Prophet ﷺ:
 
-"Zwei Worte sind leicht auf der Zunge, schwer auf der Waage und geliebt beim Allerbarmer:
-Subhanallahi wa bihamdihi, Subhanallahil-'Azim."
-- Ueberliefert in Sahih al-Bukhari und Sahih Muslim
+  „Zwei Worte sind leicht auf der Zunge, schwer auf der Waage und geliebt beim Allerbarmer:
+  Subhanallahi wa bihamdihi, Subhanallahil-‘Azim.“
+  — Überliefert in Sahih al-Bukhari und Sahih Muslim
 
-Dhikr kann mit den Fingern oder mit einer Zaehlhilfe (Masbaha) gezaehlt werden. Diese Funktion in der App hilft dir dabei, deine Dhikr zu zaehlen und eine Uebersicht darueber zu behalten, wie oft du bestimmte Worte des Gedenkens gesagt hast.
+  Dhikr kann mit den Fingern oder mit einer Zählhilfe (Masbaha) gezählt werden. Diese Funktion in der App hilft dir dabei, deine Dhikr zu zählen und eine Übersicht darüber zu behalten, wie oft du bestimmte Worte des Gedenkens gesagt hast.
 
-Dhikr kann fast ueberall gemacht werden - zum Beispiel nach dem Gebet, vor dem Schlafen, auf dem Weg zur Arbeit oder Schule, beim Warten auf den Bus oder in ruhigen Momenten des Tages. So kannst du deinen Tag immer wieder mit der Erinnerung an Allah fuellen.''';
+  Dhikr kann fast überall gemacht werden – zum Beispiel nach dem Gebet, vor dem Schlafen, auf dem Weg zur Arbeit oder Schule, beim Warten auf den Bus oder in ruhigen Momenten des Tages. So kannst du deinen Tag immer wieder mit der Erinnerung an Allah füllen.''';
       case AppLanguage.english:
-        return '''The remembrance of Allah (Dhikr) is one of the greatest acts of worship in Islam. Through Dhikr, a believer remembers their Lord, strengthens their faith, and grows closer to Allah. Allah commands the believers in the Qur'an:
+    return '''The remembrance of Allah (Dhikr) is one of the greatest acts of worship in Islam. Through Dhikr, a believer remembers their Lord, strengthens their faith, and grows closer to Allah. Allah commands the believers in the Qur'an:
 
-"O you who believe, remember Allah with much remembrance."
-- Surah Al-Ahzab (33:41)
+  “O you who believe, remember Allah with much remembrance.”
+  — Surah Al-Ahzab (33:41)
 
-Allah also tells us that remembering Him brings peace to the heart:
+  Allah also tells us that remembering Him brings peace to the heart:
 
-"Indeed, in the remembrance of Allah do hearts find rest."
-- Surah Ar-Ra'd (13:28)
+  “Indeed, in the remembrance of Allah do hearts find rest.”
+  — Surah Ar-Ra'd (13:28)
 
-The Prophet Muhammad ﷺ taught his followers simple words of remembrance that are easy to say but bring great reward.
+  The Prophet Muhammad ﷺ taught his followers simple words of remembrance that are easy to say but bring great reward.
 
-Among the most well-known are:
+  Among the most well-known are:
 
-Subhanallah (Glory be to Allah)
-Alhamdulillah (All praise is due to Allah)
-Allahu Akbar (Allah is the Greatest)
+  Subhanallah (Glory be to Allah)
+  Alhamdulillah (All praise is due to Allah)
+  Allahu Akbar (Allah is the Greatest)
 
-The Prophet ﷺ said:
+  The Prophet ﷺ said:
 
-"Whoever says Subhanallah 33 times, Alhamdulillah 33 times, and Allahu Akbar 34 times after every obligatory prayer will have his sins forgiven, even if they are like the foam of the sea."
-- Narrated in Sahih Muslim
+  “Whoever says Subhanallah 33 times, Alhamdulillah 33 times, and Allahu Akbar 34 times after every obligatory prayer will have his sins forgiven, even if they are like the foam of the sea.”
+  — Narrated in Sahih Muslim
 
-The Prophet ﷺ also said:
+  The Prophet ﷺ also said:
 
-"Two words are light on the tongue, heavy on the scale, and beloved to the Most Merciful:
-Subhanallahi wa bihamdihi, Subhanallahil-'Azim."
-- Narrated in Sahih al-Bukhari and Sahih Muslim
+  “Two words are light on the tongue, heavy on the scale, and beloved to the Most Merciful:
+  Subhanallahi wa bihamdihi, Subhanallahil-‘Azim.”
+  — Narrated in Sahih al-Bukhari and Sahih Muslim
 
-A Muslim can remember Allah at many moments throughout the day - after prayer, before sleep, while traveling to work or school, while waiting for the bus, or during quiet moments.
+  A Muslim can remember Allah at many moments throughout the day—after prayer, before sleep, while traveling to work or school, while waiting for the bus, or during quiet moments.
 
-Dhikr can be counted using the fingers or a prayer counter (Masbaha). This feature in the app helps you keep track of your Dhikr and see how many times you have remembered Allah.
+  Dhikr can be counted using the fingers or a prayer counter (Masbaha). This feature in the app helps you keep track of your Dhikr and see how many times you have remembered Allah.
 
-Remembering Allah regularly brings peace to the heart and strengthens the connection between the believer and their Lord.''';
+  Remembering Allah regularly brings peace to the heart and strengthens the connection between the believer and their Lord.''';
       case AppLanguage.arabic:
-        return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وقرب العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
+    return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وقرب العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
 
-﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اذْكُرُوا اللَّهَ ذِكْرًا كَثِيرًا﴾
-- سورة الأحزاب، الآية 41
+  ﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اذْكُرُوا اللَّهَ ذِكْرًا كَثِيرًا﴾
+  — سورة الأحزاب، الآية 41
 
-كما بيّن الله سبحانه أن ذكره سببٌ لطمأنينة القلوب وسكون النفوس، فقال:
+  كما بيّن الله سبحانه أن ذكره سببٌ لطمأنينة القلوب وسكون النفوس، فقال:
 
-﴿أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ﴾
-- سورة الرعد، الآية 28
+  ﴿أَلَا بِذِكْرِ اللَّهِ تَطْمَئِنُّ الْقُلُوبُ﴾
+  — سورة الرعد، الآية 28
 
-وقد علَّم النبي محمد ﷺ أمّتَه أذكارًا يسيرةً على اللسان، عظيمةً في الأجر عند الله، ومن أشهرها:
+  وقد علَّم النبي محمد ﷺ أمّتَه أذكارًا يسيرةً على اللسان، عظيمةً في الأجر عند الله، ومن أشهرها:
 
-سبحان الله
-الحمد لله
-الله أكبر
+  سبحان الله
+  الحمد لله
+  الله أكبر
 
-قال رسول الله ﷺ:
+  قال رسول الله ﷺ:
 
-«مَن سبَّح اللهَ دبرَ كلِّ صلاةٍ ثلاثًا وثلاثين، وحمِد اللهَ ثلاثًا وثلاثين، وكبَّر اللهَ أربعًا وثلاثين، غُفِرَت له خطاياه وإن كانت مثل زبد البحر».
-- رواه صحيح مسلم
+  «مَن سبَّح اللهَ دبرَ كلِّ صلاةٍ ثلاثًا وثلاثين، وحمِد اللهَ ثلاثًا وثلاثين، وكبَّر اللهَ أربعًا وثلاثين، غُفِرَت له خطاياه وإن كانت مثل زبد البحر».
 
-وقال النبي ﷺ أيضًا:
+  — رواه صحيح مسلم
 
-«كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ:
-سُبْحَانَ اللَّهِ وَبِحَمْدِهِ،
-سُبْحَانَ اللَّهِ الْعَظِيمِ».
-- رواه صحيح البخاري وصحيح مسلم
+  وقال النبي ﷺ أيضًا:
 
-ويستطيع المسلم أن يذكر الله في أوقاتٍ كثيرة من يومه، مثل بعد الصلاة، وقبل النوم، وأثناء الطريق إلى العمل أو الدراسة، أو عند انتظار الحافلة، أو في أوقات الفراغ.
+  «كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ، ثَقِيلَتَانِ فِي الْمِيزَانِ، حَبِيبَتَانِ إِلَى الرَّحْمَنِ:
+  سُبْحَانَ اللَّهِ وَبِحَمْدِهِ،
+  سُبْحَانَ اللَّهِ الْعَظِيمِ».
 
-ويمكن عدّ الأذكار بالأصابع أو باستخدام السبحة. وتساعدك هذه الميزة في التطبيق على عدّ الأذكار وتسجيلها، حتى تتمكّن من معرفة عدد المرات التي ذكرت فيها الله ومتابعة ذكرك بشكلٍ منتظم.
+  — رواه صحيح البخاري و صحيح مسلم
 
-فالذكر عبادة عظيمة، يقرّب العبد من ربّه ويملأ القلب بالسكينة والطمأنينة.''';
+  ويستطيع المسلم أن يذكر الله في أوقاتٍ كثيرة من يومه، مثل بعد الصلاة، وقبل النوم، وأثناء الطريق إلى العمل أو الدراسة، أو عند انتظار الحافلة، أو في أوقات الفراغ.
+
+  ويمكن عدّ الأذكار بالأصابع أو باستخدام السبحة. وتساعدك هذه الميزة في التطبيق على عدّ الأذكار وتسجيلها، حتى تتمكّن من معرفة عدد المرات التي ذكرت فيها الله ومتابعة ذكرك بشكلٍ منتظم.
+
+  فالذكر عبادة عظيمة، يقرّب العبد من ربّه ويملأ القلب بالسكينة والطمأنينة.''';
     }
   }
 
