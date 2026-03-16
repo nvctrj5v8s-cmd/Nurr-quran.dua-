@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'mushaf_reader_page.dart';
+import 'german_reader_page.dart';
 
 // ==================== SPRACH-MODELL ====================
 enum QuranLanguage {
@@ -462,7 +462,7 @@ class _MainPageState extends State<MainPage> {
               [
                 HomePage(appLanguage: _appLanguage),
                 _appLanguage == AppLanguage.german
-                    ? const GermanQuranPdfPage()
+                    ? GermanReaderPage(themeColor: _MyAppState.currentTheme.color)
                     : MushafReaderPage(
                         themeColor: _MyAppState.currentTheme.color,
                         uiLanguageCode: _appLanguage.code,
@@ -1369,7 +1369,7 @@ class _QuranPageState extends State<QuranPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const GermanQuranPdfPage(),
+                    builder: (_) => GermanReaderPage(themeColor: _MyAppState.currentTheme.color),
                   ),
                 );
               },
@@ -1545,111 +1545,6 @@ class _QuranPageState extends State<QuranPage> {
 }
 
 // ==================== GERMAN QURAN PDF PAGE ====================
-class GermanQuranPdfPage extends StatefulWidget {
-  const GermanQuranPdfPage({super.key});
-
-  @override
-  State<GermanQuranPdfPage> createState() => _GermanQuranPdfPageState();
-}
-
-class _GermanQuranPdfPageState extends State<GermanQuranPdfPage> {
-  final PdfViewerController _pdfController = PdfViewerController();
-  bool _isLoading = true;
-  bool _hasError = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: _MyAppState.currentTheme.color,
-        title: Text(
-          '📖 Quran auf Deutsch',
-          style: TextStyle(
-            color: _MyAppState.currentTheme.color,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-        actions: [
-          if (!_isLoading && !_hasError)
-            IconButton(
-              icon: Icon(Icons.first_page, color: _MyAppState.currentTheme.color),
-              tooltip: 'Zur ersten Sure',
-              onPressed: () => _pdfController.jumpToPage(28),
-            ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          if (!_hasError)
-            SfPdfViewer.asset(
-              'assets/assets/de_Translation_of_the_holy_kuran_in_deutsch.pdf',
-              controller: _pdfController,
-              initialPageNumber: 28,
-              enableDoubleTapZooming: true,
-              canShowScrollHead: true,
-              canShowScrollStatus: true,
-              pageLayoutMode: PdfPageLayoutMode.single,
-              onDocumentLoaded: (_) {
-                if (mounted) setState(() => _isLoading = false);
-              },
-              onDocumentLoadFailed: (_) {
-                if (mounted) setState(() { _isLoading = false; _hasError = true; });
-              },
-            ),
-          if (_isLoading && !_hasError)
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(color: _MyAppState.currentTheme.color),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Quran wird geladen...',
-                    style: TextStyle(color: _MyAppState.currentTheme.color, fontSize: 16),
-                  ),
-                ],
-              ),
-            ),
-          if (_hasError)
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, color: Colors.red, size: 60),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'PDF konnte nicht geladen werden.',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton.icon(
-                    onPressed: () => setState(() { _isLoading = true; _hasError = false; }),
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Erneut versuchen'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _MyAppState.currentTheme.color,
-                      foregroundColor: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pdfController.dispose();
-    super.dispose();
-  }
-}
-
 // ==================== SURAH DETAIL PAGE ====================
 class SurahDetailPage extends StatefulWidget {
   final int surahNumber;
