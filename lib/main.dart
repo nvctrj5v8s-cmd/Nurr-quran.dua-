@@ -1554,6 +1554,8 @@ class GermanQuranPdfPage extends StatefulWidget {
 
 class _GermanQuranPdfPageState extends State<GermanQuranPdfPage> {
   final PdfViewerController _pdfController = PdfViewerController();
+  bool _isLoading = true;
+  bool _hasError = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1571,21 +1573,72 @@ class _GermanQuranPdfPageState extends State<GermanQuranPdfPage> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.first_page, color: _MyAppState.currentTheme.color),
-            tooltip: 'Zur ersten Sure',
-            onPressed: () => _pdfController.jumpToPage(28),
-          ),
+          if (!_isLoading && !_hasError)
+            IconButton(
+              icon: Icon(Icons.first_page, color: _MyAppState.currentTheme.color),
+              tooltip: 'Zur ersten Sure',
+              onPressed: () => _pdfController.jumpToPage(28),
+            ),
         ],
       ),
-      body: SfPdfViewer.asset(
-        'assets/assets/de_Translation_of_the_holy_kuran_in_deutsch.pdf',
-        controller: _pdfController,
-        initialPageNumber: 28,
-        enableDoubleTapZooming: true,
-        canShowScrollHead: true,
-        canShowScrollStatus: true,
-        pageLayoutMode: PdfPageLayoutMode.single,
+      body: Stack(
+        children: [
+          if (!_hasError)
+            SfPdfViewer.asset(
+              'assets/assets/de_Translation_of_the_holy_kuran_in_deutsch.pdf',
+              controller: _pdfController,
+              initialPageNumber: 28,
+              enableDoubleTapZooming: true,
+              canShowScrollHead: true,
+              canShowScrollStatus: true,
+              pageLayoutMode: PdfPageLayoutMode.single,
+              onDocumentLoaded: (_) {
+                if (mounted) setState(() => _isLoading = false);
+              },
+              onDocumentLoadFailed: (_) {
+                if (mounted) setState(() { _isLoading = false; _hasError = true; });
+              },
+            ),
+          if (_isLoading && !_hasError)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: _MyAppState.currentTheme.color),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Quran wird geladen...',
+                    style: TextStyle(color: _MyAppState.currentTheme.color, fontSize: 16),
+                  ),
+                ],
+              ),
+            ),
+          if (_hasError)
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 60),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'PDF konnte nicht geladen werden.',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => setState(() { _isLoading = true; _hasError = false; }),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Erneut versuchen'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _MyAppState.currentTheme.color,
+                      foregroundColor: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
