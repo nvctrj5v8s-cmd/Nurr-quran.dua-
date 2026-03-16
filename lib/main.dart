@@ -461,10 +461,12 @@ class _MainPageState extends State<MainPage> {
               ),
               [
                 HomePage(appLanguage: _appLanguage),
-                MushafReaderPage(
-                  themeColor: _MyAppState.currentTheme.color,
-                  uiLanguageCode: _appLanguage.code,
-                ),
+                _appLanguage == AppLanguage.german
+                    ? const GermanQuranPdfPage()
+                    : MushafReaderPage(
+                        themeColor: _MyAppState.currentTheme.color,
+                        uiLanguageCode: _appLanguage.code,
+                      ),
                 PrayerTimesPage(appLanguage: _appLanguage),
                 const NamesOfAllahPage(),
                 const SettingsPage()
