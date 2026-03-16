@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 /// Deutsches Quran-Seiten-Leser (LTR, Bildbasiert)
 /// 
@@ -26,12 +27,15 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
 
   static const int totalPages = 1236;
   static const String _savedPageKey = 'german_last_page';
+  static const String _bookmarksKey = 'german_quran_bookmarks_v1';
+  Map<String, List<int>> _bookmarks = {};
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 0);
     _loadSavedPage();
+    _loadBookmarks();
   }
 
   Future<void> _loadSavedPage() async {
@@ -55,6 +59,83 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_savedPageKey, _currentPage);
     } catch (_) {}
+  }
+
+  Future<void> _loadBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_bookmarksKey);
+      if (jsonStr == null || jsonStr.isEmpty) {
+        return;
+      }
+
+      final decoded = json.decode(jsonStr) as Map<String, dynamic>;
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _bookmarks = decoded.map(
+          (key, value) => MapEntry(
+            key,
+            (value as List).map((entry) => (entry as num).toInt()).toList(),
+          ),
+        );
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _saveBookmarks() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_bookmarksKey, json.encode(_bookmarks));
+    } catch (_) {}
+  }
+
+  bool _isPageBookmarked(int page) =>
+      _bookmarks.values.any((pages) => pages.contains(page));
+
+  void _showSaveBookmarkSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GermanBookmarkSaveSheet(
+        currentPage: _currentPage,
+        bookmarks: Map<String, List<int>>.from(
+          _bookmarks.map((key, value) => MapEntry(key, List<int>.from(value))),
+        ),
+        themeColor: widget.themeColor,
+        onSave: (updated) {
+          setState(() => _bookmarks = updated);
+          _saveBookmarks();
+        },
+      ),
+    );
+  }
+
+  void _showBookmarksPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => _GermanBookmarksViewPage(
+          bookmarks: Map<String, List<int>>.from(
+            _bookmarks.map((key, value) => MapEntry(key, List<int>.from(value))),
+          ),
+          themeColor: widget.themeColor,
+          onNavigateToPage: (page) {
+            Navigator.pop(context);
+            _pageController.jumpToPage(page - 1);
+            setState(() => _currentPage = page);
+          },
+          onBookmarksUpdated: (updated) {
+            setState(() => _bookmarks = updated);
+            _saveBookmarks();
+          },
+        ),
+      ),
+    );
   }
 
   void _preloadPages(int page) {
@@ -223,6 +304,21 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
                         ),
                       ),
                       IconButton(
+                        icon: Icon(
+                          _isPageBookmarked(_currentPage)
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          color: Colors.white,
+                        ),
+                        tooltip: 'Seite speichern',
+                        onPressed: _showSaveBookmarkSheet,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.bookmarks, color: Colors.white),
+                        tooltip: 'Lesezeichen',
+                        onPressed: _showBookmarksPage,
+                      ),
+                      IconButton(
                         icon: const Icon(Icons.search, color: Colors.white),
                         tooltip: 'Zur Seite springen',
                         onPressed: _showPageJumpDialog,
@@ -301,6 +397,504 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: enabled ? 2 : 0,
       ),
+    );
+  }
+}
+
+class _GermanBookmarkSaveSheet extends StatefulWidget {
+  final int currentPage;
+  final Map<String, List<int>> bookmarks;
+  final Color themeColor;
+  final void Function(Map<String, List<int>>) onSave;
+
+  const _GermanBookmarkSaveSheet({
+    required this.currentPage,
+    required this.bookmarks,
+    required this.themeColor,
+    required this.onSave,
+  });
+
+  @override
+  State<_GermanBookmarkSaveSheet> createState() => _GermanBookmarkSaveSheetState();
+}
+
+class _GermanBookmarkSaveSheetState extends State<_GermanBookmarkSaveSheet> {
+  late Map<String, List<int>> _local;
+  final TextEditingController _newCategoryController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _local = Map<String, List<int>>.from(
+      widget.bookmarks.map((key, value) => MapEntry(key, List<int>.from(value))),
+    );
+  }
+
+  @override
+  void dispose() {
+    _newCategoryController.dispose();
+    super.dispose();
+  }
+
+  void _toggle(String category) {
+    setState(() {
+      final pages = _local[category]!;
+      if (pages.contains(widget.currentPage)) {
+        pages.remove(widget.currentPage);
+      } else {
+        pages.add(widget.currentPage);
+        pages.sort();
+      }
+    });
+  }
+
+  void _addCategory() {
+    final name = _newCategoryController.text.trim();
+    if (name.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      if (!_local.containsKey(name)) {
+        _local[name] = [widget.currentPage];
+      } else {
+        final pages = _local[name]!;
+        if (!pages.contains(widget.currentPage)) {
+          pages.add(widget.currentPage);
+          pages.sort();
+        }
+      }
+      _newCategoryController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.75,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border.all(color: widget.themeColor.withOpacity(0.4)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.white30,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                Icon(Icons.bookmark_add, color: widget.themeColor),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Seite ${widget.currentPage} speichern',
+                    style: TextStyle(
+                      color: widget.themeColor,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    widget.onSave(_local);
+                    Navigator.pop(context);
+                  },
+                  child: Text(
+                    'Fertig',
+                    style: TextStyle(
+                      color: widget.themeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Divider(color: Colors.white12),
+          Flexible(
+            child: _local.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'Neue Kategorie unten hinzufügen',
+                      style: TextStyle(color: Colors.white54),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _local.keys.length,
+                    itemBuilder: (_, index) {
+                      final category = _local.keys.elementAt(index);
+                      final isChecked = _local[category]!.contains(widget.currentPage);
+                      return ListTile(
+                        leading: Checkbox(
+                          value: isChecked,
+                          activeColor: widget.themeColor,
+                          checkColor: Colors.black,
+                          side: BorderSide(color: widget.themeColor),
+                          onChanged: (_) => _toggle(category),
+                        ),
+                        title: Text(
+                          category,
+                          style: const TextStyle(color: Colors.white, fontSize: 16),
+                        ),
+                        subtitle: Text(
+                          '${_local[category]!.length} Seiten',
+                          style: const TextStyle(color: Colors.white38, fontSize: 12),
+                        ),
+                        onTap: () => _toggle(category),
+                      );
+                    },
+                  ),
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              8,
+              16,
+              MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _newCategoryController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Name der neuen Kategorie',
+                      hintStyle: const TextStyle(color: Colors.white38),
+                      filled: true,
+                      fillColor: Colors.white10,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    onSubmitted: (_) => _addCategory(),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _addCategory,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: widget.themeColor,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Hinzufügen',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GermanBookmarksViewPage extends StatefulWidget {
+  final Map<String, List<int>> bookmarks;
+  final Color themeColor;
+  final void Function(int page) onNavigateToPage;
+  final void Function(Map<String, List<int>>) onBookmarksUpdated;
+
+  const _GermanBookmarksViewPage({
+    required this.bookmarks,
+    required this.themeColor,
+    required this.onNavigateToPage,
+    required this.onBookmarksUpdated,
+  });
+
+  @override
+  State<_GermanBookmarksViewPage> createState() => _GermanBookmarksViewPageState();
+}
+
+class _GermanBookmarksViewPageState extends State<_GermanBookmarksViewPage> {
+  late Map<String, List<int>> _bookmarks;
+  final TextEditingController _newCategoryController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _bookmarks = Map<String, List<int>>.from(
+      widget.bookmarks.map((key, value) => MapEntry(key, List<int>.from(value))),
+    );
+  }
+
+  @override
+  void dispose() {
+    _newCategoryController.dispose();
+    super.dispose();
+  }
+
+  void _addCategory() {
+    final name = _newCategoryController.text.trim();
+    if (name.isEmpty || _bookmarks.containsKey(name)) {
+      return;
+    }
+
+    setState(() {
+      _bookmarks[name] = [];
+      _newCategoryController.clear();
+    });
+    widget.onBookmarksUpdated(_bookmarks);
+  }
+
+  void _removePage(String category, int page) {
+    setState(() {
+      _bookmarks[category]?.remove(page);
+    });
+    widget.onBookmarksUpdated(_bookmarks);
+  }
+
+  void _removeCategory(String category) {
+    setState(() {
+      _bookmarks.remove(category);
+    });
+    widget.onBookmarksUpdated(_bookmarks);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF111111),
+      appBar: AppBar(
+        backgroundColor: widget.themeColor,
+        foregroundColor: Colors.white,
+        title: const Text(
+          'Lesezeichen',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(56),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _newCategoryController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Neue Kategorie',
+                      hintStyle: const TextStyle(color: Colors.white60),
+                      filled: true,
+                      fillColor: Colors.white24,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                    ),
+                    onSubmitted: (_) => _addCategory(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: _addCategory,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Hinzufügen'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: widget.themeColor,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      body: _bookmarks.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(32),
+                child: Text(
+                  'Noch keine Lesezeichen.\nTippe auf das Lesezeichen-Symbol beim Lesen.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white54, fontSize: 16),
+                ),
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(12),
+              children: _bookmarks.entries.map((entry) {
+                final category = entry.key;
+                final pages = entry.value;
+                return Card(
+                  color: const Color(0xFF1E1E1E),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(
+                      color: widget.themeColor.withOpacity(0.35),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: ExpansionTile(
+                    iconColor: widget.themeColor,
+                    collapsedIconColor: widget.themeColor,
+                    leading: Icon(Icons.folder_open, color: widget.themeColor),
+                    title: Text(
+                      category,
+                      style: TextStyle(
+                        color: widget.themeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Text(
+                      '${pages.length} Seiten',
+                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      tooltip: 'Löschen',
+                      onPressed: () => showDialog<void>(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: const Color(0xFF1A1A1A),
+                          title: Text(
+                            '"$category" löschen?',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                'Abbrechen',
+                                style: TextStyle(color: Colors.white54),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _removeCategory(category);
+                              },
+                              child: const Text(
+                                'Löschen',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    children: pages.isEmpty
+                        ? const [
+                            Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Text(
+                                'Keine Seiten gespeichert',
+                                style: TextStyle(color: Colors.white38, fontSize: 13),
+                              ),
+                            ),
+                          ]
+                        : pages
+                            .map(
+                              (page) => ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 2,
+                                ),
+                                leading: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: widget.themeColor.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: widget.themeColor.withOpacity(0.4),
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '$page',
+                                      style: TextStyle(
+                                        color: widget.themeColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                title: Text(
+                                  'Seite $page',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    ElevatedButton(
+                                      onPressed: () => widget.onNavigateToPage(page),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: widget.themeColor,
+                                        foregroundColor: Colors.black,
+                                        minimumSize: const Size(60, 34),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'Öffnen',
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.close,
+                                        color: Colors.white38,
+                                        size: 18,
+                                      ),
+                                      onPressed: () => _removePage(category, page),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                );
+              }).toList(),
+            ),
     );
   }
 }
