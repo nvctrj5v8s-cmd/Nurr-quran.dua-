@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'mushaf_reader_page.dart';
 import 'german_reader_page.dart';
+import 'web_notifications.dart';
 
 // ==================== SPRACH-MODELL ====================
 enum QuranLanguage {
@@ -530,6 +531,8 @@ class _HomePageState extends State<HomePage> {
   static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
   static const String _prayerFeedbackLastShownDateKey =
       'prayer_feedback_last_shown_date_v1';
+    static const String _prayerWebNotificationPromptedKey =
+      'prayer_web_notification_prompted_v1';
   static const String _prayerHistoryMigrationKey = 'prayer_history_migration_v2';
   static const bool _previewPrayerFeedbackOnTap = false;
   static bool _isHandlingPendingPrayerFeedback = false;
@@ -664,6 +667,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initializeHome() async {
     await _runPrayerHistoryMigration();
+    await _ensureWebNotificationPermission();
     await _checkAndResetDaily();
     await _loadGebete();
     _setDailyHadith();
@@ -695,6 +699,55 @@ class _HomePageState extends State<HomePage> {
 
     await _showPendingPrayerFeedback();
     _scheduleMidnightCheck();
+  }
+
+  Future<void> _ensureWebNotificationPermission() async {
+    if (!kIsWeb || !BrowserNotificationService.isSupported) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final prayerFeedbackEnabled =
+        prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
+    if (!prayerFeedbackEnabled) {
+      return;
+    }
+
+    final alreadyPrompted =
+        prefs.getBool(_prayerWebNotificationPromptedKey) ?? false;
+    if (alreadyPrompted) {
+      return;
+    }
+
+    await BrowserNotificationService.requestPermission();
+    await prefs.setBool(_prayerWebNotificationPromptedKey, true);
+  }
+
+  Future<void> _showWebPrayerNotification({
+    required int completed,
+    required String date,
+  }) async {
+    if (!kIsWeb || !BrowserNotificationService.isSupported) {
+      return;
+    }
+
+    final title = switch (appLanguage) {
+      AppLanguage.german => 'Gebetsnachricht',
+      AppLanguage.english => 'Prayer reminder',
+      AppLanguage.arabic => 'رسالة الصلاة',
+    };
+
+    final body = switch (appLanguage) {
+      AppLanguage.german => 'Neuer Tag ($date): Gestern hast du $completed Gebete verrichtet.',
+      AppLanguage.english => 'New day ($date): Yesterday you completed $completed prayers.',
+      AppLanguage.arabic => 'يوم جديد ($date): لقد أديت $completed صلوات بالأمس.',
+    };
+
+    await BrowserNotificationService.show(
+      title: title,
+      body: body,
+      icon: 'icons/Icon-192.png',
+    );
   }
 
   Future<void> _runPrayerHistoryMigration() async {
@@ -1045,6 +1098,11 @@ class _HomePageState extends State<HomePage> {
       }
 
       await prefs.setString(_prayerFeedbackLastShownDateKey, date);
+
+      await _showWebPrayerNotification(
+        completed: completed,
+        date: date,
+      );
 
       if (!mounted) {
         return;
