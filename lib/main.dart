@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'dart:async';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'mushaf_reader_page.dart';
 import 'german_reader_page.dart';
-import 'web_notifications.dart';
 
 // ==================== SPRACH-MODELL ====================
 enum QuranLanguage {
@@ -527,17 +525,6 @@ class _HomePageState extends State<HomePage> {
   AppLanguage appLanguage = AppLanguage.german;
   List<bool> gebete = [false, false, false, false, false];
   static const String _prayerHistoryKey = 'gebet_history_v1';
-  static const String _prayerFeedbackPendingKey = 'prayer_feedback_pending_v1';
-  static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
-  static const String _prayerFeedbackLastShownDateKey =
-      'prayer_feedback_last_shown_date_v1';
-    static const String _prayerWebNotificationPromptedKey =
-      'prayer_web_notification_prompted_v1';
-  static const String _prayerHistoryMigrationKey = 'prayer_history_migration_v2';
-  static const bool _previewPrayerFeedbackOnTap = false;
-  static bool _isHandlingPendingPrayerFeedback = false;
-  bool _isFeedbackDialogOpen = false;
-  Timer? _midnightTimer;
   final gebetNamen = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   final Map<AppLanguage, List<String>> hadithsByLanguage = {
     AppLanguage.german: [
@@ -651,7 +638,6 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     appLanguage = widget.appLanguage;
     _initializeHome();
-    _scheduleMidnightCheck();
   }
 
   @override
@@ -666,106 +652,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _initializeHome() async {
-    await _runPrayerHistoryMigration();
-    await _ensureWebNotificationPermission();
     await _checkAndResetDaily();
     await _loadGebete();
     _setDailyHadith();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showPendingPrayerFeedback();
-    });
-  }
-
-  void _scheduleMidnightCheck() {
-    _midnightTimer?.cancel();
-    final now = DateTime.now();
-    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
-    final delay = nextMidnight.difference(now) + const Duration(seconds: 1);
-
-    _midnightTimer = Timer(delay, () async {
-      if (!mounted) {
-        return;
-      }
-
-      await _handleMidnightRollover();
-    });
-  }
-
-  Future<void> _handleMidnightRollover() async {
-    await _checkAndResetDaily();
-    if (!mounted) {
-      return;
-    }
-
-    await _showPendingPrayerFeedback();
-    _scheduleMidnightCheck();
-  }
-
-  Future<void> _ensureWebNotificationPermission() async {
-    if (!kIsWeb || !BrowserNotificationService.isSupported) {
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final prayerFeedbackEnabled =
-        prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
-    if (!prayerFeedbackEnabled) {
-      return;
-    }
-
-    final alreadyPrompted =
-        prefs.getBool(_prayerWebNotificationPromptedKey) ?? false;
-    if (alreadyPrompted) {
-      return;
-    }
-
-    await BrowserNotificationService.requestPermission();
-    await prefs.setBool(_prayerWebNotificationPromptedKey, true);
-  }
-
-  Future<void> _showWebPrayerNotification({
-    required int completed,
-    required String date,
-  }) async {
-    if (!kIsWeb || !BrowserNotificationService.isSupported) {
-      return;
-    }
-
-    final title = switch (appLanguage) {
-      AppLanguage.german => 'Gebetsnachricht',
-      AppLanguage.english => 'Prayer reminder',
-      AppLanguage.arabic => 'رسالة الصلاة',
-    };
-
-    final body = switch (appLanguage) {
-      AppLanguage.german => 'Neuer Tag ($date): Gestern hast du $completed Gebete verrichtet.',
-      AppLanguage.english => 'New day ($date): Yesterday you completed $completed prayers.',
-      AppLanguage.arabic => 'يوم جديد ($date): لقد أديت $completed صلوات بالأمس.',
-    };
-
-    await BrowserNotificationService.show(
-      title: title,
-      body: body,
-      icon: 'icons/Icon-192.png',
-    );
-  }
-
-  Future<void> _runPrayerHistoryMigration() async {
-    final prefs = await SharedPreferences.getInstance();
-    final migrationDone = prefs.getBool(_prayerHistoryMigrationKey) ?? false;
-    if (migrationDone) {
-      return;
-    }
-
-    // One-time cleanup so existing installs start with their own fresh data.
-    await prefs.remove(_prayerHistoryKey);
-    await prefs.remove(_prayerFeedbackPendingKey);
-    await prefs.remove('gebet_datum');
-    for (int i = 0; i < 5; i++) {
-      await prefs.remove('gebet_$i');
-    }
-
-    await prefs.setBool(_prayerHistoryMigrationKey, true);
   }
 
   void _setDailyHadith() {
@@ -811,21 +700,6 @@ class _HomePageState extends State<HomePage> {
         }
 
         await prefs.setString(_prayerHistoryKey, json.encode(historyRaw));
-
-        final prayerFeedbackEnabled =
-            prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
-        if (prayerFeedbackEnabled) {
-          await prefs.setString(
-            _prayerFeedbackPendingKey,
-            json.encode({
-              'date': gespeichertesDatum,
-              'completed': completed,
-              'total': previousPrayers.length,
-            }),
-          );
-        } else {
-          await prefs.remove(_prayerFeedbackPendingKey);
-        }
       }
 
       for (int i = 0; i < 5; i++) {
@@ -849,99 +723,9 @@ class _HomePageState extends State<HomePage> {
     await prefs.setBool('gebet_$index', value);
     final updated = List<bool>.from(gebete);
     updated[index] = value;
-    final completed = updated.where((isChecked) => isChecked).length;
     setState(() {
       gebete = updated;
     });
-
-    if (_previewPrayerFeedbackOnTap && value) {
-      await _showPrayerFeedbackDialog(completed);
-    }
-  }
-
-  String _prayerFeedbackTitle(int completed) {
-    switch (appLanguage) {
-      case AppLanguage.english:
-        if (completed >= 5) {
-          return 'Mashallah! You completed all five prayers today.';
-        }
-        if (completed >= 3) {
-          return 'Mashallah! You completed $completed prayers today.';
-        }
-        return 'Do not give up, my brother / my sister.';
-      case AppLanguage.arabic:
-        if (completed >= 5) {
-          return 'ما شاء الله! لقد أديت الصلوات الخمس كلها اليوم.';
-        }
-        if (completed >= 3) {
-          return 'ما شاء الله! لقد أديت $completed صلوات اليوم.';
-        }
-        return 'يا أخي / يا أختي، لا تستسلم.';
-      case AppLanguage.german:
-        if (completed >= 5) {
-          return 'Mashallah! Du hast heute alle fünf Gebete verrichtet – das ist wirklich lobenswert!';
-        }
-        if (completed >= 3) {
-          return 'Mashallah! Du hast heute $completed Gebete verrichtet. Sehr gut!';
-        }
-        return 'Mein Bruder / meine Schwester, lass uns nicht aufgeben!';
-    }
-  }
-
-  String _prayerFeedbackBody(int completed) {
-    switch (appLanguage) {
-      case AppLanguage.english:
-        if (completed >= 5) {
-          return 'Prayer is the heart of our faith. It purifies the soul and brings closeness to Allah. Through your regular prayers, you strengthen your faith, preserve peace in your heart, and fulfill one of the most important pillars of Islam.\n\nKeep going, my brother / my sister. Allah sees everything and loves your steadfastness.';
-        }
-        if (completed >= 3) {
-          return 'Remember that keeping the prayer complete is what matters most. Every prayer brings you closer to Allah, purifies your heart, and grants inner peace.\n\nHold on to it, my brother / my sister. You are on a good path, and Allah is always with you.';
-        }
-        return 'Prayer is the connection to Allah and one of the most important ways to purify our soul and find inner peace. Even if you prayed only $completed today, it is never too late to return to regular prayer.\n\nAllah is merciful and loves every step we take toward Him. Hold on to your prayer, stay steadfast, and do not give up. You can do it! 💛';
-      case AppLanguage.arabic:
-        if (completed >= 5) {
-          return 'هذا أمر جميل حقًا!\n\nالصلاة هي قلب إيماننا، وهي تطهّر النفس وتقرّبك من الله. ومن خلال محافظتك على الصلاة تقوّي إيمانك، وتحفظ السكينة في قلبك، وتؤدي واحدة من أعظم أركان الإسلام.\n\nاستمر يا أخي / يا أختي، فالله يرى كل شيء ويحب ثباتك.';
-        }
-        if (completed >= 3) {
-          return 'أحسنت جدًا!\n\nتذكّر أن المحافظة على الصلاة كاملة هي الأهم. كل صلاة تقربك إلى الله، وتطهّر قلبك، وتمنحك السكينة.\n\nتمسّك بها يا أخي / يا أختي، فأنت على طريق جميل، والله معك دائمًا.';
-        }
-        return 'الصلاة هي الصلة بالله وأهم وسيلة لتطهير النفس ونيل السكينة. وحتى إن صليت $completed فقط اليوم، فليس متأخرًا أبدًا أن تعود إلى الصلاة المنتظمة.\n\nالله رحيم ويحب كل خطوة نخطوها إليه. تمسّك بصلاتك، واثبت، ولا تستسلم، فأنت تستطيع!';
-      case AppLanguage.german:
-        if (completed >= 5) {
-          return 'Das Gebet ist das Herzstück unseres Glaubens, es reinigt die Seele und bringt Nähe zu Allah. Durch deine regelmäßigen Gebete stärkst du deinen Glauben, bewahrst Frieden in deinem Herzen und erfüllst eine der wichtigsten Säulen des Islam.\n\nMach weiter so, mein Bruder / meine Schwester – Allah sieht alles und liebt deine Standhaftigkeit.';
-        }
-        if (completed >= 3) {
-          return 'Denke daran, das Gebet vollständig zu halten, ist das Wichtigste. Jedes Gebet bringt dich Allah näher, reinigt dein Herz und schenkt dir inneren Frieden.\n\nHalte daran fest, mein Bruder / meine Schwester – du bist auf einem guten Weg, und Allah ist immer bei dir.';
-        }
-        return 'Das Gebet ist die Verbindung zu Allah und das wichtigste Mittel, unsere Seele zu reinigen und inneren Frieden zu finden. Selbst wenn du heute nur $completed Gebete verrichtet hast, ist es nie zu spät, wieder regelmäßig zu beten.\n\nAllah ist barmherzig und liebt jeden Schritt, den wir zu Ihm machen. Halte dich an dein Gebet, sei standhaft und gib nicht auf, du schaffst das!';
-    }
-  }
-
-  String _prayerFeedbackButtonLabel() {
-    switch (appLanguage) {
-      case AppLanguage.english:
-        return 'Continue';
-      case AppLanguage.arabic:
-        return 'متابعة';
-      case AppLanguage.german:
-        return 'Weiter';
-    }
-  }
-
-  String _feedbackDateLabel(String dateKey) {
-    final date = DateTime.tryParse(dateKey);
-    if (date == null) {
-      return dateKey;
-    }
-    final formatted = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year}';
-    switch (appLanguage) {
-      case AppLanguage.english:
-        return 'Date: $formatted';
-      case AppLanguage.arabic:
-        return 'التاريخ: $formatted';
-      case AppLanguage.german:
-        return 'Datum: $formatted';
-    }
   }
 
   String _openPrayerStatsLabel() {
@@ -992,135 +776,6 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  Future<void> _showPrayerFeedbackDialog(int completed, {String? dateKey}) async {
-    if (!mounted || _isFeedbackDialogOpen) {
-      return;
-    }
-    _isFeedbackDialogOpen = true;
-    await showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.black.withOpacity(0.95),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
-          ),
-          title: Column(
-            crossAxisAlignment: appLanguage == AppLanguage.arabic
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: [
-              Text(
-                _prayerFeedbackTitle(completed),
-                style: TextStyle(
-                  color: _MyAppState.currentTheme.color,
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: appLanguage == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
-              ),
-              if (dateKey != null && dateKey.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    _feedbackDateLabel(dateKey),
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Text(
-              _prayerFeedbackBody(completed),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                height: 1.5,
-              ),
-            ),
-          ),
-          actions: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _MyAppState.currentTheme.color,
-                foregroundColor: Colors.black,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                _prayerFeedbackButtonLabel(),
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-    _isFeedbackDialogOpen = false;
-  }
-
-  Future<void> _showPendingPrayerFeedback() async {
-    if (_previewPrayerFeedbackOnTap || _isHandlingPendingPrayerFeedback) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-
-    _isHandlingPendingPrayerFeedback = true;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final pendingRaw = prefs.getString(_prayerFeedbackPendingKey);
-      if (pendingRaw == null || pendingRaw.isEmpty) {
-        return;
-      }
-
-      final pending = json.decode(pendingRaw) as Map<String, dynamic>;
-      final completed = (pending['completed'] as num?)?.toInt() ?? 0;
-      final date = '${pending['date'] ?? ''}'.trim();
-      final lastShownDate =
-          prefs.getString(_prayerFeedbackLastShownDateKey) ?? '';
-
-      await prefs.remove(_prayerFeedbackPendingKey);
-
-      if (date.isEmpty || lastShownDate == date) {
-        return;
-      }
-
-      await prefs.setString(_prayerFeedbackLastShownDateKey, date);
-
-      await _showWebPrayerNotification(
-        completed: completed,
-        date: date,
-      );
-
-      if (!mounted) {
-        return;
-      }
-
-      await _showPrayerFeedbackDialog(
-        completed,
-        dateKey: date,
-      );
-    } finally {
-      _isHandlingPendingPrayerFeedback = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _midnightTimer?.cancel();
-    super.dispose();
   }
 
   @override
@@ -2892,8 +2547,6 @@ class _SettingsPageState extends State<SettingsPage> {
   List<MapEntry<String, Map<String, dynamic>>> _prayerHistory = [];
 
   static const String _prayerHistoryKey = 'gebet_history_v1';
-  static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
-  bool _prayerFeedbackEnabled = true;
 
   static const List<String> dhikrOptions = [
     'SubhanAllah',
@@ -2924,8 +2577,6 @@ class _SettingsPageState extends State<SettingsPage> {
     final historyRaw = historyJson == null
         ? <String, dynamic>{}
         : (json.decode(historyJson) as Map<String, dynamic>);
-    final prayerFeedbackEnabled =
-      prefs.getBool(_prayerFeedbackEnabledKey) ?? true;
     final selected = dhikrOptions.contains(savedDhikr)
       ? savedDhikr
       : dhikrOptions.first;
@@ -2953,7 +2604,6 @@ class _SettingsPageState extends State<SettingsPage> {
       selectedDhikr = selected;
       tasbihCount = savedCount;
       _prayerHistory = parsedHistory;
-      _prayerFeedbackEnabled = prayerFeedbackEnabled;
     });
   }
 
@@ -3001,29 +2651,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  String _prayerReminderTitle() {
-    switch (appLanguage) {
-      case AppLanguage.english:
-        return 'Daily Prayer Message';
-      case AppLanguage.arabic:
-        return 'رسالة الصلاة اليومية';
-      case AppLanguage.german:
-        return 'Taegliche Gebetsnachricht';
-    }
-  }
-
-  String _prayerReminderSubtitle() {
-    switch (appLanguage) {
-      case AppLanguage.english:
-        return 'Show the motivation message after the day changes';
-      case AppLanguage.arabic:
-        return 'اعرض رسالة التحفيز بعد تغيّر اليوم';
-      case AppLanguage.german:
-        return 'Zeige die Motivationsnachricht nach dem Tageswechsel';
-    }
-  }
-
-
   String _prayerStatsDoneLabel(int completed, int total) {
     switch (appLanguage) {
       case AppLanguage.english:
@@ -3033,17 +2660,6 @@ class _SettingsPageState extends State<SettingsPage> {
       case AppLanguage.german:
         return '$completed von $total Gebeten';
     }
-  }
-
-  Future<void> _changePrayerFeedbackEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_prayerFeedbackEnabledKey, value);
-    if (!value) {
-      await prefs.remove('prayer_feedback_pending_v1');
-    }
-    setState(() {
-      _prayerFeedbackEnabled = value;
-    });
   }
 
   Future<void> _changeLanguage(AppLanguage newLang) async {
@@ -3515,41 +3131,6 @@ class _SettingsPageState extends State<SettingsPage> {
                               color: _MyAppState.currentTheme.color, size: 20),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCard(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _prayerReminderTitle(),
-                                style: TextStyle(
-                                  color: _MyAppState.currentTheme.color,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                _prayerReminderSubtitle(),
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Switch(
-                          value: _prayerFeedbackEnabled,
-                          activeThumbColor: _MyAppState.currentTheme.color,
-                          onChanged: _changePrayerFeedbackEnabled,
-                        ),
-                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
