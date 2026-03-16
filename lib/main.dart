@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'mushaf_reader_page.dart';
 
 // ==================== SPRACH-MODELL ====================
@@ -1336,6 +1337,60 @@ class _QuranPageState extends State<QuranPage> {
     }
   }
 
+  Widget _buildGermanPdfSection() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.menu_book_rounded, color: _MyAppState.currentTheme.color, size: 90),
+            const SizedBox(height: 24),
+            Text(
+              'Übersetzung des Heiligen Qurans',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Deutsche Übersetzung',
+              style: TextStyle(color: Colors.white60, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const GermanQuranPdfPage(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text(
+                'Quran auf Deutsch lesen',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _MyAppState.currentTheme.color,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -1389,7 +1444,9 @@ class _QuranPageState extends State<QuranPage> {
             ),
           ),
           Expanded(
-            child: isLoading
+            child: selectedLanguage == QuranLanguage.german
+                ? _buildGermanPdfSection()
+                : isLoading
                 ? Center(
                     child: CircularProgressIndicator(color: _MyAppState.currentTheme.color),
                   )
@@ -1482,6 +1539,59 @@ class _QuranPageState extends State<QuranPage> {
         ],
       ),
     );
+  }
+}
+
+// ==================== GERMAN QURAN PDF PAGE ====================
+class GermanQuranPdfPage extends StatefulWidget {
+  const GermanQuranPdfPage({super.key});
+
+  @override
+  State<GermanQuranPdfPage> createState() => _GermanQuranPdfPageState();
+}
+
+class _GermanQuranPdfPageState extends State<GermanQuranPdfPage> {
+  final PdfViewerController _pdfController = PdfViewerController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: _MyAppState.currentTheme.color,
+        title: Text(
+          '📖 Quran auf Deutsch',
+          style: TextStyle(
+            color: _MyAppState.currentTheme.color,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.first_page, color: _MyAppState.currentTheme.color),
+            tooltip: 'Zur ersten Sure',
+            onPressed: () => _pdfController.jumpToPage(28),
+          ),
+        ],
+      ),
+      body: SfPdfViewer.asset(
+        'assets/assets/de_Translation_of_the_holy_kuran_in_deutsch.pdf',
+        controller: _pdfController,
+        initialPageNumber: 28,
+        enableDoubleTapZooming: true,
+        canShowScrollHead: true,
+        canShowScrollStatus: true,
+        pageLayoutMode: PdfPageLayoutMode.single,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pdfController.dispose();
+    super.dispose();
   }
 }
 
