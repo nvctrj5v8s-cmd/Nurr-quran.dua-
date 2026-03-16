@@ -1444,7 +1444,7 @@ class _QuranPageState extends State<QuranPage> {
             ),
           ),
           Expanded(
-            child: selectedLanguage == QuranLanguage.german
+            child: (selectedLanguage == QuranLanguage.german || widget.appLanguage == AppLanguage.german)
                 ? _buildGermanPdfSection()
                 : isLoading
                 ? Center(
