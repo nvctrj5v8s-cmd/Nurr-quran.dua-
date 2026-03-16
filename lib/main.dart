@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'dart:async';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -527,9 +528,13 @@ class _HomePageState extends State<HomePage> {
   static const String _prayerHistoryKey = 'gebet_history_v1';
   static const String _prayerFeedbackPendingKey = 'prayer_feedback_pending_v1';
   static const String _prayerFeedbackEnabledKey = 'prayer_feedback_enabled_v1';
+  static const String _prayerFeedbackLastShownDateKey =
+      'prayer_feedback_last_shown_date_v1';
   static const String _prayerHistoryMigrationKey = 'prayer_history_migration_v2';
   static const bool _previewPrayerFeedbackOnTap = false;
+  static bool _isHandlingPendingPrayerFeedback = false;
   bool _isFeedbackDialogOpen = false;
+  Timer? _midnightTimer;
   final gebetNamen = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   final Map<AppLanguage, List<String>> hadithsByLanguage = {
     AppLanguage.german: [
@@ -643,6 +648,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     appLanguage = widget.appLanguage;
     _initializeHome();
+    _scheduleMidnightCheck();
   }
 
   @override
@@ -664,6 +670,31 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showPendingPrayerFeedback();
     });
+  }
+
+  void _scheduleMidnightCheck() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final delay = nextMidnight.difference(now) + const Duration(seconds: 1);
+
+    _midnightTimer = Timer(delay, () async {
+      if (!mounted) {
+        return;
+      }
+
+      await _handleMidnightRollover();
+    });
+  }
+
+  Future<void> _handleMidnightRollover() async {
+    await _checkAndResetDaily();
+    if (!mounted) {
+      return;
+    }
+
+    await _showPendingPrayerFeedback();
+    _scheduleMidnightCheck();
   }
 
   Future<void> _runPrayerHistoryMigration() async {
@@ -985,33 +1016,53 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _showPendingPrayerFeedback() async {
-    if (_previewPrayerFeedbackOnTap) {
+    if (_previewPrayerFeedbackOnTap || _isHandlingPendingPrayerFeedback) {
       return;
     }
     if (!mounted) {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final pendingRaw = prefs.getString(_prayerFeedbackPendingKey);
-    if (pendingRaw == null || pendingRaw.isEmpty) {
-      return;
+    _isHandlingPendingPrayerFeedback = true;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final pendingRaw = prefs.getString(_prayerFeedbackPendingKey);
+      if (pendingRaw == null || pendingRaw.isEmpty) {
+        return;
+      }
+
+      final pending = json.decode(pendingRaw) as Map<String, dynamic>;
+      final completed = (pending['completed'] as num?)?.toInt() ?? 0;
+      final date = '${pending['date'] ?? ''}'.trim();
+      final lastShownDate =
+          prefs.getString(_prayerFeedbackLastShownDateKey) ?? '';
+
+      await prefs.remove(_prayerFeedbackPendingKey);
+
+      if (date.isEmpty || lastShownDate == date) {
+        return;
+      }
+
+      await prefs.setString(_prayerFeedbackLastShownDateKey, date);
+
+      if (!mounted) {
+        return;
+      }
+
+      await _showPrayerFeedbackDialog(
+        completed,
+        dateKey: date,
+      );
+    } finally {
+      _isHandlingPendingPrayerFeedback = false;
     }
+  }
 
-    final pending = json.decode(pendingRaw) as Map<String, dynamic>;
-    final completed = (pending['completed'] as num?)?.toInt() ?? 0;
-    final date = '${pending['date'] ?? ''}'.trim();
-
-    await prefs.remove(_prayerFeedbackPendingKey);
-
-    if (!mounted) {
-      return;
-    }
-
-    await _showPrayerFeedbackDialog(
-      completed,
-      dateKey: date.isEmpty ? null : date,
-    );
+  @override
+  void dispose() {
+    _midnightTimer?.cancel();
+    super.dispose();
   }
 
   @override
