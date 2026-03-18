@@ -14,7 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/Nurr-quran.dua-/">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -33,31 +33,6 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
-  <script>
-    (function () {
-      const bootstrapUrl = 'flutter_bootstrap.js?v=20260316-rootfix3';
-
-      async function clearOldWebCaches() {
-        if ('serviceWorker' in navigator) {
-          const registrations = await navigator.serviceWorker.getRegistrations();
-          await Promise.all(registrations.map((registration) => registration.unregister()));
-        }
-
-        if ('caches' in window) {
-          const cacheNames = await caches.keys();
-          await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
-        }
-      }
-
-      clearOldWebCaches()
-        .catch((error) => console.warn('Cache cleanup failed', error))
-        .finally(() => {
-          const script = document.createElement('script');
-          script.src = bootstrapUrl;
-          script.async = true;
-          document.body.appendChild(script);
-        });
-    })();
-  </script>
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

@@ -67,6 +67,7 @@ flutter:
     - assets/images/
     - assets/data/
     - assets/mushaf_pages/
+    - assets/mushaf_pages_en/
     - assets/german_pages/
 
   # An image asset can refer to one or more resolution-specific "variants", see

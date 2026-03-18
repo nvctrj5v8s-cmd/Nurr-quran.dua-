@@ -32,17 +32,51 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   late PageController _pageController;
   int _currentPage = 1;
   bool _showUI = true;
-  static const int totalAssetPages = 604;
-  static const int skippedAssetPages = 2;
-  static const int totalPages = totalAssetPages - skippedAssetPages;
-  static const int pageNumberingVersion = 2;
+  static const int _arabicTotalAssetPages = 604;
+  static const int _arabicSkippedAssetPages = 2;
+  static const int _englishTotalAssetPages = 942;
 
   // ---- Bookmarks ----
-  static const String _bookmarksKey = 'mushaf_bookmarks_v2';
   Map<String, List<int>> _bookmarks = {};
 
   bool get _isArabicUi => widget.uiLanguageCode == 'ar';
   bool get _isEnglishUi => widget.uiLanguageCode == 'en';
+  bool get _isRtlBookLayout => !_isEnglishUi;
+
+  int get _totalPages {
+    if (_isEnglishUi) return _englishTotalAssetPages;
+    return _arabicTotalAssetPages - _arabicSkippedAssetPages;
+  }
+
+  int get _skippedAssetPages {
+    if (_isEnglishUi) return 0;
+    return _arabicSkippedAssetPages;
+  }
+
+  String get _imageFolder {
+    if (_isEnglishUi) return 'assets/mushaf_pages_en';
+    return 'assets/mushaf_pages';
+  }
+
+  String get _savedPageKey {
+    if (_isEnglishUi) return 'mushaf_en_last_page';
+    return 'mushaf_last_page';
+  }
+
+  String get _pageVersionKey {
+    if (_isEnglishUi) return 'mushaf_en_page_numbering_version';
+    return 'mushaf_page_numbering_version';
+  }
+
+  String get _bookmarksKey {
+    if (_isEnglishUi) return 'mushaf_en_bookmarks_v1';
+    return 'mushaf_bookmarks_v2';
+  }
+
+  int get _pageNumberingVersion {
+    if (_isEnglishUi) return 1;
+    return 2;
+  }
 
   String _titlePrefix() {
     if (_isArabicUi) return 'المصحف - صفحة';
@@ -81,9 +115,9 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   }
 
   String _pageNumberFieldLabel() {
-    if (_isArabicUi) return 'رقم الصفحة (1-$totalPages)';
-    if (_isEnglishUi) return 'Page number (1-$totalPages)';
-    return 'Seitenzahl (1-$totalPages)';
+    if (_isArabicUi) return 'رقم الصفحة (1-$_totalPages)';
+    if (_isEnglishUi) return 'Page number (1-$_totalPages)';
+    return 'Seitenzahl (1-$_totalPages)';
   }
 
   String _cancelLabel() {
@@ -99,9 +133,9 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   }
 
   String _invalidPageSnackBar() {
-    if (_isArabicUi) return 'الرجاء إدخال رقم بين 1 و $totalPages';
-    if (_isEnglishUi) return 'Please enter a number between 1 and $totalPages';
-    return 'Bitte Zahl zwischen 1 und $totalPages eingeben';
+    if (_isArabicUi) return 'الرجاء إدخال رقم بين 1 و $_totalPages';
+    if (_isEnglishUi) return 'Please enter a number between 1 and $_totalPages';
+    return 'Bitte Zahl zwischen 1 und $_totalPages eingeben';
   }
 
   String _imageLoadError(int visiblePage) {
@@ -128,13 +162,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final rawPage = prefs.getInt('mushaf_last_page');
-      final version = prefs.getInt('mushaf_page_numbering_version') ?? 1;
+      final rawPage = prefs.getInt(_savedPageKey);
+      final version = prefs.getInt(_pageVersionKey) ?? 1;
 
       if (rawPage != null) {
-        savedPage = version >= pageNumberingVersion
-            ? rawPage.clamp(1, totalPages)
-            : (rawPage - 1).clamp(1, totalPages);
+        savedPage = version >= _pageNumberingVersion
+        ? rawPage.clamp(1, _totalPages)
+        : (rawPage - 1).clamp(1, _totalPages);
       }
     } catch (e) {
       debugPrint('Fehler beim Laden der Seite: $e');
@@ -162,12 +196,18 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Konvertiere sichtbare Seite (1-602) zu physischem Index für RTL.
   int _convertToPhysicalIndex(int visiblePage) {
-    return totalPages - visiblePage;
+    if (_isRtlBookLayout) {
+      return _totalPages - visiblePage;
+    }
+    return visiblePage - 1;
   }
 
   /// Konvertiere physischen Index zu sichtbarer Seite.
   int _convertToLogicalPage(int physicalIndex) {
-    return totalPages - physicalIndex;
+    if (_isRtlBookLayout) {
+      return _totalPages - physicalIndex;
+    }
+    return physicalIndex + 1;
   }
   
   /// Preload aktuelle Seite + 2 Nachbarn für smooth scrolling
@@ -179,9 +219,9 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     ];
     
     for (final page in pagesToPreload) {
-      if (page >= 1 && page <= totalPages) {
+      if (page >= 1 && page <= _totalPages) {
         final pageNum = _formatPageNumber(page);
-        final imagePath = 'assets/mushaf_pages/$pageNum.png';
+        final imagePath = '$_imageFolder/$pageNum.png';
         final mediaQuery = MediaQuery.of(context);
         final targetWidth =
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
@@ -198,7 +238,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Formatiere Seitenzahl für URL
   String _formatPageNumber(int visiblePage) {
-    final assetPageNumber = visiblePage + skippedAssetPages;
+    final assetPageNumber = visiblePage + _skippedAssetPages;
     return assetPageNumber.toString().padLeft(3, '0');
   }
   
@@ -206,8 +246,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   Future<void> _savePage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('mushaf_last_page', _currentPage);
-      await prefs.setInt('mushaf_page_numbering_version', pageNumberingVersion);
+      await prefs.setInt(_savedPageKey, _currentPage);
+      await prefs.setInt(_pageVersionKey, _pageNumberingVersion);
     } catch (e) {
       debugPrint('Fehler beim Speichern: $e');
     }
@@ -399,7 +439,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       builder: (BuildContext context, int physicalIndex) {
         final visiblePage = _convertToLogicalPage(physicalIndex);
         final pageNum = _formatPageNumber(visiblePage);
-        final imagePath = 'assets/mushaf_pages/$pageNum.png';
+        final imagePath = '$_imageFolder/$pageNum.png';
         final mediaQuery = MediaQuery.of(context);
         final targetWidth =
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
@@ -447,7 +487,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         );
       },
       
-      itemCount: totalPages,
+      itemCount: _totalPages,
       loadingBuilder: (context, event) {
         return const SizedBox.shrink();
       },
@@ -496,7 +536,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         children: [
           // Vorherige Seite (nach rechts in RTL)
           _buildNavButton(
-            icon: Icons.arrow_forward,
+            icon: _isRtlBookLayout ? Icons.arrow_forward : Icons.arrow_back,
             label: _previousLabel(),
             onPressed: _currentPage > 1 ? _goToPreviousPage : null,
           ),
@@ -510,7 +550,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
               border: Border.all(color: Colors.white, width: 2),
             ),
             child: Text(
-              '$_currentPage / $totalPages',
+              '$_currentPage / $_totalPages',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -521,9 +561,9 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           
           // Nächste Seite (nach links in RTL)
           _buildNavButton(
-            icon: Icons.arrow_back,
+            icon: _isRtlBookLayout ? Icons.arrow_back : Icons.arrow_forward,
             label: _nextLabel(),
-            onPressed: _currentPage < totalPages ? _goToNextPage : null,
+            onPressed: _currentPage < _totalPages ? _goToNextPage : null,
           ),
         ],
       ),
@@ -559,8 +599,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Gehe zur nächsten Seite (nach links wischen)
   void _goToNextPage() {
-    if (_currentPage < totalPages) {
-      final nextLogicalPage = (_currentPage + 1).clamp(1, totalPages);
+    if (_currentPage < _totalPages) {
+      final nextLogicalPage = (_currentPage + 1).clamp(1, _totalPages);
       final nextPhysicalIndex = _convertToPhysicalIndex(nextLogicalPage);
       
       _pageController.animateToPage(
@@ -574,7 +614,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   /// Gehe zur vorherigen Seite (nach rechts wischen)
   void _goToPreviousPage() {
     if (_currentPage > 1) {
-      final prevLogicalPage = (_currentPage - 1).clamp(1, totalPages);
+      final prevLogicalPage = (_currentPage - 1).clamp(1, _totalPages);
       final prevPhysicalIndex = _convertToPhysicalIndex(prevLogicalPage);
       
       _pageController.animateToPage(
@@ -625,7 +665,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   /// Springe zu eingegebener Seite
   void _jumpToPage(String input) {
     final pageNumber = int.tryParse(input);
-    if (pageNumber == null || pageNumber < 1 || pageNumber > totalPages) {
+    if (pageNumber == null || pageNumber < 1 || pageNumber > _totalPages) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(_invalidPageSnackBar()),

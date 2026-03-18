@@ -30,6 +30,23 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
   static const String _bookmarksKey = 'german_quran_bookmarks_v1';
   Map<String, List<int>> _bookmarks = {};
 
+  int _displayPageNumber(int physicalPage) {
+    if (physicalPage <= 1208) {
+      return (physicalPage + 1) ~/ 2;
+    }
+    return physicalPage - 604;
+  }
+
+  int _physicalPageFromDisplay(int displayPage) {
+    if (displayPage <= 604) {
+      return (displayPage * 2) - 1;
+    }
+    return displayPage + 604;
+  }
+
+  int get _currentDisplayPage => _displayPageNumber(_currentPage);
+  int get _maxDisplayPage => _displayPageNumber(totalPages);
+
   @override
   void initState() {
     super.initState();
@@ -174,7 +191,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
   }
 
   void _showPageJumpDialog() {
-    final ctrl = TextEditingController(text: '$_currentPage');
+    final ctrl = TextEditingController(text: '$_currentDisplayPage');
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -184,7 +201,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
           keyboardType: TextInputType.number,
           autofocus: true,
           decoration: InputDecoration(
-            labelText: 'Seite (1–$totalPages)',
+            labelText: 'Seite (1–$_maxDisplayPage)',
             border: const OutlineInputBorder(),
             prefixIcon: const Icon(Icons.tag),
           ),
@@ -209,16 +226,17 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
   }
 
   void _jumpToPage(String input) {
-    final page = int.tryParse(input);
-    if (page == null || page < 1 || page > totalPages) {
+    final displayPage = int.tryParse(input);
+    if (displayPage == null || displayPage < 1 || displayPage > _maxDisplayPage) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Bitte Zahl zwischen 1 und $totalPages eingeben'),
+          content: Text('Bitte Zahl zwischen 1 und $_maxDisplayPage eingeben'),
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
+    final page = _physicalPageFromDisplay(displayPage).clamp(1, totalPages);
     _pageController.jumpToPage(page - 1);
     Navigator.pop(context);
   }
@@ -294,7 +312,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '📖 Quran auf Deutsch – Seite $_currentPage',
+                          '📖 Quran auf Deutsch – Seite $_currentDisplayPage',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -358,7 +376,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '$_currentPage / $totalPages',
+                      '$_currentDisplayPage / $_maxDisplayPage',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
