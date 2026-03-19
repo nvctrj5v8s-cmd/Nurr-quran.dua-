@@ -35,31 +35,31 @@
 <body>
   <script>
     (function () {
-      if (!('serviceWorker' in navigator)) {
+      var resetKey = 'quran_sw_reset_done';
+      if (sessionStorage.getItem(resetKey)) {
         return;
       }
+      sessionStorage.setItem(resetKey, '1');
 
-      if (sessionStorage.getItem('quran_sw_reset_done') === '1') {
-        return;
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registrations) {
+          return Promise.all(registrations.map(function (registration) {
+            return registration.unregister();
+          }));
+        }).catch(function () {});
       }
 
-      sessionStorage.setItem('quran_sw_reset_done', '1');
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (key) {
+            return caches.delete(key);
+          }));
+        }).catch(function () {});
+      }
 
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        return Promise.all(registrations.map(function (registration) {
-          return registration.unregister();
-        }));
-      }).then(function () {
-        if ('caches' in window) {
-          return caches.keys().then(function (keys) {
-            return Promise.all(keys.map(function (key) {
-              return caches.delete(key);
-            }));
-          });
-        }
-      }).finally(function () {
-        window.location.reload();
-      });
+      setTimeout(function () {
+        location.reload();
+      }, 200);
     })();
   </script>
   <script src="flutter_bootstrap.js" async></script>

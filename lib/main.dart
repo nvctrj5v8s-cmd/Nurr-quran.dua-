@@ -1088,7 +1088,7 @@ class _QuranPageState extends State<QuranPage> {
   Future<void> loadSurahs() async {
     try {
       final response = await http.get(
-        Uri.parse('http://api.alquran.cloud/v1/surah'),
+        Uri.parse('https://api.alquran.cloud/v1/surah'),
       );
 
       if (response.statusCode == 200) {
@@ -1379,7 +1379,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
 
   Future<void> loadSurah() async {
     try {
-      final url = 'http://api.alquran.cloud/v1/surah/${widget.surahNumber}/${widget.language.apiEdition}';
+      final url = 'https://api.alquran.cloud/v1/surah/${widget.surahNumber}/${widget.language.apiEdition}';
 
       final response = await http.get(Uri.parse(url));
 
