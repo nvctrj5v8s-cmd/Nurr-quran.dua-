@@ -463,10 +463,12 @@ class _MainPageState extends State<MainPage> {
                 HomePage(appLanguage: _appLanguage),
                 _appLanguage == AppLanguage.german
                     ? GermanReaderPage(themeColor: _MyAppState.currentTheme.color)
-                    : MushafReaderPage(
-                        themeColor: _MyAppState.currentTheme.color,
-                        uiLanguageCode: _appLanguage.code,
-                      ),
+                    : _appLanguage == AppLanguage.english
+                        ? QuranPage(appLanguage: _appLanguage)
+                        : MushafReaderPage(
+                            themeColor: _MyAppState.currentTheme.color,
+                            uiLanguageCode: _appLanguage.code,
+                          ),
                 PrayerTimesPage(appLanguage: _appLanguage),
                 const NamesOfAllahPage(),
                 const SettingsPage()
@@ -998,6 +1000,11 @@ class _QuranPageState extends State<QuranPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.appLanguage == AppLanguage.english) {
+      selectedLanguage = QuranLanguage.english;
+    } else if (widget.appLanguage == AppLanguage.german) {
+      selectedLanguage = QuranLanguage.german;
+    }
     loadLanguagePreference();
     loadSurahs();
   }
@@ -1005,10 +1012,15 @@ class _QuranPageState extends State<QuranPage> {
   Future<void> loadLanguagePreference() async {
     final prefs = await SharedPreferences.getInstance();
     final savedLang = prefs.getString('quran_language') ?? 'arabic';
+    final fallback = widget.appLanguage == AppLanguage.english
+        ? QuranLanguage.english
+        : widget.appLanguage == AppLanguage.german
+            ? QuranLanguage.german
+            : QuranLanguage.arabic;
     setState(() {
       selectedLanguage = QuranLanguage.values.firstWhere(
         (lang) => lang.name == savedLang,
-        orElse: () => QuranLanguage.arabic,
+        orElse: () => fallback,
       );
     });
   }
