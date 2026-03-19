@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -227,11 +228,11 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
                 .clamp(900.0, 1800.0)
                 .round();
-        // Preload in Flutter's Image Cache with resized decode for faster startup.
-        precacheImage(
-          ResizeImage(AssetImage(imagePath), width: targetWidth),
-          context,
-        );
+        // On web, some browsers are more stable with direct AssetImage decode.
+        final ImageProvider<Object> imageProvider = kIsWeb
+            ? AssetImage(imagePath)
+            : ResizeImage(AssetImage(imagePath), width: targetWidth);
+        precacheImage(imageProvider, context);
       }
     }
   }
@@ -446,9 +447,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
                 .clamp(900.0, 1800.0)
                 .round();
         
+        final ImageProvider<Object> imageProvider = kIsWeb
+            ? AssetImage(imagePath)
+            : ResizeImage(AssetImage(imagePath), width: targetWidth);
+
         return PhotoViewGalleryPageOptions(
           // Decode at device-appropriate width for better speed/memory.
-          imageProvider: ResizeImage(AssetImage(imagePath), width: targetWidth),
+          imageProvider: imageProvider,
           
           // Start at contained size so horizontal swipe switches pages directly.
           initialScale: PhotoViewComputedScale.contained,
