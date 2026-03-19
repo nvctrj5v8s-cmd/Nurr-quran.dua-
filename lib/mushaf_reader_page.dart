@@ -435,6 +435,10 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   
   /// Haupt-PageView mit RTL und Zoom
   Widget _buildPageView() {
+    if (kIsWeb) {
+      return _buildWebPageView();
+    }
+
     return PhotoViewGallery.builder(
       scrollPhysics: const BouncingScrollPhysics(),
       builder: (BuildContext context, int physicalIndex) {
@@ -519,6 +523,63 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       },
       
       scrollDirection: Axis.horizontal,
+    );
+  }
+
+  Widget _buildWebPageView() {
+    return PageView.builder(
+      controller: _pageController,
+      reverse: _isRtlBookLayout,
+      itemCount: _totalPages,
+      onPageChanged: (pageIndex) {
+        final visiblePage = pageIndex + 1;
+
+        setState(() {
+          _currentPage = visiblePage;
+        });
+
+        _savePage();
+        _preloadPages(visiblePage);
+      },
+      itemBuilder: (context, pageIndex) {
+        final visiblePage = pageIndex + 1;
+        final pageNum = _formatPageNumber(visiblePage);
+        final imagePath = '$_imageFolder/$pageNum.png';
+
+        return Container(
+          color: Colors.black,
+          alignment: Alignment.center,
+          child: InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 3.0,
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.contain,
+              filterQuality: FilterQuality.low,
+              errorBuilder: (context, error, stackTrace) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.broken_image,
+                        size: 64,
+                        color: Colors.brown.shade400,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _imageLoadError(visiblePage),
+                        style: const TextStyle(fontSize: 16),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
   
