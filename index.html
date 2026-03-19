@@ -33,6 +33,35 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) {
+        return;
+      }
+
+      if (sessionStorage.getItem('quran_sw_reset_done') === '1') {
+        return;
+      }
+
+      sessionStorage.setItem('quran_sw_reset_done', '1');
+
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        return Promise.all(registrations.map(function (registration) {
+          return registration.unregister();
+        }));
+      }).then(function () {
+        if ('caches' in window) {
+          return caches.keys().then(function (keys) {
+            return Promise.all(keys.map(function (key) {
+              return caches.delete(key);
+            }));
+          });
+        }
+      }).finally(function () {
+        window.location.reload();
+      });
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
