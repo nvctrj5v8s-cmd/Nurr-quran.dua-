@@ -464,7 +464,10 @@ class _MainPageState extends State<MainPage> {
                 _appLanguage == AppLanguage.german
                     ? GermanReaderPage(themeColor: _MyAppState.currentTheme.color)
                     : _appLanguage == AppLanguage.english
-                        ? QuranPage(appLanguage: _appLanguage)
+                        ? MushafReaderPage(
+                            themeColor: _MyAppState.currentTheme.color,
+                            uiLanguageCode: _appLanguage.code,
+                          )
                         : MushafReaderPage(
                             themeColor: _MyAppState.currentTheme.color,
                             uiLanguageCode: _appLanguage.code,

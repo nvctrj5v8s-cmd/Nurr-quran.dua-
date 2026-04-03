@@ -7,7 +7,7 @@ from pathlib import Path
 pdf_path = r'C:\Users\moham\quran\assets\assets\Holy-Quran-English real.pdf'
 output_dir = r'C:\Users\moham\quran\assets\mushaf_pages_en'
 start_page = 17  # 1-basiert
-end_page = 958   # 1-basiert
+end_page = 977   # 1-basiert (17-977 => 961 Seiten)
 
 # Zielverzeichnis erstellen und alte PNGs entfernen
 os.makedirs(output_dir, exist_ok=True)

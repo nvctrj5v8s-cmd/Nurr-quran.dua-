@@ -35,7 +35,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   bool _showUI = true;
   static const int _arabicTotalAssetPages = 604;
   static const int _arabicSkippedAssetPages = 2;
-  static const int _englishTotalAssetPages = 942;
+  static const int _englishTotalAssetPages = 961;
 
   // ---- Bookmarks ----
   Map<String, List<int>> _bookmarks = {};
