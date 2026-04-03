@@ -35,33 +35,26 @@
 <body>
   <script>
     (function () {
-      var resetKey = 'quran_sw_reset_done';
-      if (sessionStorage.getItem(resetKey)) {
+      if (sessionStorage.getItem('quran_sw_reset_done_v2') === '1') {
         return;
       }
-      sessionStorage.setItem(resetKey, '1');
-
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (registrations) {
-          return Promise.all(registrations.map(function (registration) {
-            return registration.unregister();
-          }));
-        }).catch(function () {});
-      }
-
-      if ('caches' in window) {
-        caches.keys().then(function (keys) {
-          return Promise.all(keys.map(function (key) {
-            return caches.delete(key);
-          }));
-        }).catch(function () {});
-      }
-
-      setTimeout(function () {
+      sessionStorage.setItem('quran_sw_reset_done_v2', '1');
+      Promise.all([
+        ('serviceWorker' in navigator)
+          ? navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            })
+          : Promise.resolve(),
+        ('caches' in window)
+          ? caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            })
+          : Promise.resolve()
+      ]).finally(function () {
         location.reload();
-      }, 200);
+      });
     })();
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter_bootstrap.js?v=20260403-2" async></script>
 </body>
 </html>
