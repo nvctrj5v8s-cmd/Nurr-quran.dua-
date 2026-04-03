@@ -982,6 +982,225 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+class EnglishQuranPage extends StatefulWidget {
+  const EnglishQuranPage({super.key});
+
+  @override
+  State<EnglishQuranPage> createState() => _EnglishQuranPageState();
+}
+
+class _EnglishQuranPageState extends State<EnglishQuranPage> {
+  List<dynamic> surahs = [];
+  bool isLoading = true;
+  String? errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSurahs();
+  }
+
+  Future<void> _loadSurahs() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://api.alquran.cloud/v1/surah'),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to load surahs (${response.statusCode})');
+      }
+
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      final payload = data['data'];
+      if (payload is! List) {
+        throw Exception('Invalid response payload');
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        surahs = payload;
+        isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        errorMessage = 'Could not load Quran list. Please try again.';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.9),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '📖 AL-QURAN (ENGLISH)',
+                  style: TextStyle(
+                    color: _MyAppState.currentTheme.color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Sahih International Translation',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: _MyAppState.currentTheme.color,
+                    ),
+                  )
+                : errorMessage != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.white70, size: 44),
+                              const SizedBox(height: 12),
+                              Text(
+                                errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(color: Colors.white, fontSize: 16),
+                              ),
+                              const SizedBox(height: 14),
+                              ElevatedButton.icon(
+                                onPressed: _loadSurahs,
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Retry'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _MyAppState.currentTheme.color,
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(10),
+                        itemCount: surahs.length,
+                        itemBuilder: (context, i) {
+                          final surah = surahs[i];
+                          return GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => SurahDetailPage(
+                                    surahNumber: surah['number'],
+                                    language: QuranLanguage.english,
+                                    appLanguage: AppLanguage.english,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.85),
+                                borderRadius: BorderRadius.circular(15),
+                                border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 50,
+                                    height: 50,
+                                    decoration: BoxDecoration(
+                                      color: _MyAppState.currentTheme.color,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${surah['number']}',
+                                        style: const TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          surah['englishName'],
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(
+                                          '${surah['numberOfAyahs']} Ayahs • ${surah['revelationType']}',
+                                          style: const TextStyle(
+                                            color: Colors.white70,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Text(
+                                    surah['name'],
+                                    style: TextStyle(
+                                      color: _MyAppState.currentTheme.color,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textDirection: TextDirection.rtl,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ==================== QURAN PAGE ====================
 class QuranPage extends StatefulWidget {
   final AppLanguage appLanguage;
