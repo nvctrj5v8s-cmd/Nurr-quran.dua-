@@ -532,7 +532,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       reverse: _isRtlBookLayout,
       itemCount: _totalPages,
       onPageChanged: (pageIndex) {
-        final visiblePage = pageIndex + 1;
+        final visiblePage = _convertToLogicalPage(pageIndex);
 
         setState(() {
           _currentPage = visiblePage;
@@ -542,7 +542,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         _preloadPages(visiblePage);
       },
       itemBuilder: (context, pageIndex) {
-        final visiblePage = pageIndex + 1;
+        final visiblePage = _convertToLogicalPage(pageIndex);
         final pageNum = _formatPageNumber(visiblePage);
         final imagePath = '$_imageFolder/$pageNum.png';
 
