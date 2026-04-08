@@ -529,7 +529,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   Widget _buildWebPageView() {
     return PageView.builder(
       controller: _pageController,
-      reverse: _isRtlBookLayout,
+      reverse: false,
       itemCount: _totalPages,
       onPageChanged: (pageIndex) {
         final visiblePage = _convertToLogicalPage(pageIndex);
@@ -742,6 +742,11 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     }
     final physicalIndex = _convertToPhysicalIndex(pageNumber);
     _pageController.jumpToPage(physicalIndex);
+    setState(() {
+      _currentPage = pageNumber;
+    });
+    _savePage();
+    _preloadPages(pageNumber);
     Navigator.pop(context);
   }
   
