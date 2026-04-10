@@ -4720,11 +4720,11 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   String _locationInfoLabel() {
     switch (widget.appLanguage) {
       case AppLanguage.english:
-        return 'Your location is only used to calculate local prayer times and is never stored or transmitted.';
+        return 'Your location is used to calculate local prayer times. Depending on platform, it may be sent to the prayer times service or an IP-based location service.';
       case AppLanguage.arabic:
-        return 'يُستخدم موقعك فقط لحساب أوقات الصلاة المحلية ولا يتم تخزينه أو إرساله.';
+        return 'يُستخدم موقعك لحساب أوقات الصلاة المحلية، وقد يتم إرساله حسب المنصة إلى خدمة أوقات الصلاة أو إلى خدمة تحديد الموقع عبر عنوان IP.';
       case AppLanguage.german:
-        return 'Dein Standort wird nur zur Berechnung der lokalen Gebetszeiten genutzt und nie gespeichert oder weitergegeben.';
+        return 'Dein Standort wird zur Berechnung lokaler Gebetszeiten genutzt und kann je nach Plattform an den Gebetszeiten-Dienst oder einen IP-basierten Standortdienst gesendet werden.';
     }
   }
 
