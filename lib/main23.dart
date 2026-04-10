@@ -1009,6 +1009,7 @@ class _QuranPageState extends State<QuranPage> {
     });
   }
 
+  // ignore: unused_element
   void _showLanguageDialog() {
     showDialog(
       context: context,
@@ -1267,6 +1268,7 @@ class FullSurahPage extends StatefulWidget {
 
 class _FullSurahPageState extends State<FullSurahPage> {
   final PageController _pageController = PageController();
+  // ignore: unused_field
   int _currentPageIndex = 0;
   bool isBookmarked = false;
   Map<String, Color> highlightedVerses = {}; // "surah_verse" -> Color
@@ -1752,6 +1754,7 @@ class _FullSurahPageState extends State<FullSurahPage> {
     );
   }
 
+  // ignore: unused_element
   List<InlineSpan> _buildVerses(List<Map<String, dynamic>> verses) {
     List<InlineSpan> spans = [];
 

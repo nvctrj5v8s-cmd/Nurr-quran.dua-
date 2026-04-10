@@ -5,8 +5,360 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
+const Map<String, int> arabicSurahStartPages = {
+  'الفاتحة': 1,
+  'البقرة': 2,
+  'آل عمران': 50,
+  'النساء': 77,
+  'المائدة': 106,
+  'الأنعام': 128,
+  'الأعراف': 151,
+  'الأنفال': 177,
+  'التوبة': 187,
+  'يونس': 208,
+  'هود': 221,
+  'يوسف': 235,
+  'الرعد': 249,
+  'إبراهيم': 255,
+  'الحجر': 262,
+  'النحل': 267,
+  'الإسراء': 282,
+  'الكهف': 293,
+  'مريم': 305,
+  'طه': 312,
+  'الأنبياء': 322,
+  'الحج': 332,
+  'المؤمنون': 342,
+  'النور': 350,
+  'الفرقان': 359,
+  'الشعراء': 367,
+  'النمل': 377,
+  'القصص': 385,
+  'العنكبوت': 396,
+  'الروم': 404,
+  'لقمان': 411,
+  'السجدة': 415,
+  'الأحزاب': 418,
+  'سبأ': 428,
+  'فاطر': 434,
+  'يس': 440,
+  'الصافات': 446,
+  'ص': 453,
+  'الزمر': 458,
+  'غافر': 467,
+  'فصلت': 477,
+  'الشورى': 483,
+  'الزخرف': 489,
+  'الدخان': 496,
+  'الجاثية': 499,
+  'الأحقاف': 502,
+  'محمد': 507,
+  'الفتح': 511,
+  'الحجرات': 515,
+  'ق': 518,
+  'الذاريات': 520,
+  'الطور': 523,
+  'النجم': 526,
+  'القمر': 528,
+  'الرحمن': 531,
+  'الواقعة': 534,
+  'الحديد': 537,
+  'المجادلة': 542,
+  'الحشر': 545,
+  'الممتحنة': 549,
+  'الصف': 551,
+  'الجمعة': 553,
+  'المنافقون': 554,
+  'التغابن': 556,
+  'الطلاق': 558,
+  'التحريم': 560,
+  'الملك': 562,
+  'القلم': 564,
+  'الحاقة': 566,
+  'المعارج': 568,
+  'نوح': 570,
+  'الجن': 572,
+  'المزمل': 574,
+  'المدثر': 575,
+  'القيامة': 577,
+  'الإنسان': 578,
+  'المرسلات': 580,
+  'النبأ': 582,
+  'النازعات': 583,
+  'عبس': 585,
+  'التكوير': 586,
+  'الانفطار': 587,
+  'المطففين': 587,
+  'الانشقاق': 589,
+  'البروج': 590,
+  'الطارق': 591,
+  'الأعلى': 591,
+  'الغاشية': 592,
+  'الفجر': 593,
+  'البلد': 594,
+  'الشمس': 595,
+  'الليل': 595,
+  'الضحى': 596,
+  'الشرح': 596,
+  'التين': 597,
+  'العلق': 597,
+  'القدر': 598,
+  'البينة': 598,
+  'الزلزلة': 599,
+  'العاديات': 599,
+  'القارعة': 600,
+  'التكاثر': 600,
+  'العصر': 601,
+  'الهمزة': 601,
+  'الفيل': 601,
+  'قريش': 602,
+  'الماعون': 602,
+  'الكوثر': 602,
+  'الكافرون': 603,
+  'النصر': 603,
+  'المسد': 603,
+  'الإخلاص': 604,
+  'الفلق': 604,
+  'الناس': 604,
+};
+
+class ArabicMushafNavigatorPage extends StatefulWidget {
+  final Color themeColor;
+
+  const ArabicMushafNavigatorPage({super.key, this.themeColor = Colors.teal});
+
+  @override
+  State<ArabicMushafNavigatorPage> createState() =>
+      _ArabicMushafNavigatorPageState();
+}
+
+class _ArabicMushafNavigatorPageState extends State<ArabicMushafNavigatorPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+  bool _showMushaf = false;
+  int _selectedPage = 1;
+  String? _pressedSurah;
+
+  List<MapEntry<String, int>> get _allSurahs =>
+      arabicSurahStartPages.entries.toList(growable: false);
+
+  List<MapEntry<String, int>> get _filteredSurahs {
+    final q = _query.trim();
+    if (q.isEmpty) {
+      return _allSurahs;
+    }
+
+    return _allSurahs
+        .where((entry) {
+          final surahName = entry.key;
+          final page = entry.value;
+          return surahName.contains(q) || page.toString().contains(q);
+        })
+        .toList(growable: false);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _openSurah(int startPage) {
+    setState(() {
+      _selectedPage = startPage;
+      _showMushaf = true;
+    });
+  }
+
+  void _backToSurahList() {
+    setState(() {
+      _showMushaf = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 320),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        final slide = Tween<Offset>(
+          begin: const Offset(0, 0.03),
+          end: Offset.zero,
+        ).animate(animation);
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(position: slide, child: child),
+        );
+      },
+      child: _showMushaf
+          ? MushafReaderPage(
+              key: const ValueKey('mushaf_view'),
+              themeColor: widget.themeColor,
+              uiLanguageCode: 'ar',
+              initialPage: _selectedPage,
+              onShowSurahList: _backToSurahList,
+            )
+          : Scaffold(
+              key: const ValueKey('surah_list_view'),
+              backgroundColor: const Color(0xFF111111),
+              body: SafeArea(
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                      child: TextField(
+                        controller: _searchController,
+                        textDirection: TextDirection.rtl,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'ابحث باسم السورة أو رقم الصفحة',
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: Colors.white70,
+                          ),
+                          suffixIcon: _query.isEmpty
+                              ? null
+                              : IconButton(
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _query = '';
+                                    });
+                                  },
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                          filled: true,
+                          fillColor: const Color(0xFF1E1E1E),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: widget.themeColor.withOpacity(0.35),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(
+                              color: widget.themeColor,
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            _query = value;
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: _filteredSurahs.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'لا توجد نتائج',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 18,
+                                ),
+                              ),
+                            )
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                              itemCount: _filteredSurahs.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final entry = _filteredSurahs[index];
+                                final isPressed = _pressedSurah == entry.key;
+
+                                return AnimatedScale(
+                                  scale: isPressed ? 0.975 : 1,
+                                  duration: const Duration(milliseconds: 120),
+                                  curve: Curves.easeOut,
+                                  child: Material(
+                                    color: const Color(0xFF1C1C1C),
+                                    borderRadius: BorderRadius.circular(14),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(14),
+                                      splashColor: widget.themeColor
+                                          .withOpacity(0.18),
+                                      highlightColor: widget.themeColor
+                                          .withOpacity(0.09),
+                                      onHighlightChanged: (highlighted) {
+                                        setState(() {
+                                          _pressedSurah = highlighted
+                                              ? entry.key
+                                              : null;
+                                        });
+                                      },
+                                      onTap: () => _openSurah(entry.value),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 14,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
+                                          border: Border.all(
+                                            color: widget.themeColor
+                                                .withOpacity(
+                                                  isPressed ? 0.7 : 0.35,
+                                                ),
+                                          ),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                entry.key,
+                                                textDirection:
+                                                    TextDirection.rtl,
+                                                textAlign: TextAlign.right,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              '${entry.value}',
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
+
 /// Mushaf Reader - Zeigt Quran-Seiten wie ein gedrucktes Buch
-/// 
+///
 /// Features:
 /// - 604 Seiten als Bilder (PNG/JPG)
 /// - RTL: Startseite rechts, Wischen nach links = nächste Seite
@@ -17,12 +369,14 @@ class MushafReaderPage extends StatefulWidget {
   final Color themeColor;
   final VoidCallback? onShowSurahList;
   final String uiLanguageCode;
-  
+  final int? initialPage;
+
   const MushafReaderPage({
     super.key,
     this.themeColor = Colors.teal,
     this.onShowSurahList,
     this.uiLanguageCode = 'de',
+    this.initialPage,
   });
 
   @override
@@ -157,9 +511,32 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     _loadSavedPage();
     _loadBookmarks();
   }
-  
+
   Future<void> _loadSavedPage() async {
-    int savedPage = 1;
+    int savedPage = widget.initialPage?.clamp(1, _totalPages) ?? 1;
+
+    if (widget.initialPage != null) {
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _currentPage = savedPage;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        final physicalIndex = _convertToPhysicalIndex(savedPage);
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(physicalIndex);
+        }
+        _savePage();
+        _preloadPages(savedPage);
+      });
+      return;
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -168,8 +545,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
 
       if (rawPage != null) {
         savedPage = version >= _pageNumberingVersion
-        ? rawPage.clamp(1, _totalPages)
-        : (rawPage - 1).clamp(1, _totalPages);
+            ? rawPage.clamp(1, _totalPages)
+            : (rawPage - 1).clamp(1, _totalPages);
       }
     } catch (e) {
       debugPrint('Fehler beim Laden der Seite: $e');
@@ -194,7 +571,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       _preloadPages(savedPage);
     });
   }
-  
+
   /// Konvertiere sichtbare Seite (1-602) zu physischem Index für RTL.
   int _convertToPhysicalIndex(int visiblePage) {
     if (_isRtlBookLayout) {
@@ -210,15 +587,11 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     }
     return physicalIndex + 1;
   }
-  
+
   /// Preload aktuelle Seite + 2 Nachbarn für smooth scrolling
   void _preloadPages(int visiblePage) {
-    final pagesToPreload = [
-      visiblePage - 1,
-      visiblePage,
-      visiblePage + 1,
-    ];
-    
+    final pagesToPreload = [visiblePage - 1, visiblePage, visiblePage + 1];
+
     for (final page in pagesToPreload) {
       if (page >= 1 && page <= _totalPages) {
         final pageNum = _formatPageNumber(page);
@@ -236,13 +609,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       }
     }
   }
-  
+
   /// Formatiere Seitenzahl für URL
   String _formatPageNumber(int visiblePage) {
     final assetPageNumber = visiblePage + _skippedAssetPages;
     return assetPageNumber.toString().padLeft(3, '0');
   }
-  
+
   /// Speichere aktuelle Seite persistent
   Future<void> _savePage() async {
     try {
@@ -264,10 +637,12 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         final decoded = json.decode(jsonStr) as Map<String, dynamic>;
         if (mounted) {
           setState(() {
-            _bookmarks = decoded.map((k, v) => MapEntry(
-              k,
-              (v as List).map((e) => (e as num).toInt()).toList(),
-            ));
+            _bookmarks = decoded.map(
+              (k, v) => MapEntry(
+                k,
+                (v as List).map((e) => (e as num).toInt()).toList(),
+              ),
+            );
           });
         }
       }
@@ -347,13 +722,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       ),
     );
   }
-  
+
   @override
   void dispose() {
     _pageController.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -363,19 +738,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           child: _buildPageView(),
         ),
         if (_showUI) ...[
-          Positioned(
-            top: 0, left: 0, right: 0,
-            child: _buildAppBarOverlay(),
-          ),
-          Positioned(
-            bottom: 0, left: 0, right: 0,
-            child: _buildBottomBar(),
-          ),
+          Positioned(top: 0, left: 0, right: 0, child: _buildAppBarOverlay()),
+          Positioned(bottom: 0, left: 0, right: 0, child: _buildBottomBar()),
         ],
       ],
     );
   }
-  
+
   /// Overlay AppBar mit Seitenzahl und Aktionen
   Widget _buildAppBarOverlay() {
     return Container(
@@ -432,7 +801,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       ),
     );
   }
-  
+
   /// Haupt-PageView mit RTL und Zoom
   Widget _buildPageView() {
     if (kIsWeb) {
@@ -450,7 +819,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
                 .clamp(900.0, 1800.0)
                 .round();
-        
+
         final ImageProvider<Object> imageProvider = kIsWeb
             ? AssetImage(imagePath)
             : ResizeImage(AssetImage(imagePath), width: targetWidth);
@@ -458,31 +827,35 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         return PhotoViewGalleryPageOptions(
           // Decode at device-appropriate width for better speed/memory.
           imageProvider: imageProvider,
-          
+
           // Start at contained size so horizontal swipe switches pages directly.
           initialScale: PhotoViewComputedScale.contained,
-          
+
           // Keep min at contained to avoid accidental underscale panning.
           minScale: PhotoViewComputedScale.contained,
-          
+
           // Max: 3x zoom
           maxScale: PhotoViewComputedScale.covered * 3.0,
 
           // Keep rendering lightweight on lower-end devices.
           filterQuality: FilterQuality.low,
-          
+
           // Hero animation für smooth transitions
           heroAttributes: PhotoViewHeroAttributes(
             tag: 'mushaf_page_$visiblePage',
           ),
-          
+
           // Error placeholder
           errorBuilder: (context, error, stackTrace) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.broken_image, size: 64, color: Colors.brown.shade400),
+                  Icon(
+                    Icons.broken_image,
+                    size: 64,
+                    color: Colors.brown.shade400,
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     _imageLoadError(visiblePage),
@@ -495,33 +868,31 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           },
         );
       },
-      
+
       itemCount: _totalPages,
       loadingBuilder: (context, event) {
         return const SizedBox.shrink();
       },
-      
-      backgroundDecoration: const BoxDecoration(
-        color: Colors.black,
-      ),
-      
+
+      backgroundDecoration: const BoxDecoration(color: Colors.black),
+
       pageController: _pageController,
-      
+
       // Callback wenn Seite gewechselt wird
       onPageChanged: (physicalIndex) {
         final visiblePage = _convertToLogicalPage(physicalIndex);
-        
+
         setState(() {
           _currentPage = visiblePage;
         });
-        
+
         // Speichere neue Seite
         _savePage();
-        
+
         // Preload Nachbarseiten
         _preloadPages(visiblePage);
       },
-      
+
       scrollDirection: Axis.horizontal,
     );
   }
@@ -582,7 +953,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       },
     );
   }
-  
+
   /// Bottom Navigation Bar mit Seitenzahl und Navigation
   Widget _buildBottomBar() {
     return Container(
@@ -606,7 +977,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
             label: _previousLabel(),
             onPressed: _currentPage > 1 ? _goToPreviousPage : null,
           ),
-          
+
           // Seitenzahl
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -624,7 +995,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
               ),
             ),
           ),
-          
+
           // Nächste Seite (nach links in RTL)
           _buildNavButton(
             icon: _isRtlBookLayout ? Icons.arrow_back : Icons.arrow_forward,
@@ -635,7 +1006,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       ),
     );
   }
-  
+
   /// Navigation Button
   Widget _buildNavButton({
     required IconData icon,
@@ -643,7 +1014,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     required VoidCallback? onPressed,
   }) {
     final isEnabled = onPressed != null;
-    
+
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 20),
@@ -655,20 +1026,18 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
         backgroundColor: isEnabled ? Colors.white : Colors.grey.shade400,
         foregroundColor: isEnabled ? widget.themeColor : Colors.grey.shade600,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: isEnabled ? 2 : 0,
       ),
     );
   }
-  
+
   /// Gehe zur nächsten Seite (nach links wischen)
   void _goToNextPage() {
     if (_currentPage < _totalPages) {
       final nextLogicalPage = (_currentPage + 1).clamp(1, _totalPages);
       final nextPhysicalIndex = _convertToPhysicalIndex(nextLogicalPage);
-      
+
       _pageController.animateToPage(
         nextPhysicalIndex,
         duration: const Duration(milliseconds: 300),
@@ -676,13 +1045,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       );
     }
   }
-  
+
   /// Gehe zur vorherigen Seite (nach rechts wischen)
   void _goToPreviousPage() {
     if (_currentPage > 1) {
       final prevLogicalPage = (_currentPage - 1).clamp(1, _totalPages);
       final prevPhysicalIndex = _convertToPhysicalIndex(prevLogicalPage);
-      
+
       _pageController.animateToPage(
         prevPhysicalIndex,
         duration: const Duration(milliseconds: 300),
@@ -690,11 +1059,11 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       );
     }
   }
-  
+
   /// Dialog: Springe zu bestimmter Seite
   void _showPageJumpDialog() {
     final controller = TextEditingController(text: '$_currentPage');
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -727,10 +1096,19 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       ),
     );
   }
-  
-  /// Springe zu eingegebener Seite
+
+  /// Springe zu eingegebener Seite or Arabic Surah name (in Arabic UI mode)
   void _jumpToPage(String input) {
-    final pageNumber = int.tryParse(input);
+    int? pageNumber;
+
+    // For Arabic UI, try to match Arabic Surah names first
+    if (_isArabicUi) {
+      pageNumber = arabicSurahStartPages[input.trim()];
+    }
+
+    // If no Arabic Surah match or not Arabic UI, try parsing as page number
+    pageNumber ??= int.tryParse(input);
+
     if (pageNumber == null || pageNumber < 1 || pageNumber > _totalPages) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -743,13 +1121,12 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     final physicalIndex = _convertToPhysicalIndex(pageNumber);
     _pageController.jumpToPage(physicalIndex);
     setState(() {
-      _currentPage = pageNumber;
+      _currentPage = pageNumber!;
     });
     _savePage();
     _preloadPages(pageNumber);
     Navigator.pop(context);
   }
-  
 }
 
 // ==================== BOOKMARK SAVE SHEET ====================
@@ -780,14 +1157,31 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
   bool get _isAr => widget.uiLanguageCode == 'ar';
   bool get _isEn => widget.uiLanguageCode == 'en';
 
-  String get _title =>
-      _isAr ? '\u062d\u0641\u0638 \u0635\u0641\u062d\u0629 ${widget.currentPage}' : _isEn ? 'Save Page ${widget.currentPage}' : 'Seite ${widget.currentPage} speichern';
-  String get _newCategoryHint =>
-      _isAr ? '\u0627\u0633\u0645 \u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u062c\u062f\u064a\u062f\u0629' : _isEn ? 'New category name' : 'Name der neuen Kategorie';
-  String get _addLabel => _isAr ? '\u0625\u0636\u0627\u0641\u0629' : _isEn ? 'Add' : 'Hinzufügen';
-  String get _doneLabel => _isAr ? '\u062a\u0645' : _isEn ? 'Done' : 'Fertig';
-  String get _noCategoriesHint =>
-      _isAr ? '\u0623\u0636\u0641 \u0641\u0626\u0629 \u062c\u062f\u064a\u062f\u0629 \u0623\u062f\u0646\u0627\u0647' : _isEn ? 'Add a new category below' : 'Neue Kategorie unten hinzufügen';
+  String get _title => _isAr
+      ? '\u062d\u0641\u0638 \u0635\u0641\u062d\u0629 ${widget.currentPage}'
+      : _isEn
+      ? 'Save Page ${widget.currentPage}'
+      : 'Seite ${widget.currentPage} speichern';
+  String get _newCategoryHint => _isAr
+      ? '\u0627\u0633\u0645 \u0627\u0644\u0641\u0626\u0629 \u0627\u0644\u062c\u062f\u064a\u062f\u0629'
+      : _isEn
+      ? 'New category name'
+      : 'Name der neuen Kategorie';
+  String get _addLabel => _isAr
+      ? '\u0625\u0636\u0627\u0641\u0629'
+      : _isEn
+      ? 'Add'
+      : 'Hinzufügen';
+  String get _doneLabel => _isAr
+      ? '\u062a\u0645'
+      : _isEn
+      ? 'Done'
+      : 'Fertig';
+  String get _noCategoriesHint => _isAr
+      ? '\u0623\u0636\u0641 \u0641\u0626\u0629 \u062c\u062f\u064a\u062f\u0629 \u0623\u062f\u0646\u0627\u0647'
+      : _isEn
+      ? 'Add a new category below'
+      : 'Neue Kategorie unten hinzufügen';
 
   @override
   void initState() {
@@ -878,11 +1272,14 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
                     widget.onSave(_local);
                     Navigator.pop(context);
                   },
-                  child: Text(_doneLabel,
-                      style: TextStyle(
-                          color: widget.themeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16)),
+                  child: Text(
+                    _doneLabel,
+                    style: TextStyle(
+                      color: widget.themeColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -893,16 +1290,20 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
             child: _local.isEmpty
                 ? Padding(
                     padding: const EdgeInsets.all(20),
-                    child: Text(_noCategoriesHint,
-                        style: const TextStyle(color: Colors.white54),
-                        textAlign: TextAlign.center),
+                    child: Text(
+                      _noCategoriesHint,
+                      style: const TextStyle(color: Colors.white54),
+                      textAlign: TextAlign.center,
+                    ),
                   )
                 : ListView.builder(
                     shrinkWrap: true,
                     itemCount: _local.keys.length,
                     itemBuilder: (_, i) {
                       final cat = _local.keys.elementAt(i);
-                      final isChecked = _local[cat]!.contains(widget.currentPage);
+                      final isChecked = _local[cat]!.contains(
+                        widget.currentPage,
+                      );
                       return ListTile(
                         leading: Checkbox(
                           value: isChecked,
@@ -911,12 +1312,23 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
                           side: BorderSide(color: widget.themeColor),
                           onChanged: (_) => _toggle(cat),
                         ),
-                        title: Text(cat,
-                            style: const TextStyle(
-                                color: Colors.white, fontSize: 16)),
+                        title: Text(
+                          cat,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                        ),
                         subtitle: Text(
-                          '${_local[cat]!.length} ${_isAr ? "\u0635\u0641\u062d\u0629" : _isEn ? "pages" : "Seiten"}',
-                          style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          '${_local[cat]!.length} ${_isAr
+                              ? "\u0635\u0641\u062d\u0629"
+                              : _isEn
+                              ? "pages"
+                              : "Seiten"}',
+                          style: const TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                          ),
                         ),
                         onTap: () => _toggle(cat),
                       );
@@ -926,7 +1338,11 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
           // Add new category
           Padding(
             padding: EdgeInsets.fromLTRB(
-                16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 16),
+              16,
+              8,
+              16,
+              MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -943,7 +1359,9 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 12),
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                     ),
                     onSubmitted: (_) => _addCategory(),
                   ),
@@ -955,12 +1373,17 @@ class _BookmarkSaveSheetState extends State<_BookmarkSaveSheet> {
                     backgroundColor: widget.themeColor,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  child: Text(_addLabel,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    _addLabel,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -999,20 +1422,36 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
   bool get _isAr => widget.uiLanguageCode == 'ar';
   bool get _isEn => widget.uiLanguageCode == 'en';
 
-  String get _pageTitle =>
-      _isAr ? '\u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629' : _isEn ? 'Bookmarks' : 'Lesezeichen';
-  String get _emptyHint =>
-      _isAr ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0625\u0634\u0627\u0631\u0627\u062a \u0628\u0639\u062f.\n\u0627\u0636\u063a\u0637 \u0639\u0644\u0649 \u0632\u0631 \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0623\u062b\u0646\u0627\u0621 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0635\u062d\u0641.'
-          : _isEn
-              ? 'No bookmarks yet.\nTap the bookmark icon while reading.'
-              : 'Noch keine Lesezeichen.\nTippe auf das Lesezeichen-Symbol beim Lesen.';
-  String get _newCatHint =>
-      _isAr ? '\u0627\u0633\u0645 \u0641\u0626\u0629 \u062c\u062f\u064a\u062f\u0629' : _isEn ? 'New category name' : 'Neue Kategorie';
-  String get _addLabel => _isAr ? '\u0625\u0636\u0627\u0641\u0629' : _isEn ? 'Add' : 'Hinzufügen';
-  String get _goToPageLabel =>
-      _isAr ? '\u0627\u0646\u062a\u0642\u0644' : _isEn ? 'Go' : 'Open';
-  String get _deleteLabel =>
-      _isAr ? '\u062d\u0630\u0641' : _isEn ? 'Delete' : 'Löschen';
+  String get _pageTitle => _isAr
+      ? '\u0627\u0644\u0625\u0634\u0627\u0631\u0627\u062a \u0627\u0644\u0645\u0631\u062c\u0639\u064a\u0629'
+      : _isEn
+      ? 'Bookmarks'
+      : 'Lesezeichen';
+  String get _emptyHint => _isAr
+      ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0625\u0634\u0627\u0631\u0627\u062a \u0628\u0639\u062f.\n\u0627\u0636\u063a\u0637 \u0639\u0644\u0649 \u0632\u0631 \u0627\u0644\u0625\u0634\u0627\u0631\u0629 \u0623\u062b\u0646\u0627\u0621 \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0645\u0635\u062d\u0641.'
+      : _isEn
+      ? 'No bookmarks yet.\nTap the bookmark icon while reading.'
+      : 'Noch keine Lesezeichen.\nTippe auf das Lesezeichen-Symbol beim Lesen.';
+  String get _newCatHint => _isAr
+      ? '\u0627\u0633\u0645 \u0641\u0626\u0629 \u062c\u062f\u064a\u062f\u0629'
+      : _isEn
+      ? 'New category name'
+      : 'Neue Kategorie';
+  String get _addLabel => _isAr
+      ? '\u0625\u0636\u0627\u0641\u0629'
+      : _isEn
+      ? 'Add'
+      : 'Hinzufügen';
+  String get _goToPageLabel => _isAr
+      ? '\u0627\u0646\u062a\u0642\u0644'
+      : _isEn
+      ? 'Go'
+      : 'Open';
+  String get _deleteLabel => _isAr
+      ? '\u062d\u0630\u0641'
+      : _isEn
+      ? 'Delete'
+      : 'Löschen';
 
   @override
   void initState() {
@@ -1057,8 +1496,10 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
       appBar: AppBar(
         backgroundColor: widget.themeColor,
         foregroundColor: Colors.white,
-        title: Text(_pageTitle,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          _pageTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(56),
           child: Padding(
@@ -1079,7 +1520,9 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                         borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                     ),
                     onSubmitted: (_) => _addCategory(),
                   ),
@@ -1093,7 +1536,8 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                     backgroundColor: Colors.white,
                     foregroundColor: widget.themeColor,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ],
@@ -1123,7 +1567,9 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
                     side: BorderSide(
-                        color: widget.themeColor.withOpacity(0.35), width: 1.5),
+                      color: widget.themeColor.withOpacity(0.35),
+                      width: 1.5,
+                    ),
                   ),
                   child: ExpansionTile(
                     iconColor: widget.themeColor,
@@ -1132,21 +1578,32 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                     title: Text(
                       cat,
                       style: TextStyle(
-                          color: widget.themeColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16),
+                        color: widget.themeColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                     subtitle: Text(
-                      '${pages.length} ${_isAr ? "\u0635\u0641\u062d\u0629" : _isEn ? "pages" : "Seiten"}',
-                      style: const TextStyle(color: Colors.white38, fontSize: 12),
+                      '${pages.length} ${_isAr
+                          ? "\u0635\u0641\u062d\u0629"
+                          : _isEn
+                          ? "pages"
+                          : "Seiten"}',
+                      style: const TextStyle(
+                        color: Colors.white38,
+                        fontSize: 12,
+                      ),
                     ),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const SizedBox(width: 4),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline,
-                              color: Colors.redAccent, size: 20),
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.redAccent,
+                            size: 20,
+                          ),
                           tooltip: _deleteLabel,
                           onPressed: () => showDialog(
                             context: context,
@@ -1156,30 +1613,35 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                                 _isAr
                                     ? '\u062d\u0630\u0641 "\$cat"?'
                                     : _isEn
-                                        ? 'Delete "$cat"?'
-                                        : '"$cat" löschen?',
+                                    ? 'Delete "$cat"?'
+                                    : '"$cat" löschen?',
                                 style: const TextStyle(color: Colors.white),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
                                   child: Text(
-                                      _isAr
-                                          ? '\u0625\u0644\u063a\u0627\u0621'
-                                          : _isEn
-                                              ? 'Cancel'
-                                              : 'Abbrechen',
-                                      style: const TextStyle(
-                                          color: Colors.white54)),
+                                    _isAr
+                                        ? '\u0625\u0644\u063a\u0627\u0621'
+                                        : _isEn
+                                        ? 'Cancel'
+                                        : 'Abbrechen',
+                                    style: const TextStyle(
+                                      color: Colors.white54,
+                                    ),
+                                  ),
                                 ),
                                 TextButton(
                                   onPressed: () {
                                     Navigator.pop(context);
                                     _removeCategory(cat);
                                   },
-                                  child: Text(_deleteLabel,
-                                      style: const TextStyle(
-                                          color: Colors.redAccent)),
+                                  child: Text(
+                                    _deleteLabel,
+                                    style: const TextStyle(
+                                      color: Colors.redAccent,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1195,34 +1657,44 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                                 _isAr
                                     ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0635\u0641\u062d\u0627\u062a \u0645\u062d\u0641\u0648\u0638\u0629'
                                     : _isEn
-                                        ? 'No pages saved here'
-                                        : 'Keine Seiten gespeichert',
+                                    ? 'No pages saved here'
+                                    : 'Keine Seiten gespeichert',
                                 style: const TextStyle(
-                                    color: Colors.white38, fontSize: 13),
+                                  color: Colors.white38,
+                                  fontSize: 13,
+                                ),
                               ),
-                            )
+                            ),
                           ]
                         : pages
-                            .map((page) => ListTile(
+                              .map(
+                                (page) => ListTile(
                                   contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 20, vertical: 2),
+                                    horizontal: 20,
+                                    vertical: 2,
+                                  ),
                                   leading: Container(
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: widget.themeColor.withOpacity(0.15),
+                                      color: widget.themeColor.withOpacity(
+                                        0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                          color:
-                                              widget.themeColor.withOpacity(0.4)),
+                                        color: widget.themeColor.withOpacity(
+                                          0.4,
+                                        ),
+                                      ),
                                     ),
                                     child: Center(
                                       child: Text(
                                         '$page',
                                         style: TextStyle(
-                                            color: widget.themeColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14),
+                                          color: widget.themeColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1230,10 +1702,12 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                                     _isAr
                                         ? '\u0635\u0641\u062d\u0629 $page'
                                         : _isEn
-                                            ? 'Page $page'
-                                            : 'Seite $page',
+                                        ? 'Page $page'
+                                        : 'Seite $page',
                                     style: const TextStyle(
-                                        color: Colors.white, fontSize: 15),
+                                      color: Colors.white,
+                                      fontSize: 15,
+                                    ),
                                   ),
                                   trailing: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -1246,24 +1720,32 @@ class _BookmarksViewPageState extends State<_BookmarksViewPage> {
                                           foregroundColor: Colors.black,
                                           minimumSize: const Size(60, 34),
                                           shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8)),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
                                         ),
-                                        child: Text(_goToPageLabel,
-                                            style: const TextStyle(
-                                                fontWeight: FontWeight.bold)),
+                                        child: Text(
+                                          _goToPageLabel,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                       ),
                                       const SizedBox(width: 6),
                                       IconButton(
-                                        icon: const Icon(Icons.close,
-                                            color: Colors.white38, size: 18),
-                                        onPressed: () =>
-                                            _removePage(cat, page),
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: Colors.white38,
+                                          size: 18,
+                                        ),
+                                        onPressed: () => _removePage(cat, page),
                                       ),
                                     ],
                                   ),
-                                ))
-                            .toList(),
+                                ),
+                              )
+                              .toList(),
                   ),
                 );
               }).toList(),

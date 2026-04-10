@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'mushaf_reader_page.dart';
 import 'german_reader_page.dart';
+import 'dua_page.dart';
 
 // ==================== SPRACH-MODELL ====================
 enum QuranLanguage {
@@ -117,7 +118,10 @@ class _MyAppState extends State<MyApp> {
     });
   }
 
-  static void updateBackground(BuildContext context, AppBackground newBackground) {
+  static void updateBackground(
+    BuildContext context,
+    AppBackground newBackground,
+  ) {
     currentBackground = newBackground;
     backgroundNotifier.value = newBackground;
     context.findAncestorStateOfType<_MyAppState>()?.setState(() {
@@ -168,7 +172,8 @@ class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key, this.isFirstTime = false});
 
   @override
-  State<LanguageSelectionScreen> createState() => _LanguageSelectionScreenState();
+  State<LanguageSelectionScreen> createState() =>
+      _LanguageSelectionScreenState();
 }
 
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
@@ -252,20 +257,26 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isSelected
-                              ? [_MyAppState.currentTheme.color, Colors.orange.shade700]
+                              ? [
+                                  _MyAppState.currentTheme.color,
+                                  Colors.orange.shade700,
+                                ]
                               : [Colors.grey.shade800, Colors.grey.shade900],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? _MyAppState.currentTheme.color : Colors.grey.shade700,
+                          color: isSelected
+                              ? _MyAppState.currentTheme.color
+                              : Colors.grey.shade700,
                           width: isSelected ? 3 : 2,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: _MyAppState.currentTheme.color.withOpacity(0.4),
+                                  color: _MyAppState.currentTheme.color
+                                      .withOpacity(0.4),
                                   blurRadius: 15,
                                   spreadRadius: 3,
                                 ),
@@ -274,10 +285,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                       ),
                       child: Row(
                         children: [
-                          Text(
-                            lang.flag,
-                            style: const TextStyle(fontSize: 40),
-                          ),
+                          Text(lang.flag, style: const TextStyle(fontSize: 40)),
                           const SizedBox(width: 20),
                           Expanded(
                             child: Text(
@@ -285,7 +293,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 22,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
                               ),
                             ),
                           ),
@@ -337,7 +347,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                 ElevatedButton(
                   onPressed: selectedLanguage != null ? _saveLanguage : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedLanguage != null ? _MyAppState.currentTheme.color : Colors.grey,
+                    backgroundColor: selectedLanguage != null
+                        ? _MyAppState.currentTheme.color
+                        : Colors.grey,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 60,
@@ -423,15 +435,14 @@ class _MainPageState extends State<MainPage> {
     final visiblePage = rawSavedPage == null
         ? 1
         : numberingVersion >= 2
-            ? rawSavedPage.clamp(1, 602)
-            : (rawSavedPage - 1).clamp(1, 602);
+        ? rawSavedPage.clamp(1, 602)
+        : (rawSavedPage - 1).clamp(1, 602);
     final startPage = (visiblePage - 1).clamp(1, 602);
     final endPage = (visiblePage + 3).clamp(1, 602);
     final mediaQuery = MediaQuery.of(context);
-    final targetWidth =
-        (mediaQuery.size.width * mediaQuery.devicePixelRatio)
-            .clamp(900.0, 1800.0)
-            .round();
+    final targetWidth = (mediaQuery.size.width * mediaQuery.devicePixelRatio)
+        .clamp(900.0, 1800.0)
+        .round();
 
     for (int page = startPage; page <= endPage; page++) {
       final pageNum = (page + 2).toString().padLeft(3, '0');
@@ -462,19 +473,24 @@ class _MainPageState extends State<MainPage> {
               [
                 HomePage(appLanguage: _appLanguage),
                 _appLanguage == AppLanguage.german
-                    ? GermanReaderPage(themeColor: _MyAppState.currentTheme.color)
+                    ? GermanReaderPage(
+                        themeColor: _MyAppState.currentTheme.color,
+                      )
                     : _appLanguage == AppLanguage.english
-                        ? MushafReaderPage(
-                            themeColor: _MyAppState.currentTheme.color,
-                            uiLanguageCode: _appLanguage.code,
-                          )
-                        : MushafReaderPage(
-                            themeColor: _MyAppState.currentTheme.color,
-                            uiLanguageCode: _appLanguage.code,
-                          ),
+                    ? MushafReaderPage(
+                        themeColor: _MyAppState.currentTheme.color,
+                        uiLanguageCode: _appLanguage.code,
+                      )
+                    : ArabicMushafNavigatorPage(
+                        themeColor: _MyAppState.currentTheme.color,
+                      ),
                 PrayerTimesPage(appLanguage: _appLanguage),
+                DuaPage(
+                  themeColor: _MyAppState.currentTheme.color,
+                  langCode: _appLanguage.code,
+                ),
                 const NamesOfAllahPage(),
-                const SettingsPage()
+                const SettingsPage(),
               ][tab],
             ],
           ),
@@ -486,9 +502,26 @@ class _MainPageState extends State<MainPage> {
             unselectedItemColor: Colors.white70,
             type: BottomNavigationBarType.fixed,
             items: [
-              BottomNavigationBarItem(icon: const Icon(Icons.home), label: _navLabel('Home', 'Home', 'الرئيسية')),
-              BottomNavigationBarItem(icon: const Icon(Icons.book), label: _navLabel('Quran', 'Quran', 'القرآن')),
-              BottomNavigationBarItem(icon: const Icon(Icons.access_time_filled), label: _navLabel('Gebetszeiten', 'Prayer Times', 'أوقات الصلاة')),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.home),
+                label: _navLabel('Home', 'Home', 'الرئيسية'),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.book),
+                label: _navLabel('Quran', 'Quran', 'القرآن'),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.access_time_filled),
+                label: _navLabel(
+                  'Gebetszeiten',
+                  'Prayer Times',
+                  'أوقات الصلاة',
+                ),
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.favorite),
+                label: _navLabel('Dua', 'Dua', 'الدعاء'),
+              ),
               BottomNavigationBarItem(
                 icon: Container(
                   width: 24,
@@ -500,13 +533,19 @@ class _MainPageState extends State<MainPage> {
                   child: const Center(
                     child: Text(
                       '99',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
                 label: _navLabel('99 Namen', '99 Names', '99 اسما'),
               ),
-              BottomNavigationBarItem(icon: const Icon(Icons.more_horiz), label: _navLabel('Mehr', 'More', 'المزيد')),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.more_horiz),
+                label: _navLabel('Mehr', 'More', 'المزيد'),
+              ),
             ],
           ),
         );
@@ -570,7 +609,8 @@ class _HomePageState extends State<HomePage> {
     ],
   };
 
-  List<String> get _currentHadiths => hadithsByLanguage[appLanguage] ?? hadithsByLanguage[AppLanguage.german]!;
+  List<String> get _currentHadiths =>
+      hadithsByLanguage[appLanguage] ?? hadithsByLanguage[AppLanguage.german]!;
 
   String get _hadithOfDayTitle {
     switch (appLanguage) {
@@ -638,6 +678,28 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  String get _duaTitle {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Dua Sammlung';
+      case AppLanguage.english:
+        return 'Dua Collection';
+      case AppLanguage.arabic:
+        return 'مجموعة الأدعية';
+    }
+  }
+
+  String get _duaSubtitle {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Öffne die detaillierten Bittgebete nach Kategorien';
+      case AppLanguage.english:
+        return 'Open detailed supplications by category';
+      case AppLanguage.arabic:
+        return 'افتح الأدعية التفصيلية حسب الفئات';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -675,7 +737,7 @@ class _HomePageState extends State<HomePage> {
     final now = DateTime.now();
     final trackingDate = DateTime(now.year, now.month, now.day);
     final heuteString =
-      '${trackingDate.year}-${trackingDate.month.toString().padLeft(2, '0')}-${trackingDate.day.toString().padLeft(2, '0')}';
+        '${trackingDate.year}-${trackingDate.month.toString().padLeft(2, '0')}-${trackingDate.day.toString().padLeft(2, '0')}';
     final gespeichertesDatum = prefs.getString('gebet_datum') ?? '';
 
     if (gespeichertesDatum != heuteString) {
@@ -689,8 +751,9 @@ class _HomePageState extends State<HomePage> {
           5,
           (i) => prefs.getBool('gebet_$i') ?? false,
         );
-        final completed =
-            previousPrayers.where((isChecked) => isChecked).length;
+        final completed = previousPrayers
+            .where((isChecked) => isChecked)
+            .length;
 
         historyRaw[gespeichertesDatum] = {
           'completed': completed,
@@ -699,7 +762,13 @@ class _HomePageState extends State<HomePage> {
         };
 
         final keys = historyRaw.keys.toList()
-          ..sort((a, b) => DateTime.tryParse(a)?.compareTo(DateTime.tryParse(b) ?? DateTime(1900)) ?? -1);
+          ..sort(
+            (a, b) =>
+                DateTime.tryParse(
+                  a,
+                )?.compareTo(DateTime.tryParse(b) ?? DateTime(1900)) ??
+                -1,
+          );
         while (keys.length > 120) {
           historyRaw.remove(keys.removeAt(0));
         }
@@ -744,7 +813,8 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<List<MapEntry<String, Map<String, dynamic>>>> _loadPrayerHistory() async {
+  Future<List<MapEntry<String, Map<String, dynamic>>>>
+  _loadPrayerHistory() async {
     final prefs = await SharedPreferences.getInstance();
     final historyJson = prefs.getString(_prayerHistoryKey);
     final historyRaw = historyJson == null
@@ -754,9 +824,13 @@ class _HomePageState extends State<HomePage> {
     final parsedHistory = <MapEntry<String, Map<String, dynamic>>>[];
     for (final entry in historyRaw.entries) {
       if (entry.value is Map<String, dynamic>) {
-        parsedHistory.add(MapEntry(entry.key, entry.value as Map<String, dynamic>));
+        parsedHistory.add(
+          MapEntry(entry.key, entry.value as Map<String, dynamic>),
+        );
       } else if (entry.value is Map) {
-        parsedHistory.add(MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)));
+        parsedHistory.add(
+          MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)),
+        );
       }
     }
     parsedHistory.sort((a, b) {
@@ -797,7 +871,10 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _MyAppState.currentTheme.color, width: 4),
+                border: Border.all(
+                  color: _MyAppState.currentTheme.color,
+                  width: 4,
+                ),
               ),
               child: Column(
                 children: [
@@ -813,10 +890,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     _prayerTrackerHint,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   const SizedBox(height: 15),
                   ...List.generate(
@@ -886,7 +960,10 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _MyAppState.currentTheme.color, width: 4),
+                border: Border.all(
+                  color: _MyAppState.currentTheme.color,
+                  width: 4,
+                ),
               ),
               child: Column(
                 children: [
@@ -936,7 +1013,10 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.9),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _MyAppState.currentTheme.color, width: 4),
+                  border: Border.all(
+                    color: _MyAppState.currentTheme.color,
+                    width: 4,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -961,6 +1041,70 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 5),
                           Text(
                             _masbahaSubtitle,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      color: _MyAppState.currentTheme.color,
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 25),
+            GestureDetector(
+              onTap: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => DuaPage(
+                      themeColor: _MyAppState.currentTheme.color,
+                      langCode: appLanguage.code,
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _MyAppState.currentTheme.color,
+                    width: 4,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.favorite,
+                      color: _MyAppState.currentTheme.color,
+                      size: 34,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _duaTitle,
+                            style: TextStyle(
+                              color: _MyAppState.currentTheme.color,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            _duaSubtitle,
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 14,
@@ -1069,10 +1213,7 @@ class _EnglishQuranPageState extends State<EnglishQuranPage> {
                 const SizedBox(height: 8),
                 const Text(
                   'Sahih International Translation',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
@@ -1085,118 +1226,128 @@ class _EnglishQuranPageState extends State<EnglishQuranPage> {
                     ),
                   )
                 : errorMessage != null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.error_outline, color: Colors.white70, size: 44),
-                              const SizedBox(height: 12),
-                              Text(
-                                errorMessage!,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.white, fontSize: 16),
-                              ),
-                              const SizedBox(height: 14),
-                              ElevatedButton.icon(
-                                onPressed: _loadSurahs,
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Retry'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: _MyAppState.currentTheme.color,
-                                  foregroundColor: Colors.black,
-                                ),
-                              ),
-                            ],
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            color: Colors.white70,
+                            size: 44,
                           ),
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(10),
-                        itemCount: surahs.length,
-                        itemBuilder: (context, i) {
-                          final surah = surahs[i];
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => SurahDetailPage(
-                                    surahNumber: surah['number'],
-                                    language: QuranLanguage.english,
-                                    appLanguage: AppLanguage.english,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.85),
-                                borderRadius: BorderRadius.circular(15),
-                                border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 50,
-                                    height: 50,
-                                    decoration: BoxDecoration(
-                                      color: _MyAppState.currentTheme.color,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${surah['number']}',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 15),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          surah['englishName'],
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          '${surah['numberOfAyahs']} Ayahs • ${surah['revelationType']}',
-                                          style: const TextStyle(
-                                            color: Colors.white70,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  Text(
-                                    surah['name'],
-                                    style: TextStyle(
-                                      color: _MyAppState.currentTheme.color,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    textDirection: TextDirection.rtl,
-                                  ),
-                                ],
+                          const SizedBox(height: 12),
+                          Text(
+                            errorMessage!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton.icon(
+                            onPressed: _loadSurahs,
+                            icon: const Icon(Icons.refresh),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: _MyAppState.currentTheme.color,
+                              foregroundColor: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: surahs.length,
+                    itemBuilder: (context, i) {
+                      final surah = surahs[i];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SurahDetailPage(
+                                surahNumber: surah['number'],
+                                language: QuranLanguage.english,
+                                appLanguage: AppLanguage.english,
                               ),
                             ),
                           );
                         },
-                      ),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          padding: const EdgeInsets.all(15),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: _MyAppState.currentTheme.color,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: _MyAppState.currentTheme.color,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${surah['number']}',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      surah['englishName'],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Text(
+                                      '${surah['numberOfAyahs']} Ayahs • ${surah['revelationType']}',
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Text(
+                                surah['name'],
+                                style: TextStyle(
+                                  color: _MyAppState.currentTheme.color,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textDirection: TextDirection.rtl,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -1237,8 +1388,8 @@ class _QuranPageState extends State<QuranPage> {
     final fallback = widget.appLanguage == AppLanguage.english
         ? QuranLanguage.english
         : widget.appLanguage == AppLanguage.german
-            ? QuranLanguage.german
-            : QuranLanguage.arabic;
+        ? QuranLanguage.german
+        : QuranLanguage.arabic;
     setState(() {
       selectedLanguage = QuranLanguage.values.firstWhere(
         (lang) => lang.name == savedLang,
@@ -1284,7 +1435,9 @@ class _QuranPageState extends State<QuranPage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: isSelected ? Colors.green : _MyAppState.currentTheme.color.withOpacity(0.3),
+                      color: isSelected
+                          ? Colors.green
+                          : _MyAppState.currentTheme.color.withOpacity(0.3),
                       width: isSelected ? 3 : 1,
                     ),
                   ),
@@ -1300,11 +1453,17 @@ class _QuranPageState extends State<QuranPage> {
                     style: TextStyle(
                       color: isSelected ? Colors.green : Colors.white,
                       fontSize: 18,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
+                      ? const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 28,
+                        )
                       : null,
                   onTap: () {
                     saveLanguagePreference(language);
@@ -1344,7 +1503,11 @@ class _QuranPageState extends State<QuranPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.menu_book_rounded, color: _MyAppState.currentTheme.color, size: 90),
+            Icon(
+              Icons.menu_book_rounded,
+              color: _MyAppState.currentTheme.color,
+              size: 90,
+            ),
             const SizedBox(height: 24),
             Text(
               'Übersetzung des Heiligen Qurans',
@@ -1367,7 +1530,9 @@ class _QuranPageState extends State<QuranPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => GermanReaderPage(themeColor: _MyAppState.currentTheme.color),
+                    builder: (_) => GermanReaderPage(
+                      themeColor: _MyAppState.currentTheme.color,
+                    ),
                   ),
                 );
               },
@@ -1379,7 +1544,10 @@ class _QuranPageState extends State<QuranPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: _MyAppState.currentTheme.color,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -1444,11 +1612,15 @@ class _QuranPageState extends State<QuranPage> {
             ),
           ),
           Expanded(
-            child: (selectedLanguage == QuranLanguage.german || widget.appLanguage == AppLanguage.german)
+            child:
+                (selectedLanguage == QuranLanguage.german ||
+                    widget.appLanguage == AppLanguage.german)
                 ? _buildGermanPdfSection()
                 : isLoading
                 ? Center(
-                    child: CircularProgressIndicator(color: _MyAppState.currentTheme.color),
+                    child: CircularProgressIndicator(
+                      color: _MyAppState.currentTheme.color,
+                    ),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(10),
@@ -1474,7 +1646,10 @@ class _QuranPageState extends State<QuranPage> {
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(15),
-                            border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                            border: Border.all(
+                              color: _MyAppState.currentTheme.color,
+                              width: 2,
+                            ),
                           ),
                           child: Row(
                             children: [
@@ -1613,7 +1788,8 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
 
   Future<void> loadSurah() async {
     try {
-      final url = 'https://api.alquran.cloud/v1/surah/${widget.surahNumber}/${widget.language.apiEdition}';
+      final url =
+          'https://api.alquran.cloud/v1/surah/${widget.surahNumber}/${widget.language.apiEdition}';
 
       final response = await http.get(Uri.parse(url));
 
@@ -1637,10 +1813,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
               }
             }
 
-            return {
-              'verse_key': verseNumber.toString(),
-              'text_uthmani': text,
-            };
+            return {'verse_key': verseNumber.toString(), 'text_uthmani': text};
           }).toList();
 
           surahName = surahData['englishName'];
@@ -1688,52 +1861,53 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       final verseKey = ayah['verse_key'];
       final text = ayah['text_uthmani'];
 
-      spans.add(TextSpan(
-        text: text,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: widget.language == QuranLanguage.arabic ? 28 : 19,
-          height: widget.language == QuranLanguage.arabic ? 2.2 : 1.9,
-          fontFamily: widget.language == QuranLanguage.arabic
-              ? GoogleFonts.amiriQuran().fontFamily
-              : null,
-          fontWeight: FontWeight.w400,
-          letterSpacing: widget.language == QuranLanguage.arabic ? 0.5 : 0.3,
+      spans.add(
+        TextSpan(
+          text: text,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: widget.language == QuranLanguage.arabic ? 28 : 19,
+            height: widget.language == QuranLanguage.arabic ? 2.2 : 1.9,
+            fontFamily: widget.language == QuranLanguage.arabic
+                ? GoogleFonts.amiriQuran().fontFamily
+                : null,
+            fontWeight: FontWeight.w400,
+            letterSpacing: widget.language == QuranLanguage.arabic ? 0.5 : 0.3,
+          ),
         ),
-      ));
+      );
 
-      spans.add(WidgetSpan(
-        alignment: PlaceholderAlignment.middle,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          child: Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.red,
-              border: Border.all(
-                color: Colors.white,
-                width: 1.5,
+      spans.add(
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.red,
+                border: Border.all(color: Colors.white, width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.red.withOpacity(0.5),
+                    blurRadius: 4,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.red.withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
+              child: Text(
+                verseKey,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
-            child: Text(
-              verseKey,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
               ),
             ),
           ),
         ),
-      ));
+      );
 
       if (i < pageAyahs.length - 1) {
         spans.add(const TextSpan(text: ' '));
@@ -1771,7 +1945,9 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
       ),
       body: isLoading
           ? Center(
-              child: CircularProgressIndicator(color: _MyAppState.currentTheme.color),
+              child: CircularProgressIndicator(
+                color: _MyAppState.currentTheme.color,
+              ),
             )
           : Stack(
               children: [
@@ -1908,10 +2084,13 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                     child: Text(
                                       widget.language == QuranLanguage.arabic
                                           ? 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ'
-                                          : widget.language == QuranLanguage.german
-                                              ? 'Im Namen Allahs, des Allerbarmers, des Barmherzigen'
-                                              : 'In the name of Allah, the Most Gracious, the Most Merciful',
-                                      style: widget.language == QuranLanguage.arabic
+                                          : widget.language ==
+                                                QuranLanguage.german
+                                          ? 'Im Namen Allahs, des Allerbarmers, des Barmherzigen'
+                                          : 'In the name of Allah, the Most Gracious, the Most Merciful',
+                                      style:
+                                          widget.language ==
+                                              QuranLanguage.arabic
                                           ? GoogleFonts.amiriQuran(
                                               color: const Color(0xFFD4AF37),
                                               fontSize: 32,
@@ -1927,13 +2106,13 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                     ),
                                   ),
                                 SelectableText.rich(
-                                  TextSpan(
-                                    children: _buildPageContent(),
-                                  ),
-                                  textAlign: widget.language == QuranLanguage.arabic
+                                  TextSpan(children: _buildPageContent()),
+                                  textAlign:
+                                      widget.language == QuranLanguage.arabic
                                       ? TextAlign.right
                                       : TextAlign.justify,
-                                  textDirection: widget.language == QuranLanguage.arabic
+                                  textDirection:
+                                      widget.language == QuranLanguage.arabic
                                       ? TextDirection.rtl
                                       : TextDirection.ltr,
                                 ),
@@ -1965,8 +2144,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                   icon: const Icon(Icons.arrow_forward),
                                   label: Text(_nextButtonLabel()),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFD4AF37),
+                                    backgroundColor: const Color(0xFFD4AF37),
                                     foregroundColor: Colors.black,
                                     disabledBackgroundColor:
                                         Colors.grey.shade800,
@@ -1986,8 +2164,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                   icon: const Icon(Icons.arrow_back),
                                   label: Text(_previousButtonLabel()),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFD4AF37),
+                                    backgroundColor: const Color(0xFFD4AF37),
                                     foregroundColor: Colors.black,
                                     disabledBackgroundColor:
                                         Colors.grey.shade800,
@@ -2009,8 +2186,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                   icon: const Icon(Icons.arrow_back),
                                   label: Text(_previousButtonLabel()),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFD4AF37),
+                                    backgroundColor: const Color(0xFFD4AF37),
                                     foregroundColor: Colors.black,
                                     disabledBackgroundColor:
                                         Colors.grey.shade800,
@@ -2030,8 +2206,7 @@ class _SurahDetailPageState extends State<SurahDetailPage> {
                                   icon: const Icon(Icons.arrow_forward),
                                   label: Text(_nextButtonLabel()),
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color(0xFFD4AF37),
+                                    backgroundColor: const Color(0xFFD4AF37),
                                     foregroundColor: Colors.black,
                                     disabledBackgroundColor:
                                         Colors.grey.shade800,
@@ -2093,14 +2268,14 @@ class _SunnahPageState extends State<SunnahPage> {
 
     try {
       final url = Uri.parse(
-          'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedLanguage.apiEdition}.json');
+        'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/${selectedLanguage.apiEdition}.json',
+      );
 
       final response = await http.get(url);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final loadedHadiths =
-            List<Map<String, dynamic>>.from(data['hadiths']);
+        final loadedHadiths = List<Map<String, dynamic>>.from(data['hadiths']);
 
         setState(() {
           hadiths = loadedHadiths;
@@ -2133,14 +2308,16 @@ class _SunnahPageState extends State<SunnahPage> {
     await Future.delayed(const Duration(milliseconds: 100));
 
     final keywords = query.toLowerCase().split(' ');
-    final filtered = hadiths.where((h) {
-      final text = (h['text'] ?? '').toString();
-      final searchText = selectedLanguage == HadithLanguage.arabic
-          ? text
-          : text.toLowerCase();
-      return keywords
-          .any((k) => k.length > 2 && searchText.contains(k));
-    }).take(50).toList();
+    final filtered = hadiths
+        .where((h) {
+          final text = (h['text'] ?? '').toString();
+          final searchText = selectedLanguage == HadithLanguage.arabic
+              ? text
+              : text.toLowerCase();
+          return keywords.any((k) => k.length > 2 && searchText.contains(k));
+        })
+        .take(50)
+        .toList();
 
     setState(() {
       searchResults = filtered;
@@ -2150,25 +2327,8 @@ class _SunnahPageState extends State<SunnahPage> {
 
   List<Map<String, dynamic>> getFilteredHadiths(String category) {
     final arabicKeywords = {
-      'Faith': [
-        'إيمان',
-        'آمن',
-        'مؤمن',
-        'كفر',
-        'شهادة',
-        'توحيد',
-        'قلب'
-      ],
-      'Ablution': [
-        'وضوء',
-        'توضأ',
-        'غسل',
-        'طهارة',
-        'ماء',
-        'يد',
-        'رجل',
-        'رأس'
-      ],
+      'Faith': ['إيمان', 'آمن', 'مؤمن', 'كفر', 'شهادة', 'توحيد', 'قلب'],
+      'Ablution': ['وضوء', 'توضأ', 'غسل', 'طهارة', 'ماء', 'يد', 'رجل', 'رأس'],
       'Prayer': [
         'صلاة',
         'صلى',
@@ -2178,7 +2338,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'قبلة',
         'مسجد',
         'إمام',
-        'ركعة'
+        'ركعة',
       ],
       'Zakat': ['زكاة', 'صدقة', 'أعطى', 'مال', 'فقير', 'مسكين'],
       'Fasting': ['صوم', 'صيام', 'صائم', 'رمضان', 'فطر', 'أفطر', 'سحور'],
@@ -2195,7 +2355,15 @@ class _SunnahPageState extends State<SunnahPage> {
     };
 
     final englishKeywords = {
-      'Faith': ['faith', 'belief', 'believe', 'muslim', 'testif', 'heart', 'deed'],
+      'Faith': [
+        'faith',
+        'belief',
+        'believe',
+        'muslim',
+        'testif',
+        'heart',
+        'deed',
+      ],
       'Ablution': [
         'ablution',
         'wudu',
@@ -2204,7 +2372,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'purif',
         'hand',
         'foot',
-        'head'
+        'head',
       ],
       'Prayer': [
         'prayer',
@@ -2215,7 +2383,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'prostrat',
         'mosque',
         'imam',
-        'rakat'
+        'rakat',
       ],
       'Zakat': [
         'zakat',
@@ -2225,7 +2393,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'gave',
         'wealth',
         'poor',
-        'needy'
+        'needy',
       ],
       'Fasting': [
         'fast',
@@ -2234,7 +2402,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'ramadan',
         'iftar',
         'suhur',
-        'hunger'
+        'hunger',
       ],
       'Hajj': [
         'hajj',
@@ -2243,7 +2411,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'kaaba',
         'mecca',
         'tawaf',
-        'saee'
+        'saee',
       ],
       'Marriage': [
         'marriage',
@@ -2251,7 +2419,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'married',
         'wife',
         'husband',
-        'wedding'
+        'wedding',
       ],
       'Divorce': ['divorce', 'divorced', 'separation'],
       'Business': [
@@ -2263,7 +2431,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'sold',
         'price',
         'debt',
-        'riba'
+        'riba',
       ],
       'Jihad': ['jihad', 'fight', 'fought', 'battle', 'enemy', 'martyr'],
       'Manners': [
@@ -2274,7 +2442,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'honest',
         'truth',
         'neighbor',
-        'greet'
+        'greet',
       ],
       'Dua': [
         'supplication',
@@ -2283,7 +2451,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'forgive',
         'praise',
         'remember',
-        'allah'
+        'allah',
       ],
       'Food': [
         'food',
@@ -2294,7 +2462,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'meat',
         'bread',
         'date',
-        'milk'
+        'milk',
       ],
       'Knowledge': [
         'knowledge',
@@ -2304,7 +2472,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'scholar',
         'wisdom',
         'book',
-        'read'
+        'read',
       ],
       'Funerals': [
         'funeral',
@@ -2313,7 +2481,7 @@ class _SunnahPageState extends State<SunnahPage> {
         'died',
         'bury',
         'burial',
-        'grave'
+        'grave',
       ],
     };
 
@@ -2323,15 +2491,18 @@ class _SunnahPageState extends State<SunnahPage> {
 
     if (keywords.isEmpty) return [];
 
-    final filtered = hadiths.where((h) {
-      final text = (h['text'] ?? '').toString();
-      if (selectedLanguage == HadithLanguage.arabic) {
-        return keywords.any((k) => text.contains(k));
-      } else {
-        final lowerText = text.toLowerCase();
-        return keywords.any((k) => lowerText.contains(k.toLowerCase()));
-      }
-    }).take(50).toList();
+    final filtered = hadiths
+        .where((h) {
+          final text = (h['text'] ?? '').toString();
+          if (selectedLanguage == HadithLanguage.arabic) {
+            return keywords.any((k) => text.contains(k));
+          } else {
+            final lowerText = text.toLowerCase();
+            return keywords.any((k) => lowerText.contains(k.toLowerCase()));
+          }
+        })
+        .take(50)
+        .toList();
 
     return filtered;
   }
@@ -2389,9 +2560,10 @@ class _SunnahPageState extends State<SunnahPage> {
         title: Text(
           '🌍 Sprache wählen',
           style: TextStyle(
-              color: _MyAppState.currentTheme.color,
-              fontSize: 22,
-              fontWeight: FontWeight.bold),
+            color: _MyAppState.currentTheme.color,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
           textAlign: TextAlign.center,
         ),
         content: Column(
@@ -2404,8 +2576,9 @@ class _SunnahPageState extends State<SunnahPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color:
-                        isSelected ? Colors.green : _MyAppState.currentTheme.color.withOpacity(0.3),
+                    color: isSelected
+                        ? Colors.green
+                        : _MyAppState.currentTheme.color.withOpacity(0.3),
                     width: isSelected ? 3 : 1,
                   ),
                 ),
@@ -2418,12 +2591,17 @@ class _SunnahPageState extends State<SunnahPage> {
                   style: TextStyle(
                     color: isSelected ? Colors.green : Colors.white,
                     fontSize: 18,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.bold
+                        : FontWeight.normal,
                   ),
                 ),
                 trailing: isSelected
-                    ? const Icon(Icons.check_circle, color: Colors.green, size: 28)
+                    ? const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 28,
+                      )
                     : null,
                 onTap: () {
                   changeLanguage(lang);
@@ -2447,35 +2625,47 @@ class _SunnahPageState extends State<SunnahPage> {
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.9),
               border: Border(
-                  bottom: BorderSide(color: _MyAppState.currentTheme.color, width: 2)),
+                bottom: BorderSide(
+                  color: _MyAppState.currentTheme.color,
+                  width: 2,
+                ),
+              ),
             ),
             child: Column(
               children: [
                 Text(
                   '📖 Hadiths des Propheten ﷺ',
                   style: TextStyle(
-                      color: _MyAppState.currentTheme.color,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold),
+                    color: _MyAppState.currentTheme.color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: showLanguageDialog,
-                  icon: Text(selectedLanguage.flag,
-                      style: const TextStyle(fontSize: 20)),
+                  icon: Text(
+                    selectedLanguage.flag,
+                    style: const TextStyle(fontSize: 20),
+                  ),
                   label: Text(
                     selectedLanguage.displayName,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _MyAppState.currentTheme.color,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 12),
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 15),
@@ -2485,11 +2675,16 @@ class _SunnahPageState extends State<SunnahPage> {
                   decoration: InputDecoration(
                     hintText: 'Suche nach Thema (z.B. prayer, patience)...',
                     hintStyle: const TextStyle(color: Colors.white54),
-                    prefixIcon: Icon(Icons.search, color: _MyAppState.currentTheme.color),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: _MyAppState.currentTheme.color,
+                    ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
-                            icon: Icon(Icons.clear,
-                                color: _MyAppState.currentTheme.color),
+                            icon: Icon(
+                              Icons.clear,
+                              color: _MyAppState.currentTheme.color,
+                            ),
                             onPressed: () {
                               _searchController.clear();
                               setState(() => searchResults = []);
@@ -2512,157 +2707,162 @@ class _SunnahPageState extends State<SunnahPage> {
           Expanded(
             child: isLoading
                 ? Center(
-                    child: CircularProgressIndicator(color: _MyAppState.currentTheme.color))
+                    child: CircularProgressIndicator(
+                      color: _MyAppState.currentTheme.color,
+                    ),
+                  )
                 : isSearching
-                    ? Center(
-                        child: CircularProgressIndicator(
-                            color: _MyAppState.currentTheme.color))
-                    : searchResults.isNotEmpty
-                        ? ListView.builder(
-                            padding: const EdgeInsets.all(10),
-                            itemCount: searchResults.length,
-                            itemBuilder: (context, index) {
-                              final hadith = searchResults[index];
-                              return Container(
-                                margin: const EdgeInsets.only(bottom: 12),
-                                padding: const EdgeInsets.all(15),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.85),
-                                  borderRadius: BorderRadius.circular(15),
-                                  border: Border.all(
-                                      color: _MyAppState.currentTheme.color, width: 2),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: _MyAppState.currentTheme.color,
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        'Sahih Bukhari - Hadith ${hadith['hadithnumber']}',
-                                        style: const TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      hadith['text'] ?? 'Kein Text verfügbar',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: selectedLanguage ==
-                                                HadithLanguage.arabic
-                                            ? 20
-                                            : 16,
-                                        height: selectedLanguage ==
-                                                HadithLanguage.arabic
-                                            ? 2.0
-                                            : 1.6,
-                                        fontFamily: selectedLanguage ==
-                                                HadithLanguage.arabic
-                                            ? GoogleFonts.amiriQuran()
-                                                .fontFamily
-                                            : null,
-                                      ),
-                                      textAlign: selectedLanguage ==
-                                              HadithLanguage.arabic
-                                          ? TextAlign.right
-                                          : TextAlign.left,
-                                      textDirection: selectedLanguage ==
-                                              HadithLanguage.arabic
-                                          ? TextDirection.rtl
-                                          : TextDirection.ltr,
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.all(10),
-                            itemCount: getCategories().length,
-                            itemBuilder: (context, index) {
-                              final category = getCategories()[index];
-                              return GestureDetector(
-                                onTap: () {
-                                  final filtered =
-                                      getFilteredHadiths(category['key']!);
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          HadithListPage(
-                                            hadiths: filtered,
-                                            categoryName: category['name']!,
-                                            language: selectedLanguage,
-                                          ),
-                                    ),
-                                  );
-                                },
-                                child: Container(
-                                  margin:
-                                      const EdgeInsets.only(bottom: 10),
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withOpacity(0.85),
-                                    borderRadius:
-                                        BorderRadius.circular(15),
-                                    border: Border.all(
-                                        color: _MyAppState.currentTheme.color, width: 2),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 50,
-                                        height: 50,
-                                        decoration:
-                                            BoxDecoration(
-                                          color: _MyAppState.currentTheme.color,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                            Icons.auto_stories,
-                                            color: Colors.black,
-                                            size: 28),
-                                      ),
-                                      const SizedBox(width: 15),
-                                      Expanded(
-                                        child: Text(
-                                          category['name']!,
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            fontFamily: selectedLanguage ==
-                                                    HadithLanguage.arabic
-                                                ? GoogleFonts.amiriQuran()
-                                                    .fontFamily
-                                                : null,
-                                          ),
-                                          textDirection: selectedLanguage ==
-                                                  HadithLanguage.arabic
-                                              ? TextDirection.rtl
-                                              : TextDirection.ltr,
-                                        ),
-                                      ),
-                                      const Icon(
-                                          Icons.arrow_forward_ios,
-                                          color: Colors.grey,
-                                          size: 20),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                ? Center(
+                    child: CircularProgressIndicator(
+                      color: _MyAppState.currentTheme.color,
+                    ),
+                  )
+                : searchResults.isNotEmpty
+                ? ListView.builder(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: searchResults.length,
+                    itemBuilder: (context, index) {
+                      final hadith = searchResults[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(15),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.85),
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: _MyAppState.currentTheme.color,
+                            width: 2,
                           ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _MyAppState.currentTheme.color,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                'Sahih Bukhari - Hadith ${hadith['hadithnumber']}',
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              hadith['text'] ?? 'Kein Text verfügbar',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize:
+                                    selectedLanguage == HadithLanguage.arabic
+                                    ? 20
+                                    : 16,
+                                height:
+                                    selectedLanguage == HadithLanguage.arabic
+                                    ? 2.0
+                                    : 1.6,
+                                fontFamily:
+                                    selectedLanguage == HadithLanguage.arabic
+                                    ? GoogleFonts.amiriQuran().fontFamily
+                                    : null,
+                              ),
+                              textAlign:
+                                  selectedLanguage == HadithLanguage.arabic
+                                  ? TextAlign.right
+                                  : TextAlign.left,
+                              textDirection:
+                                  selectedLanguage == HadithLanguage.arabic
+                                  ? TextDirection.rtl
+                                  : TextDirection.ltr,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(10),
+                    itemCount: getCategories().length,
+                    itemBuilder: (context, index) {
+                      final category = getCategories()[index];
+                      return GestureDetector(
+                        onTap: () {
+                          final filtered = getFilteredHadiths(category['key']!);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HadithListPage(
+                                hadiths: filtered,
+                                categoryName: category['name']!,
+                                language: selectedLanguage,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.85),
+                            borderRadius: BorderRadius.circular(15),
+                            border: Border.all(
+                              color: _MyAppState.currentTheme.color,
+                              width: 2,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: _MyAppState.currentTheme.color,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.auto_stories,
+                                  color: Colors.black,
+                                  size: 28,
+                                ),
+                              ),
+                              const SizedBox(width: 15),
+                              Expanded(
+                                child: Text(
+                                  category['name']!,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily:
+                                        selectedLanguage ==
+                                            HadithLanguage.arabic
+                                        ? GoogleFonts.amiriQuran().fontFamily
+                                        : null,
+                                  ),
+                                  textDirection:
+                                      selectedLanguage == HadithLanguage.arabic
+                                      ? TextDirection.rtl
+                                      : TextDirection.ltr,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
@@ -2716,14 +2916,19 @@ class HadithListPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.85),
                     borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                    border: Border.all(
+                      color: _MyAppState.currentTheme.color,
+                      width: 2,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
                         decoration: BoxDecoration(
                           color: _MyAppState.currentTheme.color,
                           borderRadius: BorderRadius.circular(8),
@@ -2742,8 +2947,7 @@ class HadithListPage extends StatelessWidget {
                         hadith['text'] ?? 'Kein Text verfügbar',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize:
-                              language == HadithLanguage.arabic ? 20 : 16,
+                          fontSize: language == HadithLanguage.arabic ? 20 : 16,
                           height: language == HadithLanguage.arabic ? 2.0 : 1.6,
                           fontFamily: language == HadithLanguage.arabic
                               ? GoogleFonts.amiriQuran().fontFamily
@@ -2804,23 +3008,27 @@ class _SettingsPageState extends State<SettingsPage> {
     final savedDhikr = prefs.getString('tasbih_dhikr') ?? dhikrOptions.first;
     final countsJson = prefs.getString('tasbih_counts_by_dhikr');
     final countsRaw = countsJson == null
-      ? <String, dynamic>{}
-      : (json.decode(countsJson) as Map<String, dynamic>);
+        ? <String, dynamic>{}
+        : (json.decode(countsJson) as Map<String, dynamic>);
     final legacyCount = prefs.getInt('tasbih_count') ?? 0;
     final historyJson = prefs.getString(_prayerHistoryKey);
     final historyRaw = historyJson == null
         ? <String, dynamic>{}
         : (json.decode(historyJson) as Map<String, dynamic>);
     final selected = dhikrOptions.contains(savedDhikr)
-      ? savedDhikr
-      : dhikrOptions.first;
+        ? savedDhikr
+        : dhikrOptions.first;
     final savedCount = (countsRaw[selected] as num?)?.toInt() ?? legacyCount;
     final parsedHistory = <MapEntry<String, Map<String, dynamic>>>[];
     for (final entry in historyRaw.entries) {
       if (entry.value is Map<String, dynamic>) {
-        parsedHistory.add(MapEntry(entry.key, entry.value as Map<String, dynamic>));
+        parsedHistory.add(
+          MapEntry(entry.key, entry.value as Map<String, dynamic>),
+        );
       } else if (entry.value is Map) {
-        parsedHistory.add(MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)));
+        parsedHistory.add(
+          MapEntry(entry.key, Map<String, dynamic>.from(entry.value as Map)),
+        );
       }
     }
     parsedHistory.sort((a, b) {
@@ -2923,6 +3131,7 @@ class _SettingsPageState extends State<SettingsPage> {
     setState(() => appBackground = newBackground);
     _MyAppState.updateBackground(context, newBackground);
   }
+
   Map<String, int> _getHijriDateParts() {
     final now = DateTime.now();
     int day = now.day;
@@ -2936,7 +3145,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     final a = year ~/ 100;
     final b = 2 - a + (a ~/ 4);
-    final jd = (365.25 * (year + 4716)).floor() +
+    final jd =
+        (365.25 * (year + 4716)).floor() +
         (30.6001 * (month + 1)).floor() +
         day +
         b -
@@ -2945,20 +3155,19 @@ class _SettingsPageState extends State<SettingsPage> {
     var l = jd - 1948440 + 10632;
     final n = (l - 1) ~/ 10631;
     l = l - 10631 * n + 354;
-    final j = (((10985 - l) ~/ 5316) * ((50 * l) ~/ 17719)) +
+    final j =
+        (((10985 - l) ~/ 5316) * ((50 * l) ~/ 17719)) +
         ((l ~/ 5670) * ((43 * l) ~/ 15238));
-    l = l - (((30 - j) ~/ 15) * ((17719 * j) ~/ 50)) -
+    l =
+        l -
+        (((30 - j) ~/ 15) * ((17719 * j) ~/ 50)) -
         ((j ~/ 16) * ((15238 * j) ~/ 43)) +
         29;
     final hijriMonth = (24 * l) ~/ 709;
     final hijriDay = l - ((709 * hijriMonth) ~/ 24);
     final hijriYear = 30 * n + j - 30;
 
-    return {
-      'day': hijriDay,
-      'month': hijriMonth,
-      'year': hijriYear,
-    };
+    return {'day': hijriDay, 'month': hijriMonth, 'year': hijriYear};
   }
 
   List<String> _getHijriMonths() {
@@ -3128,7 +3337,11 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.settings, color: _MyAppState.currentTheme.color, size: 32),
+                  Icon(
+                    Icons.settings,
+                    color: _MyAppState.currentTheme.color,
+                    size: 32,
+                  ),
                   const SizedBox(width: 12),
                   Text(
                     _settingsTitle(),
@@ -3152,8 +3365,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.image,
-                                color: _MyAppState.currentTheme.color, size: 28),
+                            Icon(
+                              Icons.image,
+                              color: _MyAppState.currentTheme.color,
+                              size: 28,
+                            ),
                             const SizedBox(width: 12),
                             Text(
                               _backgroundTitle(),
@@ -3182,7 +3398,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                   border: Border.all(
                                     color: isSelected
                                         ? _MyAppState.currentTheme.color
-                                        : _MyAppState.currentTheme.color.withOpacity(0.3),
+                                        : _MyAppState.currentTheme.color
+                                              .withOpacity(0.3),
                                     width: isSelected ? 2 : 1,
                                   ),
                                 ),
@@ -3213,9 +3430,12 @@ class _SettingsPageState extends State<SettingsPage> {
                                           ),
                                         ),
                                         if (isSelected)
-                                          Icon(Icons.check_circle,
-                                              color: _MyAppState.currentTheme.color,
-                                              size: 20),
+                                          Icon(
+                                            Icons.check_circle,
+                                            color:
+                                                _MyAppState.currentTheme.color,
+                                            size: 20,
+                                          ),
                                       ],
                                     ),
                                   ],
@@ -3240,8 +3460,11 @@ class _SettingsPageState extends State<SettingsPage> {
                           children: [
                             Row(
                               children: [
-                                Icon(Icons.calendar_month,
-                                    color: _MyAppState.currentTheme.color, size: 28),
+                                Icon(
+                                  Icons.calendar_month,
+                                  color: _MyAppState.currentTheme.color,
+                                  size: 28,
+                                ),
                                 const SizedBox(width: 12),
                                 Text(
                                   _calendarTitle(),
@@ -3261,7 +3484,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: Colors.black.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: _MyAppState.currentTheme.color.withOpacity(0.3),
+                                  color: _MyAppState.currentTheme.color
+                                      .withOpacity(0.3),
                                 ),
                               ),
                               child: Column(
@@ -3316,8 +3540,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: _buildCard(
                       child: Row(
                         children: [
-                          Icon(Icons.query_stats,
-                              color: _MyAppState.currentTheme.color, size: 32),
+                          Icon(
+                            Icons.query_stats,
+                            color: _MyAppState.currentTheme.color,
+                            size: 32,
+                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -3334,19 +3561,31 @@ class _SettingsPageState extends State<SettingsPage> {
                                 const SizedBox(height: 4),
                                 Text(
                                   _prayerStatsSubtitle(),
-                                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  _prayerStatsDoneLabel(completedTotal, totalPrayers),
-                                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                                  _prayerStatsDoneLabel(
+                                    completedTotal,
+                                    totalPrayers,
+                                  ),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
                                 ),
                                 if (isPreview)
                                   Padding(
                                     padding: const EdgeInsets.only(top: 6),
                                     child: Text(
                                       _prayerStatsEmptyLabel(),
-                                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                                      style: const TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
                                     ),
                                   ),
                                 const SizedBox(height: 6),
@@ -3361,8 +3600,11 @@ class _SettingsPageState extends State<SettingsPage> {
                               ],
                             ),
                           ),
-                          Icon(Icons.arrow_forward_ios,
-                              color: _MyAppState.currentTheme.color, size: 20),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: _MyAppState.currentTheme.color,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
@@ -3381,8 +3623,11 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: _buildCard(
                       child: Row(
                         children: [
-                          Icon(Icons.touch_app,
-                              color: _MyAppState.currentTheme.color, size: 32),
+                          Icon(
+                            Icons.touch_app,
+                            color: _MyAppState.currentTheme.color,
+                            size: 32,
+                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
@@ -3407,8 +3652,11 @@ class _SettingsPageState extends State<SettingsPage> {
                               ],
                             ),
                           ),
-                          Icon(Icons.arrow_forward_ios,
-                              color: _MyAppState.currentTheme.color, size: 20),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            color: _MyAppState.currentTheme.color,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
@@ -3420,8 +3668,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.language,
-                                color: _MyAppState.currentTheme.color, size: 28),
+                            Icon(
+                              Icons.language,
+                              color: _MyAppState.currentTheme.color,
+                              size: 28,
+                            ),
                             const SizedBox(width: 12),
                             Text(
                               _languageTitle(),
@@ -3434,56 +3685,57 @@ class _SettingsPageState extends State<SettingsPage> {
                           ],
                         ),
                         const SizedBox(height: 16),
-                        ...AppLanguage.values
-                            .map((lang) => GestureDetector(
-                              onTap: () => _changeLanguage(lang),
-                              child: Container(
-                                margin: const EdgeInsets.only(bottom: 8),
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
+                        ...AppLanguage.values.map(
+                          (lang) => GestureDetector(
+                            onTap: () => _changeLanguage(lang),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: appLanguage == lang
+                                    ? _MyAppState.currentTheme.color
+                                          .withOpacity(0.2)
+                                    : Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
                                   color: appLanguage == lang
-                                      ? _MyAppState.currentTheme.color.withOpacity(0.2)
-                                      : Colors.black.withOpacity(0.3),
-                                  borderRadius:
-                                      BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: appLanguage == lang
-                                        ? _MyAppState.currentTheme.color
-                                        : _MyAppState.currentTheme.color
+                                      ? _MyAppState.currentTheme.color
+                                      : _MyAppState.currentTheme.color
                                             .withOpacity(0.3),
-                                    width: appLanguage == lang ? 2 : 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      lang.flag,
-                                      style: const TextStyle(
-                                          fontSize: 24),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      lang.displayName,
-                                      style: TextStyle(
-                                        color: appLanguage == lang
-                                            ? _MyAppState.currentTheme.color
-                                            : Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: appLanguage == lang
-                                            ? FontWeight.bold
-                                            : FontWeight.normal,
-                                      ),
-                                    ),
-                                    const Spacer(),
-                                    if (appLanguage == lang)
-                                      Icon(Icons.check_circle,
-                                          color: _MyAppState.currentTheme.color,
-                                          size: 20),
-                                  ],
+                                  width: appLanguage == lang ? 2 : 1,
                                 ),
                               ),
-                            ))
-                            ,
+                              child: Row(
+                                children: [
+                                  Text(
+                                    lang.flag,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    lang.displayName,
+                                    style: TextStyle(
+                                      color: appLanguage == lang
+                                          ? _MyAppState.currentTheme.color
+                                          : Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: appLanguage == lang
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  if (appLanguage == lang)
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: _MyAppState.currentTheme.color,
+                                      size: 20,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -3494,8 +3746,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.palette,
-                                color: _MyAppState.currentTheme.color, size: 28),
+                            Icon(
+                              Icons.palette,
+                              color: _MyAppState.currentTheme.color,
+                              size: 28,
+                            ),
                             const SizedBox(width: 12),
                             Text(
                               _themeTitle(),
@@ -3511,60 +3766,66 @@ class _SettingsPageState extends State<SettingsPage> {
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
-                          children:
-                              AppTheme.values
-                                  .map((theme) => GestureDetector(
-                                    onTap: () => _changeTheme(theme),
-                                    child: Container(
-                                      width: 100,
-                                      padding: const EdgeInsets.symmetric(
-                                          vertical: 12, horizontal: 8),
-                                      decoration: BoxDecoration(
-                                        color: theme.color
-                                            .withOpacity(0.2),
-                                        borderRadius:
-                                            BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: _MyAppState.currentTheme == theme
-                                              ? theme.color
-                                              : theme.color
-                                                  .withOpacity(0.3),
-                                          width: _MyAppState.currentTheme == theme ? 3 : 1,
-                                        ),
-                                      ),
-                                      child: Column(
-                                        children: [
-                                          Container(
-                                            width: 40,
-                                            height: 40,
-                                            decoration: BoxDecoration(
-                                              color: theme.color,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: _MyAppState.currentTheme == theme
-                                                ? const Icon(
-                                                    Icons.check,
-                                                    color: Colors.white,
-                                                    size: 24)
-                                                : null,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            theme.name.split(' ')[0],
-                                            style: TextStyle(
-                                              color: theme.color,
-                                              fontSize: 12,
-                                              fontWeight: _MyAppState.currentTheme == theme
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
-                                        ],
+                          children: AppTheme.values
+                              .map(
+                                (theme) => GestureDetector(
+                                  onTap: () => _changeTheme(theme),
+                                  child: Container(
+                                    width: 100,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 12,
+                                      horizontal: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: theme.color.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: _MyAppState.currentTheme == theme
+                                            ? theme.color
+                                            : theme.color.withOpacity(0.3),
+                                        width: _MyAppState.currentTheme == theme
+                                            ? 3
+                                            : 1,
                                       ),
                                     ),
-                                  ))
-                                  .toList(),
+                                    child: Column(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: theme.color,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child:
+                                              _MyAppState.currentTheme == theme
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  color: Colors.white,
+                                                  size: 24,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          theme.name.split(' ')[0],
+                                          style: TextStyle(
+                                            color: theme.color,
+                                            fontSize: 12,
+                                            fontWeight:
+                                                _MyAppState.currentTheme ==
+                                                    theme
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ],
                     ),
@@ -3576,8 +3837,11 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.info_outline,
-                                color: _MyAppState.currentTheme.color, size: 28),
+                            Icon(
+                              Icons.info_outline,
+                              color: _MyAppState.currentTheme.color,
+                              size: 28,
+                            ),
                             const SizedBox(width: 12),
                             Text(
                               _aboutTitle(),
@@ -3591,26 +3855,28 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         const SizedBox(height: 16),
                         Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             const Text(
                               'Version',
                               style: TextStyle(
-                                  color: Colors.white70, fontSize: 16),
+                                color: Colors.white70,
+                                fontSize: 16,
+                              ),
                             ),
                             const Text(
                               '1.0.0',
                               style: TextStyle(
-                                  color: Colors.white, fontSize: 16),
+                                color: Colors.white,
+                                fontSize: 16,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 12),
                         const Text(
                           'Quran & Hadith App',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 16),
+                          style: TextStyle(color: Colors.white, fontSize: 16),
                         ),
                       ],
                     ),
@@ -3631,8 +3897,10 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: Colors.black.withOpacity(0.7),
         borderRadius: BorderRadius.circular(20),
-        border:
-            Border.all(color: _MyAppState.currentTheme.color.withOpacity(0.3), width: 1),
+        border: Border.all(
+          color: _MyAppState.currentTheme.color.withOpacity(0.3),
+          width: 1,
+        ),
       ),
       child: child,
     );
@@ -3771,12 +4039,12 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
 
     final prayerNames = switch (widget.appLanguage) {
       AppLanguage.german => [
-          'Fajr – Morgengebet',
-          'Dhuhr – Mittagsgebet',
-          'Asr – Nachmittagsgebet',
-          'Maghrib – Abendgebet',
-          'Isha – Nachtgebet',
-        ],
+        'Fajr – Morgengebet',
+        'Dhuhr – Mittagsgebet',
+        'Asr – Nachmittagsgebet',
+        'Maghrib – Abendgebet',
+        'Isha – Nachtgebet',
+      ],
       AppLanguage.english => ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'],
       AppLanguage.arabic => ['الفجر', 'الظهر', 'العصر', 'المغرب', 'العشاء'],
     };
@@ -3819,18 +4087,19 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                 child: Row(
                   children: [
                     Icon(
-                      done
-                          ? Icons.check_circle_rounded
-                          : Icons.cancel_rounded,
-                      color:
-                          done ? const Color(0xFF45B97C) : const Color(0xFFD95D39),
+                      done ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                      color: done
+                          ? const Color(0xFF45B97C)
+                          : const Color(0xFFD95D39),
                       size: 22,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       prayerNames[i],
                       style: TextStyle(
-                        color: done ? const Color(0xFF45B97C) : const Color(0xFFD95D39),
+                        color: done
+                            ? const Color(0xFF45B97C)
+                            : const Color(0xFFD95D39),
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
@@ -3907,7 +4176,9 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
   Widget build(BuildContext context) {
     final isPreview = widget.prayerHistory.isEmpty;
     final effectiveHistory = widget.prayerHistory;
-    final historyMap = {for (final entry in effectiveHistory) entry.key: entry.value};
+    final historyMap = {
+      for (final entry in effectiveHistory) entry.key: entry.value,
+    };
     final cells = _calendarCells(_currentMonth);
 
     return Scaffold(
@@ -3945,7 +4216,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                         ),
                         Text(
                           _subtitle(),
-                          style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -3980,7 +4254,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                                   );
                                 });
                               },
-                              icon: const Icon(Icons.chevron_left, color: Colors.white),
+                              icon: const Icon(
+                                Icons.chevron_left,
+                                color: Colors.white,
+                              ),
                             ),
                             Expanded(
                               child: Text(
@@ -4003,7 +4280,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                                   );
                                 });
                               },
-                              icon: const Icon(Icons.chevron_right, color: Colors.white),
+                              icon: const Icon(
+                                Icons.chevron_right,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
@@ -4012,7 +4292,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                             padding: const EdgeInsets.only(bottom: 12),
                             child: Text(
                               _previewLabel(),
-                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -4038,12 +4321,13 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: cells.length,
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 7,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 0.78,
-                          ),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 7,
+                                mainAxisSpacing: 8,
+                                crossAxisSpacing: 8,
+                                childAspectRatio: 0.78,
+                              ),
                           itemBuilder: (context, index) {
                             final date = cells[index];
                             if (date == null) {
@@ -4051,8 +4335,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                             }
 
                             final entry = historyMap[_dateKey(date)];
-                            final completed = (entry?['completed'] as num?)?.toInt();
-                            final total = (entry?['total'] as num?)?.toInt() ?? 5;
+                            final completed = (entry?['completed'] as num?)
+                                ?.toInt();
+                            final total =
+                                (entry?['total'] as num?)?.toInt() ?? 5;
                             final hasData = completed != null;
                             final dayColor = hasData
                                 ? _prayerDayColor(completed)
@@ -4063,48 +4349,62 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                                   ? () => _showDayDetailDialog(date, entry!)
                                   : null,
                               child: Container(
-                              decoration: BoxDecoration(
-                                color: dayColor.withOpacity(hasData ? 0.9 : 0.15),
-                                borderRadius: BorderRadius.circular(14),
-                                border: Border.all(
-                                  color: hasData ? dayColor : Colors.white12,
-                                  width: 1.4,
+                                decoration: BoxDecoration(
+                                  color: dayColor.withOpacity(
+                                    hasData ? 0.9 : 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: hasData ? dayColor : Colors.white12,
+                                    width: 1.4,
+                                  ),
                                 ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Align(
-                                      alignment: Alignment.topLeft,
-                                      child: Text(
-                                        '${date.day}',
-                                        style: TextStyle(
-                                          color: hasData ? Colors.black87 : Colors.white70,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 6,
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Align(
+                                        alignment: Alignment.topLeft,
+                                        child: Text(
+                                          '${date.day}',
+                                          style: TextStyle(
+                                            color: hasData
+                                                ? Colors.black87
+                                                : Colors.white70,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    Icon(
-                                      hasData ? _prayerDayIcon(completed) : Icons.circle,
-                                      size: hasData ? 20 : 8,
-                                      color: hasData ? Colors.black87 : Colors.white24,
-                                    ),
-                                    Text(
-                                      hasData ? '$completed/$total' : '-',
-                                      style: TextStyle(
-                                        color: hasData ? Colors.black87 : Colors.white54,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
+                                      Icon(
+                                        hasData
+                                            ? _prayerDayIcon(completed)
+                                            : Icons.circle,
+                                        size: hasData ? 20 : 8,
+                                        color: hasData
+                                            ? Colors.black87
+                                            : Colors.white24,
                                       ),
-                                    ),
-                                  ],
+                                      Text(
+                                        hasData ? '$completed/$total' : '-',
+                                        style: TextStyle(
+                                          color: hasData
+                                              ? Colors.black87
+                                              : Colors.white54,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ),  // Container
-                            );  // GestureDetector
+                              ), // Container
+                            ); // GestureDetector
                           },
                         ),
                       ],
@@ -4313,9 +4613,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
     final city = '${payload['city'] ?? ''}'.trim();
     final country = '${payload['country_name'] ?? ''}'.trim();
-    final label = [city, country]
-        .where((part) => part.isNotEmpty)
-        .join(', ');
+    final label = [city, country].where((part) => part.isNotEmpty).join(', ');
 
     return {
       'latitude': latitude,
@@ -4331,8 +4629,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     if (kIsWeb) {
       try {
         final position = await Geolocator.getCurrentPosition(
-          locationSettings:
-              const LocationSettings(accuracy: LocationAccuracy.high),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+          ),
         );
         return {
           'latitude': position.latitude,
@@ -4574,7 +4873,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                     const SizedBox(height: 6),
                     Text(
                       _locationLabel,
-                      style: const TextStyle(color: Colors.white60, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white60,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ],
@@ -4586,28 +4888,47 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                 children: [
                   if (_awaitingUserTrigger)
                     Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 8),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 40,
+                        horizontal: 8,
+                      ),
                       child: Column(
                         children: [
-                          Icon(Icons.location_on_outlined,
-                              color: _MyAppState.currentTheme.color, size: 64),
+                          Icon(
+                            Icons.location_on_outlined,
+                            color: _MyAppState.currentTheme.color,
+                            size: 64,
+                          ),
                           const SizedBox(height: 16),
                           Text(
                             _locationInfoLabel(),
-                            style: const TextStyle(color: Colors.white70, fontSize: 14),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
                             textAlign: TextAlign.center,
                           ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             onPressed: _loadPrayerTimes,
                             icon: const Icon(Icons.my_location),
-                            label: Text(_loadLocationLabel(),
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            label: Text(
+                              _loadLocationLabel(),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _MyAppState.currentTheme.color,
                               foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 14,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                           ),
                         ],
@@ -4624,7 +4945,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.72),
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.redAccent.withOpacity(0.45)),
+                        border: Border.all(
+                          color: Colors.redAccent.withOpacity(0.45),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -4650,13 +4973,17 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                           color: Colors.black.withOpacity(0.72),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                            color: _MyAppState.currentTheme.color.withOpacity(
+                              0.45,
+                            ),
                           ),
                         ),
                         child: Row(
                           children: [
-                            Icon(Icons.notifications_active,
-                                color: _MyAppState.currentTheme.color),
+                            Icon(
+                              Icons.notifications_active,
+                              color: _MyAppState.currentTheme.color,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: Column(
@@ -4664,7 +4991,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                 children: [
                                   Text(
                                     _nextPrayerLabel(),
-                                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                   Text(
                                     '$_nextPrayerName • $_nextPrayerTime',
@@ -4677,7 +5007,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                   if (_remainingLabel != null)
                                     Text(
                                       _remainingLabel!,
-                                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                      ),
                                     ),
                                 ],
                               ),
@@ -4695,7 +5028,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         if (_lastUpdated != null)
                           Text(
                             _updatedLabel(_lastUpdated!),
-                            style: const TextStyle(color: Colors.white60, fontSize: 12),
+                            style: const TextStyle(
+                              color: Colors.white60,
+                              fontSize: 12,
+                            ),
                           ),
                         TextButton.icon(
                           onPressed: _loadPrayerTimes,
@@ -4761,7 +5097,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
   String _introBody() {
     switch (widget.language) {
       case AppLanguage.german:
-    return '''Das Gedenken an Allah (Dhikr) gehört zu den wichtigsten Taten im Islam. Durch Dhikr erinnert sich der Gläubige an seinen Schöpfer, stärkt seinen Glauben und erhält großen Lohn. Allah lobt diejenigen, die Ihn häufig gedenken:
+        return '''Das Gedenken an Allah (Dhikr) gehört zu den wichtigsten Taten im Islam. Durch Dhikr erinnert sich der Gläubige an seinen Schöpfer, stärkt seinen Glauben und erhält großen Lohn. Allah lobt diejenigen, die Ihn häufig gedenken:
 
   „O ihr, die ihr glaubt, gedenkt Allahs in häufigem Gedenken.“
   — Qur'an 33:41
@@ -4789,7 +5125,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   Dhikr kann fast überall gemacht werden – zum Beispiel nach dem Gebet, vor dem Schlafen, auf dem Weg zur Arbeit oder Schule, beim Warten auf den Bus oder in ruhigen Momenten des Tages. So kannst du deinen Tag immer wieder mit der Erinnerung an Allah füllen.''';
       case AppLanguage.english:
-    return '''The remembrance of Allah (Dhikr) is one of the greatest acts of worship in Islam. Through Dhikr, a believer remembers their Lord, strengthens their faith, and grows closer to Allah. Allah commands the believers in the Qur'an:
+        return '''The remembrance of Allah (Dhikr) is one of the greatest acts of worship in Islam. Through Dhikr, a believer remembers their Lord, strengthens their faith, and grows closer to Allah. Allah commands the believers in the Qur'an:
 
   “O you who believe, remember Allah with much remembrance.”
   — Surah Al-Ahzab (33:41)
@@ -4824,7 +5160,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   Remembering Allah regularly brings peace to the heart and strengthens the connection between the believer and their Lord.''';
       case AppLanguage.arabic:
-    return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وتقريبِ العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
+        return '''يُعَدُّ ذكرُ الله تعالى من أعظم العبادات في الإسلام، فهو سببٌ لزيادة الإيمان وتقريبِ العبد من ربّه. وقد أمر الله تعالى المؤمنين بالإكثار من ذكره فقال:
 
   ﴿يَا أَيُّهَا الَّذِينَ آمَنُوا اذْكُرُوا اللَّهَ ذِكْرًا كَثِيرًا﴾
   — سورة الأحزاب، الآية 41
@@ -4891,18 +5227,21 @@ class _MasbahaPageState extends State<MasbahaPage> {
               fontWeight: FontWeight.bold,
               fontSize: 22,
             ),
-            textAlign:
-                widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+            textAlign: widget.language == AppLanguage.arabic
+                ? TextAlign.right
+                : TextAlign.left,
           ),
           content: SizedBox(
             width: 520,
             child: SingleChildScrollView(
               child: Text(
                 _introBody(),
-                textDirection:
-                    widget.language == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
-                textAlign:
-                    widget.language == AppLanguage.arabic ? TextAlign.right : TextAlign.left,
+                textDirection: widget.language == AppLanguage.arabic
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                textAlign: widget.language == AppLanguage.arabic
+                    ? TextAlign.right
+                    : TextAlign.left,
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 15,
@@ -4994,7 +5333,10 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   Future<void> _saveState() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('tasbih_counts_by_dhikr', json.encode(_countsByDhikr));
+    await prefs.setString(
+      'tasbih_counts_by_dhikr',
+      json.encode(_countsByDhikr),
+    );
     await prefs.setString('tasbih_dhikr', selectedDhikr);
   }
 
@@ -5056,12 +5398,16 @@ class _MasbahaPageState extends State<MasbahaPage> {
                     Container(
                       color: Colors.black.withOpacity(0.65),
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.arrow_back,
-                                color: Colors.white),
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Colors.white,
+                            ),
                             onPressed: () => Navigator.pop(context),
                           ),
                           const SizedBox(width: 4),
@@ -5095,7 +5441,10 @@ class _MasbahaPageState extends State<MasbahaPage> {
                                       decoration: BoxDecoration(
                                         color: Colors.redAccent,
                                         shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.black, width: 0.8),
+                                        border: Border.all(
+                                          color: Colors.black,
+                                          width: 0.8,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -5107,16 +5456,21 @@ class _MasbahaPageState extends State<MasbahaPage> {
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 20),
+                        horizontal: 30,
+                        vertical: 20,
+                      ),
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 4),
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.65),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: _MyAppState.currentTheme.color
-                                .withOpacity(0.5),
+                            color: _MyAppState.currentTheme.color.withOpacity(
+                              0.5,
+                            ),
                           ),
                         ),
                         child: DropdownButtonHideUnderline(
@@ -5125,7 +5479,9 @@ class _MasbahaPageState extends State<MasbahaPage> {
                             isExpanded: true,
                             dropdownColor: const Color(0xFF1a1a1a),
                             style: const TextStyle(
-                                color: Colors.white, fontSize: 18),
+                              color: Colors.white,
+                              fontSize: 18,
+                            ),
                             items: _dhikrOptions.map((dhikr) {
                               return DropdownMenuItem<String>(
                                 value: dhikr,
@@ -5157,8 +5513,9 @@ class _MasbahaPageState extends State<MasbahaPage> {
                               gradient: LinearGradient(
                                 colors: [
                                   _MyAppState.currentTheme.color,
-                                  _MyAppState.currentTheme.color
-                                      .withOpacity(0.65),
+                                  _MyAppState.currentTheme.color.withOpacity(
+                                    0.65,
+                                  ),
                                 ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -5186,7 +5543,8 @@ class _MasbahaPageState extends State<MasbahaPage> {
                                 const SizedBox(height: 4),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 20),
+                                    horizontal: 20,
+                                  ),
                                   child: Text(
                                     selectedDhikr,
                                     style: const TextStyle(
@@ -5207,9 +5565,11 @@ class _MasbahaPageState extends State<MasbahaPage> {
                       padding: const EdgeInsets.only(bottom: 40),
                       child: TextButton.icon(
                         onPressed: _reset,
-                        icon: Icon(Icons.refresh,
-                            color: _MyAppState.currentTheme.color,
-                            size: 28),
+                        icon: Icon(
+                          Icons.refresh,
+                          color: _MyAppState.currentTheme.color,
+                          size: 28,
+                        ),
                         label: Text(
                           _resetLabel(),
                           style: TextStyle(
@@ -5221,7 +5581,9 @@ class _MasbahaPageState extends State<MasbahaPage> {
                         style: TextButton.styleFrom(
                           backgroundColor: Colors.black.withOpacity(0.5),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 30, vertical: 14),
+                            horizontal: 30,
+                            vertical: 14,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -5611,105 +5973,798 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   static final Map<int, String> _detailsEn = _parseDetails(_detailsRawEn);
 
   static const List<_AllahName> _names = [
-    _AllahName(number: 1, arabic: 'اللَّه', transliteration: 'Allah', meaningDe: 'Allah', meaningEn: 'Allah', meaningAr: 'الله'),
-    _AllahName(number: 2, arabic: 'الرَّحْمَٰن', transliteration: 'Ar-Rahman', meaningDe: 'Der Allerbarmer', meaningEn: 'The Most Compassionate', meaningAr: 'الرحمن'),
-    _AllahName(number: 3, arabic: 'الرَّحِيم', transliteration: 'Ar-Rahim', meaningDe: 'Der Barmherzige', meaningEn: 'The Most Merciful', meaningAr: 'الرحيم'),
-    _AllahName(number: 4, arabic: 'الْمَلِك', transliteration: 'Al-Malik', meaningDe: 'Der König', meaningEn: 'The King', meaningAr: 'الملك'),
-    _AllahName(number: 5, arabic: 'الْقُدُّوس', transliteration: 'Al-Quddus', meaningDe: 'Der Heilige', meaningEn: 'The Most Holy', meaningAr: 'القدوس'),
-    _AllahName(number: 6, arabic: 'السَّلَام', transliteration: 'As-Salam', meaningDe: 'Der Friede', meaningEn: 'The Source of Peace', meaningAr: 'السلام'),
-    _AllahName(number: 7, arabic: 'الْمُؤْمِن', transliteration: 'Al-Mumin', meaningDe: 'Der Gewährer von Sicherheit', meaningEn: 'The Giver of Security', meaningAr: 'المؤمن'),
-    _AllahName(number: 8, arabic: 'الْمُهَيْمِن', transliteration: 'Al-Muhaymin', meaningDe: 'Der Beschützer', meaningEn: 'The Guardian', meaningAr: 'المهيمن'),
-    _AllahName(number: 9, arabic: 'الْعَزِيز', transliteration: 'Al-Aziz', meaningDe: 'Der Allmächtige', meaningEn: 'The Almighty', meaningAr: 'العزيز'),
-    _AllahName(number: 10, arabic: 'الْجَبَّار', transliteration: 'Al-Jabbar', meaningDe: 'Der Gewaltige', meaningEn: 'The Compeller', meaningAr: 'الجبار'),
-    _AllahName(number: 11, arabic: 'الْمُتَكَبِّر', transliteration: 'Al-Mutakabbir', meaningDe: 'Der Majestätische', meaningEn: 'The Supreme', meaningAr: 'المتكبر'),
-    _AllahName(number: 12, arabic: 'الْخَالِق', transliteration: 'Al-Khaliq', meaningDe: 'Der Schöpfer', meaningEn: 'The Creator', meaningAr: 'الخالق'),
-    _AllahName(number: 13, arabic: 'الْبَارِئ', transliteration: 'Al-Bari', meaningDe: 'Der Erschaffer', meaningEn: 'The Originator', meaningAr: 'البارئ'),
-    _AllahName(number: 14, arabic: 'الْمُصَوِّر', transliteration: 'Al-Musawwir', meaningDe: 'Der Gestalter', meaningEn: 'The Fashioner', meaningAr: 'المصور'),
-    _AllahName(number: 15, arabic: 'الْغَفَّار', transliteration: 'Al-Ghaffar', meaningDe: 'Der Vielvergebende', meaningEn: 'The Constant Forgiver', meaningAr: 'الغفار'),
-    _AllahName(number: 16, arabic: 'الْقَهَّار', transliteration: 'Al-Qahhar', meaningDe: 'Der Allbezwinger', meaningEn: 'The All-Subduer', meaningAr: 'القهار'),
-    _AllahName(number: 17, arabic: 'الْوَهَّاب', transliteration: 'Al-Wahhab', meaningDe: 'Der Schenkende', meaningEn: 'The Bestower', meaningAr: 'الوهاب'),
-    _AllahName(number: 18, arabic: 'الرَّزَّاق', transliteration: 'Ar-Razzaq', meaningDe: 'Der Versorger', meaningEn: 'The Provider', meaningAr: 'الرزاق'),
-    _AllahName(number: 19, arabic: 'الْفَتَّاح', transliteration: 'Al-Fattah', meaningDe: 'Der Öffnende', meaningEn: 'The Opener', meaningAr: 'الفتاح'),
-    _AllahName(number: 20, arabic: 'الْعَلِيم', transliteration: 'Al-Alim', meaningDe: 'Der Allwissende', meaningEn: 'The All-Knowing', meaningAr: 'العليم'),
-    _AllahName(number: 21, arabic: 'الْقَابِض', transliteration: 'Al-Qabid', meaningDe: 'Der Zurückhaltende', meaningEn: 'The Withholder', meaningAr: 'القابض'),
-    _AllahName(number: 22, arabic: 'الْبَاسِط', transliteration: 'Al-Basit', meaningDe: 'Der Ausbreitende', meaningEn: 'The Extender', meaningAr: 'الباسط'),
-    _AllahName(number: 23, arabic: 'الْخَافِض', transliteration: 'Al-Khafid', meaningDe: 'Der Erniedrigende', meaningEn: 'The Reducer', meaningAr: 'الخافض'),
-    _AllahName(number: 24, arabic: 'الرَّافِع', transliteration: 'Ar-Rafi', meaningDe: 'Der Erhöhende', meaningEn: 'The Exalter', meaningAr: 'الرافع'),
-    _AllahName(number: 25, arabic: 'الْمُعِزّ', transliteration: 'Al-Muizz', meaningDe: 'Der Verleiher von Ehre', meaningEn: 'The Honourer', meaningAr: 'المعز'),
-    _AllahName(number: 26, arabic: 'الْمُذِلّ', transliteration: 'Al-Mudhill', meaningDe: 'Der Demütigende', meaningEn: 'The Dishonourer', meaningAr: 'المذل'),
-    _AllahName(number: 27, arabic: 'السَّمِيع', transliteration: 'As-Sami', meaningDe: 'Der Allhörende', meaningEn: 'The All-Hearing', meaningAr: 'السميع'),
-    _AllahName(number: 28, arabic: 'الْبَصِير', transliteration: 'Al-Basir', meaningDe: 'Der Allsehende', meaningEn: 'The All-Seeing', meaningAr: 'البصير'),
-    _AllahName(number: 29, arabic: 'الْحَكَم', transliteration: 'Al-Hakam', meaningDe: 'Der Richter', meaningEn: 'The Judge', meaningAr: 'الحكم'),
-    _AllahName(number: 30, arabic: 'الْعَدْل', transliteration: 'Al-Adl', meaningDe: 'Der Gerechte', meaningEn: 'The Just', meaningAr: 'العدل'),
-    _AllahName(number: 31, arabic: 'اللَّطِيف', transliteration: 'Al-Latif', meaningDe: 'Der Feinfühlige', meaningEn: 'The Subtle One', meaningAr: 'اللطيف'),
-    _AllahName(number: 32, arabic: 'الْخَبِير', transliteration: 'Al-Khabir', meaningDe: 'Der Allkundige', meaningEn: 'The All-Aware', meaningAr: 'الخبير'),
-    _AllahName(number: 33, arabic: 'الْحَلِيم', transliteration: 'Al-Halim', meaningDe: 'Der Nachsichtige', meaningEn: 'The Most Forbearing', meaningAr: 'الحليم'),
-    _AllahName(number: 34, arabic: 'الْعَظِيم', transliteration: 'Al-Azim', meaningDe: 'Der Gewaltige', meaningEn: 'The Magnificent', meaningAr: 'العظيم'),
-    _AllahName(number: 35, arabic: 'الْغَفُور', transliteration: 'Al-Ghafur', meaningDe: 'Der Vergebende', meaningEn: 'The Most Forgiving', meaningAr: 'الغفور'),
-    _AllahName(number: 36, arabic: 'الشَّكُور', transliteration: 'Ash-Shakur', meaningDe: 'Der Dankbare', meaningEn: 'The Most Appreciative', meaningAr: 'الشكور'),
-    _AllahName(number: 37, arabic: 'الْعَلِيّ', transliteration: 'Al-Aliyy', meaningDe: 'Der Allerhöchste', meaningEn: 'The Most High', meaningAr: 'العلي'),
-    _AllahName(number: 38, arabic: 'الْكَبِير', transliteration: 'Al-Kabir', meaningDe: 'Der Große', meaningEn: 'The Most Great', meaningAr: 'الكبير'),
-    _AllahName(number: 39, arabic: 'الْحَفِيظ', transliteration: 'Al-Hafiz', meaningDe: 'Der Bewahrende', meaningEn: 'The Preserver', meaningAr: 'الحفيظ'),
-    _AllahName(number: 40, arabic: 'الْمُقِيت', transliteration: 'Al-Muqit', meaningDe: 'Der Erhalter', meaningEn: 'The Sustainer', meaningAr: 'المقيت'),
-    _AllahName(number: 41, arabic: 'الْحَسِيب', transliteration: 'Al-Hasib', meaningDe: 'Der Abrechnende', meaningEn: 'The Reckoner', meaningAr: 'الحسيب'),
-    _AllahName(number: 42, arabic: 'الْجَلِيل', transliteration: 'Al-Jalil', meaningDe: 'Der Erhabene', meaningEn: 'The Majestic', meaningAr: 'الجليل'),
-    _AllahName(number: 43, arabic: 'الْكَرِيم', transliteration: 'Al-Karim', meaningDe: 'Der Großzügige', meaningEn: 'The Most Generous', meaningAr: 'الكريم'),
-    _AllahName(number: 44, arabic: 'الرَّقِيب', transliteration: 'Ar-Raqib', meaningDe: 'Der Wächter', meaningEn: 'The Watchful', meaningAr: 'الرقيب'),
-    _AllahName(number: 45, arabic: 'الْمُجِيب', transliteration: 'Al-Mujib', meaningDe: 'Der Erhörende', meaningEn: 'The Responsive', meaningAr: 'المجيب'),
-    _AllahName(number: 46, arabic: 'الْوَاسِع', transliteration: 'Al-Wasi', meaningDe: 'Der Umfassende', meaningEn: 'The All-Encompassing', meaningAr: 'الواسع'),
-    _AllahName(number: 47, arabic: 'الْحَكِيم', transliteration: 'Al-Hakim', meaningDe: 'Der Allweise', meaningEn: 'The All-Wise', meaningAr: 'الحكيم'),
-    _AllahName(number: 48, arabic: 'الْوَدُود', transliteration: 'Al-Wadud', meaningDe: 'Der Liebevolle', meaningEn: 'The Most Loving', meaningAr: 'الودود'),
-    _AllahName(number: 49, arabic: 'الْمَجِيد', transliteration: 'Al-Majid', meaningDe: 'Der Ruhmreiche', meaningEn: 'The Most Glorious', meaningAr: 'المجيد'),
-    _AllahName(number: 50, arabic: 'الْبَاعِث', transliteration: 'Al-Baith', meaningDe: 'Der Erwecker', meaningEn: 'The Resurrector', meaningAr: 'الباعث'),
-    _AllahName(number: 51, arabic: 'الشَّهِيد', transliteration: 'Ash-Shahid', meaningDe: 'Der Zeuge', meaningEn: 'The Witness', meaningAr: 'الشهيد'),
-    _AllahName(number: 52, arabic: 'الْحَقّ', transliteration: 'Al-Haqq', meaningDe: 'Die Wahrheit', meaningEn: 'The Truth', meaningAr: 'الحق'),
-    _AllahName(number: 53, arabic: 'الْوَكِيل', transliteration: 'Al-Wakil', meaningDe: 'Der Sachwalter', meaningEn: 'The Trustee', meaningAr: 'الوكيل'),
-    _AllahName(number: 54, arabic: 'الْقَوِيّ', transliteration: 'Al-Qawiyy', meaningDe: 'Der Starke', meaningEn: 'The All-Strong', meaningAr: 'القوي'),
-    _AllahName(number: 55, arabic: 'الْمَتِين', transliteration: 'Al-Matin', meaningDe: 'Der Standhafte', meaningEn: 'The Firm One', meaningAr: 'المتين'),
-    _AllahName(number: 56, arabic: 'الْوَلِيّ', transliteration: 'Al-Waliyy', meaningDe: 'Der Beschützerfreund', meaningEn: 'The Protecting Ally', meaningAr: 'الولي'),
-    _AllahName(number: 57, arabic: 'الْحَمِيد', transliteration: 'Al-Hamid', meaningDe: 'Der Lobenswerte', meaningEn: 'The Praiseworthy', meaningAr: 'الحميد'),
-    _AllahName(number: 58, arabic: 'الْمُحْصِي', transliteration: 'Al-Muhsi', meaningDe: 'Der Zählende', meaningEn: 'The Reckoner of All', meaningAr: 'المحصي'),
-    _AllahName(number: 59, arabic: 'الْمُبْدِئ', transliteration: 'Al-Mubdi', meaningDe: 'Der Anfänger', meaningEn: 'The Originator', meaningAr: 'المبدئ'),
-    _AllahName(number: 60, arabic: 'الْمُعِيد', transliteration: 'Al-Muid', meaningDe: 'Der Wiederhersteller', meaningEn: 'The Restorer', meaningAr: 'المعيد'),
-    _AllahName(number: 61, arabic: 'الْمُحْيِي', transliteration: 'Al-Muhyi', meaningDe: 'Der Lebensgeber', meaningEn: 'The Giver of Life', meaningAr: 'المحيي'),
-    _AllahName(number: 62, arabic: 'الْمُمِيت', transliteration: 'Al-Mumit', meaningDe: 'Der Verursacher des Todes', meaningEn: 'The Bringer of Death', meaningAr: 'المميت'),
-    _AllahName(number: 63, arabic: 'الْحَيّ', transliteration: 'Al-Hayy', meaningDe: 'Der Ewig Lebende', meaningEn: 'The Ever-Living', meaningAr: 'الحي'),
-    _AllahName(number: 64, arabic: 'الْقَيُّوم', transliteration: 'Al-Qayyum', meaningDe: 'Der Beständige', meaningEn: 'The Self-Subsisting', meaningAr: 'القيوم'),
-    _AllahName(number: 65, arabic: 'الْوَاجِد', transliteration: 'Al-Wajid', meaningDe: 'Der Finder', meaningEn: 'The Finder', meaningAr: 'الواجد'),
-    _AllahName(number: 66, arabic: 'الْمَاجِد', transliteration: 'Al-Majid', meaningDe: 'Der Edle', meaningEn: 'The Noble', meaningAr: 'الماجد'),
-    _AllahName(number: 67, arabic: 'الْوَاحِد', transliteration: 'Al-Wahid', meaningDe: 'Der Eine', meaningEn: 'The One', meaningAr: 'الواحد'),
-    _AllahName(number: 68, arabic: 'الصَّمَد', transliteration: 'As-Samad', meaningDe: 'Der Absolute', meaningEn: 'The Eternal Refuge', meaningAr: 'الصمد'),
-    _AllahName(number: 69, arabic: 'الْقَادِر', transliteration: 'Al-Qadir', meaningDe: 'Der Allmächtige', meaningEn: 'The All-Powerful', meaningAr: 'القادر'),
-    _AllahName(number: 70, arabic: 'الْمُقْتَدِر', transliteration: 'Al-Muqtadir', meaningDe: 'Der Vollmächtige', meaningEn: 'The Creator of All Power', meaningAr: 'المقتدر'),
-    _AllahName(number: 71, arabic: 'الْمُقَدِّم', transliteration: 'Al-Muqaddim', meaningDe: 'Der Voranstellende', meaningEn: 'The Expediter', meaningAr: 'المقدم'),
-    _AllahName(number: 72, arabic: 'الْمُؤَخِّر', transliteration: 'Al-Muakhkhir', meaningDe: 'Der Aufschiebende', meaningEn: 'The Delayer', meaningAr: 'المؤخر'),
-    _AllahName(number: 73, arabic: 'الْأَوَّل', transliteration: 'Al-Awwal', meaningDe: 'Der Erste', meaningEn: 'The First', meaningAr: 'الأول'),
-    _AllahName(number: 74, arabic: 'الْآخِر', transliteration: 'Al-Akhir', meaningDe: 'Der Letzte', meaningEn: 'The Last', meaningAr: 'الآخر'),
-    _AllahName(number: 75, arabic: 'الظَّاهِر', transliteration: 'Az-Zahir', meaningDe: 'Der Offenbare', meaningEn: 'The Manifest', meaningAr: 'الظاهر'),
-    _AllahName(number: 76, arabic: 'الْبَاطِن', transliteration: 'Al-Batin', meaningDe: 'Der Verborgene', meaningEn: 'The Hidden', meaningAr: 'الباطن'),
-    _AllahName(number: 77, arabic: 'الْوَالِي', transliteration: 'Al-Wali', meaningDe: 'Der Lenker', meaningEn: 'The Governor', meaningAr: 'الوالي'),
-    _AllahName(number: 78, arabic: 'الْمُتَعَالِي', transliteration: 'Al-Mutaali', meaningDe: 'Der Allerhöchste Erhabene', meaningEn: 'The Most Exalted', meaningAr: 'المتعالي'),
-    _AllahName(number: 79, arabic: 'الْبَرّ', transliteration: 'Al-Barr', meaningDe: 'Der Gütige', meaningEn: 'The Source of Goodness', meaningAr: 'البر'),
-    _AllahName(number: 80, arabic: 'التَّوَّاب', transliteration: 'At-Tawwab', meaningDe: 'Der Reue-Annehmende', meaningEn: 'The Acceptor of Repentance', meaningAr: 'التواب'),
-    _AllahName(number: 81, arabic: 'الْمُنْتَقِم', transliteration: 'Al-Muntaqim', meaningDe: 'Der Vergeltende', meaningEn: 'The Avenger', meaningAr: 'المنتقم'),
-    _AllahName(number: 82, arabic: 'الْعَفُوّ', transliteration: 'Al-Afuww', meaningDe: 'Der Verzeihende', meaningEn: 'The Pardoner', meaningAr: 'العفو'),
-    _AllahName(number: 83, arabic: 'الرَّؤُوف', transliteration: 'Ar-Rauf', meaningDe: 'Der Gütige', meaningEn: 'The Most Kind', meaningAr: 'الرؤوف'),
-    _AllahName(number: 84, arabic: 'مَالِكُ الْمُلْك', transliteration: 'Malik-ul-Mulk', meaningDe: 'Besitzer der Herrschaft', meaningEn: 'Owner of All Sovereignty', meaningAr: 'مالك الملك'),
-    _AllahName(number: 85, arabic: 'ذُو الْجَلَالِ وَالْإِكْرَام', transliteration: 'Dhul-Jalali wal-Ikram', meaningDe: 'Herr von Majestät und Ehre', meaningEn: 'Lord of Glory and Honour', meaningAr: 'ذو الجلال والإكرام'),
-    _AllahName(number: 86, arabic: 'الْمُقْسِط', transliteration: 'Al-Muqsit', meaningDe: 'Der Gerechte', meaningEn: 'The Equitable', meaningAr: 'المقسط'),
-    _AllahName(number: 87, arabic: 'الْجَامِع', transliteration: 'Al-Jami', meaningDe: 'Der Versammler', meaningEn: 'The Gatherer', meaningAr: 'الجامع'),
-    _AllahName(number: 88, arabic: 'الْغَنِيّ', transliteration: 'Al-Ghaniyy', meaningDe: 'Der Unabhängige', meaningEn: 'The Self-Sufficient', meaningAr: 'الغني'),
-    _AllahName(number: 89, arabic: 'الْمُغْنِي', transliteration: 'Al-Mughni', meaningDe: 'Der Bereichernde', meaningEn: 'The Enricher', meaningAr: 'المغني'),
-    _AllahName(number: 90, arabic: 'الْمَانِع', transliteration: 'Al-Mani', meaningDe: 'Der Zurückhaltende', meaningEn: 'The Preventer', meaningAr: 'المانع'),
-    _AllahName(number: 91, arabic: 'الضَّارّ', transliteration: 'Ad-Darr', meaningDe: 'Der Schaden Zulassende', meaningEn: 'The Afflictor', meaningAr: 'الضار'),
-    _AllahName(number: 92, arabic: 'النَّافِع', transliteration: 'An-Nafi', meaningDe: 'Der Nutzen Gebende', meaningEn: 'The Benefactor', meaningAr: 'النافع'),
-    _AllahName(number: 93, arabic: 'النُّور', transliteration: 'An-Nur', meaningDe: 'Das Licht', meaningEn: 'The Light', meaningAr: 'النور'),
-    _AllahName(number: 94, arabic: 'الْهَادِي', transliteration: 'Al-Hadi', meaningDe: 'Der Rechtleitende', meaningEn: 'The Guide', meaningAr: 'الهادي'),
-    _AllahName(number: 95, arabic: 'الْبَدِيع', transliteration: 'Al-Badi', meaningDe: 'Der Einzigartige Schöpfer', meaningEn: 'The Incomparable Originator', meaningAr: 'البديع'),
-    _AllahName(number: 96, arabic: 'الْبَاقِي', transliteration: 'Al-Baqi', meaningDe: 'Der Ewig Bleibende', meaningEn: 'The Everlasting', meaningAr: 'الباقي'),
-    _AllahName(number: 97, arabic: 'الْوَارِث', transliteration: 'Al-Warith', meaningDe: 'Der Erbe', meaningEn: 'The Inheritor', meaningAr: 'الوارث'),
-    _AllahName(number: 98, arabic: 'الرَّشِيد', transliteration: 'Ar-Rashid', meaningDe: 'Der recht Leitende', meaningEn: 'The Guide to the Right Path', meaningAr: 'الرشيد'),
-    _AllahName(number: 99, arabic: 'الصَّبُور', transliteration: 'As-Sabur', meaningDe: 'Der Geduldige', meaningEn: 'The Most Patient', meaningAr: 'الصبور'),
+    _AllahName(
+      number: 1,
+      arabic: 'اللَّه',
+      transliteration: 'Allah',
+      meaningDe: 'Allah',
+      meaningEn: 'Allah',
+      meaningAr: 'الله',
+    ),
+    _AllahName(
+      number: 2,
+      arabic: 'الرَّحْمَٰن',
+      transliteration: 'Ar-Rahman',
+      meaningDe: 'Der Allerbarmer',
+      meaningEn: 'The Most Compassionate',
+      meaningAr: 'الرحمن',
+    ),
+    _AllahName(
+      number: 3,
+      arabic: 'الرَّحِيم',
+      transliteration: 'Ar-Rahim',
+      meaningDe: 'Der Barmherzige',
+      meaningEn: 'The Most Merciful',
+      meaningAr: 'الرحيم',
+    ),
+    _AllahName(
+      number: 4,
+      arabic: 'الْمَلِك',
+      transliteration: 'Al-Malik',
+      meaningDe: 'Der König',
+      meaningEn: 'The King',
+      meaningAr: 'الملك',
+    ),
+    _AllahName(
+      number: 5,
+      arabic: 'الْقُدُّوس',
+      transliteration: 'Al-Quddus',
+      meaningDe: 'Der Heilige',
+      meaningEn: 'The Most Holy',
+      meaningAr: 'القدوس',
+    ),
+    _AllahName(
+      number: 6,
+      arabic: 'السَّلَام',
+      transliteration: 'As-Salam',
+      meaningDe: 'Der Friede',
+      meaningEn: 'The Source of Peace',
+      meaningAr: 'السلام',
+    ),
+    _AllahName(
+      number: 7,
+      arabic: 'الْمُؤْمِن',
+      transliteration: 'Al-Mumin',
+      meaningDe: 'Der Gewährer von Sicherheit',
+      meaningEn: 'The Giver of Security',
+      meaningAr: 'المؤمن',
+    ),
+    _AllahName(
+      number: 8,
+      arabic: 'الْمُهَيْمِن',
+      transliteration: 'Al-Muhaymin',
+      meaningDe: 'Der Beschützer',
+      meaningEn: 'The Guardian',
+      meaningAr: 'المهيمن',
+    ),
+    _AllahName(
+      number: 9,
+      arabic: 'الْعَزِيز',
+      transliteration: 'Al-Aziz',
+      meaningDe: 'Der Allmächtige',
+      meaningEn: 'The Almighty',
+      meaningAr: 'العزيز',
+    ),
+    _AllahName(
+      number: 10,
+      arabic: 'الْجَبَّار',
+      transliteration: 'Al-Jabbar',
+      meaningDe: 'Der Gewaltige',
+      meaningEn: 'The Compeller',
+      meaningAr: 'الجبار',
+    ),
+    _AllahName(
+      number: 11,
+      arabic: 'الْمُتَكَبِّر',
+      transliteration: 'Al-Mutakabbir',
+      meaningDe: 'Der Majestätische',
+      meaningEn: 'The Supreme',
+      meaningAr: 'المتكبر',
+    ),
+    _AllahName(
+      number: 12,
+      arabic: 'الْخَالِق',
+      transliteration: 'Al-Khaliq',
+      meaningDe: 'Der Schöpfer',
+      meaningEn: 'The Creator',
+      meaningAr: 'الخالق',
+    ),
+    _AllahName(
+      number: 13,
+      arabic: 'الْبَارِئ',
+      transliteration: 'Al-Bari',
+      meaningDe: 'Der Erschaffer',
+      meaningEn: 'The Originator',
+      meaningAr: 'البارئ',
+    ),
+    _AllahName(
+      number: 14,
+      arabic: 'الْمُصَوِّر',
+      transliteration: 'Al-Musawwir',
+      meaningDe: 'Der Gestalter',
+      meaningEn: 'The Fashioner',
+      meaningAr: 'المصور',
+    ),
+    _AllahName(
+      number: 15,
+      arabic: 'الْغَفَّار',
+      transliteration: 'Al-Ghaffar',
+      meaningDe: 'Der Vielvergebende',
+      meaningEn: 'The Constant Forgiver',
+      meaningAr: 'الغفار',
+    ),
+    _AllahName(
+      number: 16,
+      arabic: 'الْقَهَّار',
+      transliteration: 'Al-Qahhar',
+      meaningDe: 'Der Allbezwinger',
+      meaningEn: 'The All-Subduer',
+      meaningAr: 'القهار',
+    ),
+    _AllahName(
+      number: 17,
+      arabic: 'الْوَهَّاب',
+      transliteration: 'Al-Wahhab',
+      meaningDe: 'Der Schenkende',
+      meaningEn: 'The Bestower',
+      meaningAr: 'الوهاب',
+    ),
+    _AllahName(
+      number: 18,
+      arabic: 'الرَّزَّاق',
+      transliteration: 'Ar-Razzaq',
+      meaningDe: 'Der Versorger',
+      meaningEn: 'The Provider',
+      meaningAr: 'الرزاق',
+    ),
+    _AllahName(
+      number: 19,
+      arabic: 'الْفَتَّاح',
+      transliteration: 'Al-Fattah',
+      meaningDe: 'Der Öffnende',
+      meaningEn: 'The Opener',
+      meaningAr: 'الفتاح',
+    ),
+    _AllahName(
+      number: 20,
+      arabic: 'الْعَلِيم',
+      transliteration: 'Al-Alim',
+      meaningDe: 'Der Allwissende',
+      meaningEn: 'The All-Knowing',
+      meaningAr: 'العليم',
+    ),
+    _AllahName(
+      number: 21,
+      arabic: 'الْقَابِض',
+      transliteration: 'Al-Qabid',
+      meaningDe: 'Der Zurückhaltende',
+      meaningEn: 'The Withholder',
+      meaningAr: 'القابض',
+    ),
+    _AllahName(
+      number: 22,
+      arabic: 'الْبَاسِط',
+      transliteration: 'Al-Basit',
+      meaningDe: 'Der Ausbreitende',
+      meaningEn: 'The Extender',
+      meaningAr: 'الباسط',
+    ),
+    _AllahName(
+      number: 23,
+      arabic: 'الْخَافِض',
+      transliteration: 'Al-Khafid',
+      meaningDe: 'Der Erniedrigende',
+      meaningEn: 'The Reducer',
+      meaningAr: 'الخافض',
+    ),
+    _AllahName(
+      number: 24,
+      arabic: 'الرَّافِع',
+      transliteration: 'Ar-Rafi',
+      meaningDe: 'Der Erhöhende',
+      meaningEn: 'The Exalter',
+      meaningAr: 'الرافع',
+    ),
+    _AllahName(
+      number: 25,
+      arabic: 'الْمُعِزّ',
+      transliteration: 'Al-Muizz',
+      meaningDe: 'Der Verleiher von Ehre',
+      meaningEn: 'The Honourer',
+      meaningAr: 'المعز',
+    ),
+    _AllahName(
+      number: 26,
+      arabic: 'الْمُذِلّ',
+      transliteration: 'Al-Mudhill',
+      meaningDe: 'Der Demütigende',
+      meaningEn: 'The Dishonourer',
+      meaningAr: 'المذل',
+    ),
+    _AllahName(
+      number: 27,
+      arabic: 'السَّمِيع',
+      transliteration: 'As-Sami',
+      meaningDe: 'Der Allhörende',
+      meaningEn: 'The All-Hearing',
+      meaningAr: 'السميع',
+    ),
+    _AllahName(
+      number: 28,
+      arabic: 'الْبَصِير',
+      transliteration: 'Al-Basir',
+      meaningDe: 'Der Allsehende',
+      meaningEn: 'The All-Seeing',
+      meaningAr: 'البصير',
+    ),
+    _AllahName(
+      number: 29,
+      arabic: 'الْحَكَم',
+      transliteration: 'Al-Hakam',
+      meaningDe: 'Der Richter',
+      meaningEn: 'The Judge',
+      meaningAr: 'الحكم',
+    ),
+    _AllahName(
+      number: 30,
+      arabic: 'الْعَدْل',
+      transliteration: 'Al-Adl',
+      meaningDe: 'Der Gerechte',
+      meaningEn: 'The Just',
+      meaningAr: 'العدل',
+    ),
+    _AllahName(
+      number: 31,
+      arabic: 'اللَّطِيف',
+      transliteration: 'Al-Latif',
+      meaningDe: 'Der Feinfühlige',
+      meaningEn: 'The Subtle One',
+      meaningAr: 'اللطيف',
+    ),
+    _AllahName(
+      number: 32,
+      arabic: 'الْخَبِير',
+      transliteration: 'Al-Khabir',
+      meaningDe: 'Der Allkundige',
+      meaningEn: 'The All-Aware',
+      meaningAr: 'الخبير',
+    ),
+    _AllahName(
+      number: 33,
+      arabic: 'الْحَلِيم',
+      transliteration: 'Al-Halim',
+      meaningDe: 'Der Nachsichtige',
+      meaningEn: 'The Most Forbearing',
+      meaningAr: 'الحليم',
+    ),
+    _AllahName(
+      number: 34,
+      arabic: 'الْعَظِيم',
+      transliteration: 'Al-Azim',
+      meaningDe: 'Der Gewaltige',
+      meaningEn: 'The Magnificent',
+      meaningAr: 'العظيم',
+    ),
+    _AllahName(
+      number: 35,
+      arabic: 'الْغَفُور',
+      transliteration: 'Al-Ghafur',
+      meaningDe: 'Der Vergebende',
+      meaningEn: 'The Most Forgiving',
+      meaningAr: 'الغفور',
+    ),
+    _AllahName(
+      number: 36,
+      arabic: 'الشَّكُور',
+      transliteration: 'Ash-Shakur',
+      meaningDe: 'Der Dankbare',
+      meaningEn: 'The Most Appreciative',
+      meaningAr: 'الشكور',
+    ),
+    _AllahName(
+      number: 37,
+      arabic: 'الْعَلِيّ',
+      transliteration: 'Al-Aliyy',
+      meaningDe: 'Der Allerhöchste',
+      meaningEn: 'The Most High',
+      meaningAr: 'العلي',
+    ),
+    _AllahName(
+      number: 38,
+      arabic: 'الْكَبِير',
+      transliteration: 'Al-Kabir',
+      meaningDe: 'Der Große',
+      meaningEn: 'The Most Great',
+      meaningAr: 'الكبير',
+    ),
+    _AllahName(
+      number: 39,
+      arabic: 'الْحَفِيظ',
+      transliteration: 'Al-Hafiz',
+      meaningDe: 'Der Bewahrende',
+      meaningEn: 'The Preserver',
+      meaningAr: 'الحفيظ',
+    ),
+    _AllahName(
+      number: 40,
+      arabic: 'الْمُقِيت',
+      transliteration: 'Al-Muqit',
+      meaningDe: 'Der Erhalter',
+      meaningEn: 'The Sustainer',
+      meaningAr: 'المقيت',
+    ),
+    _AllahName(
+      number: 41,
+      arabic: 'الْحَسِيب',
+      transliteration: 'Al-Hasib',
+      meaningDe: 'Der Abrechnende',
+      meaningEn: 'The Reckoner',
+      meaningAr: 'الحسيب',
+    ),
+    _AllahName(
+      number: 42,
+      arabic: 'الْجَلِيل',
+      transliteration: 'Al-Jalil',
+      meaningDe: 'Der Erhabene',
+      meaningEn: 'The Majestic',
+      meaningAr: 'الجليل',
+    ),
+    _AllahName(
+      number: 43,
+      arabic: 'الْكَرِيم',
+      transliteration: 'Al-Karim',
+      meaningDe: 'Der Großzügige',
+      meaningEn: 'The Most Generous',
+      meaningAr: 'الكريم',
+    ),
+    _AllahName(
+      number: 44,
+      arabic: 'الرَّقِيب',
+      transliteration: 'Ar-Raqib',
+      meaningDe: 'Der Wächter',
+      meaningEn: 'The Watchful',
+      meaningAr: 'الرقيب',
+    ),
+    _AllahName(
+      number: 45,
+      arabic: 'الْمُجِيب',
+      transliteration: 'Al-Mujib',
+      meaningDe: 'Der Erhörende',
+      meaningEn: 'The Responsive',
+      meaningAr: 'المجيب',
+    ),
+    _AllahName(
+      number: 46,
+      arabic: 'الْوَاسِع',
+      transliteration: 'Al-Wasi',
+      meaningDe: 'Der Umfassende',
+      meaningEn: 'The All-Encompassing',
+      meaningAr: 'الواسع',
+    ),
+    _AllahName(
+      number: 47,
+      arabic: 'الْحَكِيم',
+      transliteration: 'Al-Hakim',
+      meaningDe: 'Der Allweise',
+      meaningEn: 'The All-Wise',
+      meaningAr: 'الحكيم',
+    ),
+    _AllahName(
+      number: 48,
+      arabic: 'الْوَدُود',
+      transliteration: 'Al-Wadud',
+      meaningDe: 'Der Liebevolle',
+      meaningEn: 'The Most Loving',
+      meaningAr: 'الودود',
+    ),
+    _AllahName(
+      number: 49,
+      arabic: 'الْمَجِيد',
+      transliteration: 'Al-Majid',
+      meaningDe: 'Der Ruhmreiche',
+      meaningEn: 'The Most Glorious',
+      meaningAr: 'المجيد',
+    ),
+    _AllahName(
+      number: 50,
+      arabic: 'الْبَاعِث',
+      transliteration: 'Al-Baith',
+      meaningDe: 'Der Erwecker',
+      meaningEn: 'The Resurrector',
+      meaningAr: 'الباعث',
+    ),
+    _AllahName(
+      number: 51,
+      arabic: 'الشَّهِيد',
+      transliteration: 'Ash-Shahid',
+      meaningDe: 'Der Zeuge',
+      meaningEn: 'The Witness',
+      meaningAr: 'الشهيد',
+    ),
+    _AllahName(
+      number: 52,
+      arabic: 'الْحَقّ',
+      transliteration: 'Al-Haqq',
+      meaningDe: 'Die Wahrheit',
+      meaningEn: 'The Truth',
+      meaningAr: 'الحق',
+    ),
+    _AllahName(
+      number: 53,
+      arabic: 'الْوَكِيل',
+      transliteration: 'Al-Wakil',
+      meaningDe: 'Der Sachwalter',
+      meaningEn: 'The Trustee',
+      meaningAr: 'الوكيل',
+    ),
+    _AllahName(
+      number: 54,
+      arabic: 'الْقَوِيّ',
+      transliteration: 'Al-Qawiyy',
+      meaningDe: 'Der Starke',
+      meaningEn: 'The All-Strong',
+      meaningAr: 'القوي',
+    ),
+    _AllahName(
+      number: 55,
+      arabic: 'الْمَتِين',
+      transliteration: 'Al-Matin',
+      meaningDe: 'Der Standhafte',
+      meaningEn: 'The Firm One',
+      meaningAr: 'المتين',
+    ),
+    _AllahName(
+      number: 56,
+      arabic: 'الْوَلِيّ',
+      transliteration: 'Al-Waliyy',
+      meaningDe: 'Der Beschützerfreund',
+      meaningEn: 'The Protecting Ally',
+      meaningAr: 'الولي',
+    ),
+    _AllahName(
+      number: 57,
+      arabic: 'الْحَمِيد',
+      transliteration: 'Al-Hamid',
+      meaningDe: 'Der Lobenswerte',
+      meaningEn: 'The Praiseworthy',
+      meaningAr: 'الحميد',
+    ),
+    _AllahName(
+      number: 58,
+      arabic: 'الْمُحْصِي',
+      transliteration: 'Al-Muhsi',
+      meaningDe: 'Der Zählende',
+      meaningEn: 'The Reckoner of All',
+      meaningAr: 'المحصي',
+    ),
+    _AllahName(
+      number: 59,
+      arabic: 'الْمُبْدِئ',
+      transliteration: 'Al-Mubdi',
+      meaningDe: 'Der Anfänger',
+      meaningEn: 'The Originator',
+      meaningAr: 'المبدئ',
+    ),
+    _AllahName(
+      number: 60,
+      arabic: 'الْمُعِيد',
+      transliteration: 'Al-Muid',
+      meaningDe: 'Der Wiederhersteller',
+      meaningEn: 'The Restorer',
+      meaningAr: 'المعيد',
+    ),
+    _AllahName(
+      number: 61,
+      arabic: 'الْمُحْيِي',
+      transliteration: 'Al-Muhyi',
+      meaningDe: 'Der Lebensgeber',
+      meaningEn: 'The Giver of Life',
+      meaningAr: 'المحيي',
+    ),
+    _AllahName(
+      number: 62,
+      arabic: 'الْمُمِيت',
+      transliteration: 'Al-Mumit',
+      meaningDe: 'Der Verursacher des Todes',
+      meaningEn: 'The Bringer of Death',
+      meaningAr: 'المميت',
+    ),
+    _AllahName(
+      number: 63,
+      arabic: 'الْحَيّ',
+      transliteration: 'Al-Hayy',
+      meaningDe: 'Der Ewig Lebende',
+      meaningEn: 'The Ever-Living',
+      meaningAr: 'الحي',
+    ),
+    _AllahName(
+      number: 64,
+      arabic: 'الْقَيُّوم',
+      transliteration: 'Al-Qayyum',
+      meaningDe: 'Der Beständige',
+      meaningEn: 'The Self-Subsisting',
+      meaningAr: 'القيوم',
+    ),
+    _AllahName(
+      number: 65,
+      arabic: 'الْوَاجِد',
+      transliteration: 'Al-Wajid',
+      meaningDe: 'Der Finder',
+      meaningEn: 'The Finder',
+      meaningAr: 'الواجد',
+    ),
+    _AllahName(
+      number: 66,
+      arabic: 'الْمَاجِد',
+      transliteration: 'Al-Majid',
+      meaningDe: 'Der Edle',
+      meaningEn: 'The Noble',
+      meaningAr: 'الماجد',
+    ),
+    _AllahName(
+      number: 67,
+      arabic: 'الْوَاحِد',
+      transliteration: 'Al-Wahid',
+      meaningDe: 'Der Eine',
+      meaningEn: 'The One',
+      meaningAr: 'الواحد',
+    ),
+    _AllahName(
+      number: 68,
+      arabic: 'الصَّمَد',
+      transliteration: 'As-Samad',
+      meaningDe: 'Der Absolute',
+      meaningEn: 'The Eternal Refuge',
+      meaningAr: 'الصمد',
+    ),
+    _AllahName(
+      number: 69,
+      arabic: 'الْقَادِر',
+      transliteration: 'Al-Qadir',
+      meaningDe: 'Der Allmächtige',
+      meaningEn: 'The All-Powerful',
+      meaningAr: 'القادر',
+    ),
+    _AllahName(
+      number: 70,
+      arabic: 'الْمُقْتَدِر',
+      transliteration: 'Al-Muqtadir',
+      meaningDe: 'Der Vollmächtige',
+      meaningEn: 'The Creator of All Power',
+      meaningAr: 'المقتدر',
+    ),
+    _AllahName(
+      number: 71,
+      arabic: 'الْمُقَدِّم',
+      transliteration: 'Al-Muqaddim',
+      meaningDe: 'Der Voranstellende',
+      meaningEn: 'The Expediter',
+      meaningAr: 'المقدم',
+    ),
+    _AllahName(
+      number: 72,
+      arabic: 'الْمُؤَخِّر',
+      transliteration: 'Al-Muakhkhir',
+      meaningDe: 'Der Aufschiebende',
+      meaningEn: 'The Delayer',
+      meaningAr: 'المؤخر',
+    ),
+    _AllahName(
+      number: 73,
+      arabic: 'الْأَوَّل',
+      transliteration: 'Al-Awwal',
+      meaningDe: 'Der Erste',
+      meaningEn: 'The First',
+      meaningAr: 'الأول',
+    ),
+    _AllahName(
+      number: 74,
+      arabic: 'الْآخِر',
+      transliteration: 'Al-Akhir',
+      meaningDe: 'Der Letzte',
+      meaningEn: 'The Last',
+      meaningAr: 'الآخر',
+    ),
+    _AllahName(
+      number: 75,
+      arabic: 'الظَّاهِر',
+      transliteration: 'Az-Zahir',
+      meaningDe: 'Der Offenbare',
+      meaningEn: 'The Manifest',
+      meaningAr: 'الظاهر',
+    ),
+    _AllahName(
+      number: 76,
+      arabic: 'الْبَاطِن',
+      transliteration: 'Al-Batin',
+      meaningDe: 'Der Verborgene',
+      meaningEn: 'The Hidden',
+      meaningAr: 'الباطن',
+    ),
+    _AllahName(
+      number: 77,
+      arabic: 'الْوَالِي',
+      transliteration: 'Al-Wali',
+      meaningDe: 'Der Lenker',
+      meaningEn: 'The Governor',
+      meaningAr: 'الوالي',
+    ),
+    _AllahName(
+      number: 78,
+      arabic: 'الْمُتَعَالِي',
+      transliteration: 'Al-Mutaali',
+      meaningDe: 'Der Allerhöchste Erhabene',
+      meaningEn: 'The Most Exalted',
+      meaningAr: 'المتعالي',
+    ),
+    _AllahName(
+      number: 79,
+      arabic: 'الْبَرّ',
+      transliteration: 'Al-Barr',
+      meaningDe: 'Der Gütige',
+      meaningEn: 'The Source of Goodness',
+      meaningAr: 'البر',
+    ),
+    _AllahName(
+      number: 80,
+      arabic: 'التَّوَّاب',
+      transliteration: 'At-Tawwab',
+      meaningDe: 'Der Reue-Annehmende',
+      meaningEn: 'The Acceptor of Repentance',
+      meaningAr: 'التواب',
+    ),
+    _AllahName(
+      number: 81,
+      arabic: 'الْمُنْتَقِم',
+      transliteration: 'Al-Muntaqim',
+      meaningDe: 'Der Vergeltende',
+      meaningEn: 'The Avenger',
+      meaningAr: 'المنتقم',
+    ),
+    _AllahName(
+      number: 82,
+      arabic: 'الْعَفُوّ',
+      transliteration: 'Al-Afuww',
+      meaningDe: 'Der Verzeihende',
+      meaningEn: 'The Pardoner',
+      meaningAr: 'العفو',
+    ),
+    _AllahName(
+      number: 83,
+      arabic: 'الرَّؤُوف',
+      transliteration: 'Ar-Rauf',
+      meaningDe: 'Der Gütige',
+      meaningEn: 'The Most Kind',
+      meaningAr: 'الرؤوف',
+    ),
+    _AllahName(
+      number: 84,
+      arabic: 'مَالِكُ الْمُلْك',
+      transliteration: 'Malik-ul-Mulk',
+      meaningDe: 'Besitzer der Herrschaft',
+      meaningEn: 'Owner of All Sovereignty',
+      meaningAr: 'مالك الملك',
+    ),
+    _AllahName(
+      number: 85,
+      arabic: 'ذُو الْجَلَالِ وَالْإِكْرَام',
+      transliteration: 'Dhul-Jalali wal-Ikram',
+      meaningDe: 'Herr von Majestät und Ehre',
+      meaningEn: 'Lord of Glory and Honour',
+      meaningAr: 'ذو الجلال والإكرام',
+    ),
+    _AllahName(
+      number: 86,
+      arabic: 'الْمُقْسِط',
+      transliteration: 'Al-Muqsit',
+      meaningDe: 'Der Gerechte',
+      meaningEn: 'The Equitable',
+      meaningAr: 'المقسط',
+    ),
+    _AllahName(
+      number: 87,
+      arabic: 'الْجَامِع',
+      transliteration: 'Al-Jami',
+      meaningDe: 'Der Versammler',
+      meaningEn: 'The Gatherer',
+      meaningAr: 'الجامع',
+    ),
+    _AllahName(
+      number: 88,
+      arabic: 'الْغَنِيّ',
+      transliteration: 'Al-Ghaniyy',
+      meaningDe: 'Der Unabhängige',
+      meaningEn: 'The Self-Sufficient',
+      meaningAr: 'الغني',
+    ),
+    _AllahName(
+      number: 89,
+      arabic: 'الْمُغْنِي',
+      transliteration: 'Al-Mughni',
+      meaningDe: 'Der Bereichernde',
+      meaningEn: 'The Enricher',
+      meaningAr: 'المغني',
+    ),
+    _AllahName(
+      number: 90,
+      arabic: 'الْمَانِع',
+      transliteration: 'Al-Mani',
+      meaningDe: 'Der Zurückhaltende',
+      meaningEn: 'The Preventer',
+      meaningAr: 'المانع',
+    ),
+    _AllahName(
+      number: 91,
+      arabic: 'الضَّارّ',
+      transliteration: 'Ad-Darr',
+      meaningDe: 'Der Schaden Zulassende',
+      meaningEn: 'The Afflictor',
+      meaningAr: 'الضار',
+    ),
+    _AllahName(
+      number: 92,
+      arabic: 'النَّافِع',
+      transliteration: 'An-Nafi',
+      meaningDe: 'Der Nutzen Gebende',
+      meaningEn: 'The Benefactor',
+      meaningAr: 'النافع',
+    ),
+    _AllahName(
+      number: 93,
+      arabic: 'النُّور',
+      transliteration: 'An-Nur',
+      meaningDe: 'Das Licht',
+      meaningEn: 'The Light',
+      meaningAr: 'النور',
+    ),
+    _AllahName(
+      number: 94,
+      arabic: 'الْهَادِي',
+      transliteration: 'Al-Hadi',
+      meaningDe: 'Der Rechtleitende',
+      meaningEn: 'The Guide',
+      meaningAr: 'الهادي',
+    ),
+    _AllahName(
+      number: 95,
+      arabic: 'الْبَدِيع',
+      transliteration: 'Al-Badi',
+      meaningDe: 'Der Einzigartige Schöpfer',
+      meaningEn: 'The Incomparable Originator',
+      meaningAr: 'البديع',
+    ),
+    _AllahName(
+      number: 96,
+      arabic: 'الْبَاقِي',
+      transliteration: 'Al-Baqi',
+      meaningDe: 'Der Ewig Bleibende',
+      meaningEn: 'The Everlasting',
+      meaningAr: 'الباقي',
+    ),
+    _AllahName(
+      number: 97,
+      arabic: 'الْوَارِث',
+      transliteration: 'Al-Warith',
+      meaningDe: 'Der Erbe',
+      meaningEn: 'The Inheritor',
+      meaningAr: 'الوارث',
+    ),
+    _AllahName(
+      number: 98,
+      arabic: 'الرَّشِيد',
+      transliteration: 'Ar-Rashid',
+      meaningDe: 'Der recht Leitende',
+      meaningEn: 'The Guide to the Right Path',
+      meaningAr: 'الرشيد',
+    ),
+    _AllahName(
+      number: 99,
+      arabic: 'الصَّبُور',
+      transliteration: 'As-Sabur',
+      meaningDe: 'Der Geduldige',
+      meaningEn: 'The Most Patient',
+      meaningAr: 'الصبور',
+    ),
   ];
 
   @override
@@ -5939,15 +6994,17 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   }
 
   String _normalizeSearch(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r"[\u2018\u2019\u201B\u2032'`\-_.\s]+"), '');
+    return value.toLowerCase().replaceAll(
+      RegExp(r"[\u2018\u2019\u201B\u2032'`\-_.\s]+"),
+      '',
+    );
   }
 
   static String _nameKey(String value) {
-    return value
-        .toLowerCase()
-        .replaceAll(RegExp(r"[^a-z0-9\u0600-\u06FF]+"), '');
+    return value.toLowerCase().replaceAll(
+      RegExp(r"[^a-z0-9\u0600-\u06FF]+"),
+      '',
+    );
   }
 
   static Map<String, int> _buildDetailIndexByName() {
@@ -6157,7 +7214,9 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(
+                bottom: Radius.circular(20),
+              ),
             ),
             child: Row(
               children: [
@@ -6167,7 +7226,10 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.black.withOpacity(0.6),
-                    border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
+                    border: Border.all(
+                      color: _MyAppState.currentTheme.color,
+                      width: 2,
+                    ),
                   ),
                   child: Center(
                     child: Text(
@@ -6196,7 +7258,10 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                       const SizedBox(height: 4),
                       Text(
                         _subtitle(),
-                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
@@ -6224,7 +7289,10 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                               decoration: BoxDecoration(
                                 color: Colors.redAccent,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 0.8),
+                                border: Border.all(
+                                  color: Colors.black,
+                                  width: 0.8,
+                                ),
                               ),
                             ),
                           ),
@@ -6245,12 +7313,16 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                 });
               },
               style: const TextStyle(color: Colors.white),
-              textDirection:
-                  appLanguage == AppLanguage.arabic ? TextDirection.rtl : TextDirection.ltr,
+              textDirection: appLanguage == AppLanguage.arabic
+                  ? TextDirection.rtl
+                  : TextDirection.ltr,
               decoration: InputDecoration(
                 hintText: _searchHint(),
                 hintStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: Icon(Icons.search, color: _MyAppState.currentTheme.color),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: _MyAppState.currentTheme.color,
+                ),
                 suffixIcon: _searchQuery.trim().isNotEmpty
                     ? IconButton(
                         tooltip: 'Clear',
@@ -6260,7 +7332,10 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                             _searchQuery = '';
                           });
                         },
-                        icon: Icon(Icons.close, color: _MyAppState.currentTheme.color),
+                        icon: Icon(
+                          Icons.close,
+                          color: _MyAppState.currentTheme.color,
+                        ),
                       )
                     : null,
                 filled: true,
@@ -6306,108 +7381,121 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                     ),
                   )
                 : ListView.builder(
-              padding: const EdgeInsets.all(14),
-              itemCount: filtered.length,
-              itemBuilder: (context, index) {
-                final item = filtered[index];
-                return GestureDetector(
-                  onTap: _isAllah(item) ? null : () => _showNameDetail(item),
-                  child: Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _MyAppState.currentTheme.color.withOpacity(0.18),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 34,
-                        height: 34,
-                        decoration: BoxDecoration(
-                          color: _MyAppState.currentTheme.color,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            '${_displayNumberFor(item)}',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
+                    padding: const EdgeInsets.all(14),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final item = filtered[index];
+                      return GestureDetector(
+                        onTap: _isAllah(item)
+                            ? null
+                            : () => _showNameDetail(item),
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: _MyAppState.currentTheme.color,
+                              width: 2,
                             ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _MyAppState.currentTheme.color
+                                    .withOpacity(0.18),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  color: _MyAppState.currentTheme.color,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${_displayNumberFor(item)}',
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.arabic,
+                                      textDirection: TextDirection.rtl,
+                                      style: GoogleFonts.notoNaskhArabic(
+                                        color: Colors.black,
+                                        fontSize: 30,
+                                        height: 1.7,
+                                        fontWeight: FontWeight.w700,
+                                        textStyle: const TextStyle(
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      item.transliteration,
+                                      style: const TextStyle(
+                                        color: Colors.black87,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    if (!_isAllah(item))
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item.meaning(appLanguage),
+                                            style: const TextStyle(
+                                              color: Colors.black54,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            _tapForMeaningLabel(),
+                                            style: TextStyle(
+                                              color: _MyAppState
+                                                  .currentTheme
+                                                  .color,
+                                              fontSize: 13,
+                                              fontStyle: FontStyle.italic,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                            textDirection:
+                                                appLanguage ==
+                                                    AppLanguage.arabic
+                                                ? TextDirection.rtl
+                                                : TextDirection.ltr,
+                                          ),
+                                        ],
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.arabic,
-                              textDirection: TextDirection.rtl,
-                              style: GoogleFonts.notoNaskhArabic(
-                                color: Colors.black,
-                                fontSize: 30,
-                                height: 1.7,
-                                fontWeight: FontWeight.w700,
-                                textStyle: const TextStyle(color: Colors.black),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.transliteration,
-                              style: const TextStyle(
-                                color: Colors.black87,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            if (!_isAllah(item))
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.meaning(appLanguage),
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _tapForMeaningLabel(),
-                                    style: TextStyle(
-                                      color: _MyAppState.currentTheme.color,
-                                      fontSize: 13,
-                                      fontStyle: FontStyle.italic,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    textDirection: appLanguage == AppLanguage.arabic
-                                        ? TextDirection.rtl
-                                        : TextDirection.ltr,
-                                  ),
-                                ],
-                              ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),
