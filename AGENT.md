@@ -109,6 +109,18 @@ Richtlinien:
 - Keine unnoetigen Tiefen in der Ordnerstruktur.
 - Generierte Dateien und Build-Outputs nicht manuell als fachliche Quelle bearbeiten, ausser es ist explizit Teil des Tasks.
 
+## Git-Arbeitsregel
+
+Standardvorgabe fuer dieses Projekt:
+- Nicht mit zusaetzlichen Branches, Worktrees oder anderen Git-Sonderwegen arbeiten, ausser der User verlangt das ausdruecklich.
+- Standardziel fuer normale Aenderungen ist `main`.
+- Wenn der User bestaetigt, dass die aktuellen Aenderungen auf GitHub veroeffentlicht werden sollen, dann direkt diesen Ablauf verwenden:
+- `git add .`
+- `git commit -m "(Passende Beschreibung auf Deutsch)"`
+- `git push origin main`
+- Agenten sollen den User in sinnvollen Abstaenden aktiv fragen, ob die fertigen Aenderungen nach GitHub gepusht werden sollen.
+- Nur wenn der User das ausdruecklich will, sollen Pushes ausgefuehrt werden.
+
 ## Flutter Best Practices
 
 Es soll sich an Best Practices gehalten werden:
