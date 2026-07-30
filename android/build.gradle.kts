@@ -5,17 +5,6 @@ allprojects {
     }
 }
 
-// Force all subprojects to use compileSdk 34
-subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            project.extensions.configure<com.android.build.gradle.BaseExtension>("android") {
-                compileSdkVersion(34)
-            }
-        }
-    }
-}
-
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
