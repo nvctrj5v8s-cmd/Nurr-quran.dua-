@@ -36,6 +36,8 @@
   <script>
     (async function () {
       try {
+        const wasControlled =
+            'serviceWorker' in navigator && navigator.serviceWorker.controller;
         if ('serviceWorker' in navigator) {
           const registrations = await navigator.serviceWorker.getRegistrations();
           await Promise.all(registrations.map((item) => item.unregister()));
@@ -44,11 +46,20 @@
           const keys = await caches.keys();
           await Promise.all(keys.map((key) => caches.delete(key)));
         }
-      } finally {
-        const flutterScript = document.createElement('script');
-        flutterScript.src = 'flutter_bootstrap.js?v=20260820-mobile-cache-fix';
-        document.body.appendChild(flutterScript);
+        if (wasControlled && !sessionStorage.getItem('nurr_cache_reloaded')) {
+          sessionStorage.setItem('nurr_cache_reloaded', 'true');
+          location.reload();
+          return;
+        }
+        sessionStorage.removeItem('nurr_cache_reloaded');
+      } catch (_) {
+        // Flutter still starts if a browser blocks cache-management APIs.
       }
+      if (document.body.dataset.flutterStarted === 'true') return;
+      document.body.dataset.flutterStarted = 'true';
+      const flutterScript = document.createElement('script');
+      flutterScript.src = 'flutter_bootstrap.js?v=20260820-mobile-cache-fix-2';
+      document.body.appendChild(flutterScript);
     })();
   </script>
 </body>

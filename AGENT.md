@@ -203,4 +203,4 @@ muessen mindestens diese Dateien geprueft werden:
 - Bei jeder relevanten Projektaenderung mit aktualisieren.
 - Im Quran-Reader wechselt horizontales Wischen nach der letzten Seite beziehungsweise am unteren Ende einer Sure zur naechsten Sure. Am Anfang fuehrt Wischen zur vorherigen Sure; die Zurueck-Navigation zur Surenuebersicht bleibt erhalten.
 - Hell- und Dunkelmodus gelten konsistent fuer die gesamte App und fuer Quran-Dialoge, Einstellungen und Aktionsmenues; helle Ansichten verwenden dunkle, dunkle Ansichten helle Schrift.
-- Der Web-Start wartet auf das Entfernen alter Service-Worker- und PWA-Caches, bevor Flutter geladen wird, damit mobile Browser keine veraltete weisse Version anzeigen.
+- Der Web-Start wartet auf das Entfernen alter Service-Worker- und PWA-Caches und startet eine noch vom alten Worker kontrollierte Seite einmal neu, bevor Flutter geladen wird, damit mobile Browser keine veraltete weisse Version anzeigen.
