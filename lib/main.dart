@@ -1,13 +1,15 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
-import 'mushaf_reader_page.dart';
-import 'german_reader_page.dart';
 import 'dua_page.dart';
+import 'quran_text_reader_page.dart';
+import 'modern_home_page.dart';
+import 'nurr_design.dart';
+import 'nurr_onboarding_page.dart';
 
 // ==================== SPRACH-MODELL ====================
 enum QuranLanguage {
@@ -35,7 +37,7 @@ enum AppLanguage {
 
 // ==================== APP-THEME ====================
 enum AppTheme {
-  classic(Colors.amber, 'Klassisch (Gold)'),
+  classic(Color(0xFFC79435), 'Klassisch (Gold)'),
   green(Colors.green, 'Grün'),
   blue(Colors.blue, 'Blau'),
   pink(Colors.pink, 'Rosa'),
@@ -56,16 +58,40 @@ enum AppTheme {
 }
 
 enum AppBackground {
-  defaultImage('assets/images/hintergrund.jpg', 'Hintergrund 1'),
-  altImage('assets/images/hintergrund2.jpg', 'Hintergrund 2'),
-  bg3('assets/images/863ad44b341008c996f680d61ff457bc.jpg', 'Hintergrund 3'),
-  bg4('assets/images/978ffb16be030a299ad164e390480d92.jpg', 'Hintergrund 4'),
-  bg5('assets/images/9620bb06bbfd9c9cbbca520b5b7f6c10.jpg', 'Hintergrund 5'),
-  bg6('assets/images/c9bd77df1796b47bd0345867734dccda.jpg', 'Hintergrund 6'),
-  bg7('assets/images/c69be9ea90230e3d4fc366b353738728.jpg', 'Hintergrund 7'),
-  bg8('assets/images/d0d20b27b7272e5f95ee8c3a13d62ed2.jpg', 'Hintergrund 8'),
-  bg9('assets/images/e398611a35f42d3e50bc4ebd19960c6a.jpg', 'Hintergrund 9'),
-  bg10('assets/images/ff2686056f5ff73715363eeb3e9ec772.jpg', 'Hintergrund 10');
+  defaultImage('assets/assets/images/hintergrund.jpg', 'Hintergrund 1'),
+  altImage('assets/assets/images/hintergrund2.jpg', 'Hintergrund 2'),
+  bg3(
+    'assets/assets/images/863ad44b341008c996f680d61ff457bc.jpg',
+    'Hintergrund 3',
+  ),
+  bg4(
+    'assets/assets/images/978ffb16be030a299ad164e390480d92.jpg',
+    'Hintergrund 4',
+  ),
+  bg5(
+    'assets/assets/images/9620bb06bbfd9c9cbbca520b5b7f6c10.jpg',
+    'Hintergrund 5',
+  ),
+  bg6(
+    'assets/assets/images/c9bd77df1796b47bd0345867734dccda.jpg',
+    'Hintergrund 6',
+  ),
+  bg7(
+    'assets/assets/images/c69be9ea90230e3d4fc366b353738728.jpg',
+    'Hintergrund 7',
+  ),
+  bg8(
+    'assets/assets/images/d0d20b27b7272e5f95ee8c3a13d62ed2.jpg',
+    'Hintergrund 8',
+  ),
+  bg9(
+    'assets/assets/images/e398611a35f42d3e50bc4ebd19960c6a.jpg',
+    'Hintergrund 9',
+  ),
+  bg10(
+    'assets/assets/images/ff2686056f5ff73715363eeb3e9ec772.jpg',
+    'Hintergrund 10',
+  );
 
   final String assetPath;
   final String label;
@@ -102,19 +128,19 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadAppearance() async {
     final prefs = await SharedPreferences.getInstance();
-    final themeIndex = prefs.getInt('app_theme') ?? 0;
     final backgroundAsset = prefs.getString('app_background');
+    NurrDesign.darkMode.value = prefs.getBool('nurr_app_dark_mode') ?? false;
     setState(() {
-      currentTheme = AppTheme.fromIndex(themeIndex);
+      currentTheme = AppTheme.classic;
       currentBackground = AppBackground.fromAssetPath(backgroundAsset);
     });
     backgroundNotifier.value = currentBackground;
   }
 
   static void updateTheme(BuildContext context, AppTheme newTheme) {
-    currentTheme = newTheme;
+    currentTheme = AppTheme.classic;
     context.findAncestorStateOfType<_MyAppState>()?.setState(() {
-      currentTheme = newTheme;
+      currentTheme = AppTheme.classic;
     });
   }
 
@@ -131,38 +157,79 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primaryColor: currentTheme.color,
-        colorScheme: ColorScheme.dark(
-          primary: currentTheme.color,
-          secondary: currentTheme.color,
-        ),
-      ),
-      home: FutureBuilder<bool>(
-        future: _checkFirstTime(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              body: Center(
-                child: CircularProgressIndicator(color: currentTheme.color),
+    return ValueListenableBuilder<bool>(
+      valueListenable: NurrDesign.darkMode,
+      builder: (context, isDark, child) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          scaffoldBackgroundColor: NurrDesign.background(isDark),
+          primaryColor: NurrDesign.gold,
+          colorScheme: isDark
+              ? const ColorScheme.dark(
+                  primary: NurrDesign.gold,
+                  secondary: NurrDesign.emerald,
+                  surface: NurrDesign.darkSurface,
+                )
+              : const ColorScheme.light(
+                  primary: NurrDesign.goldDark,
+                  secondary: NurrDesign.emerald,
+                  surface: NurrDesign.paper,
+                ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: NurrDesign.surface(isDark),
+            foregroundColor: NurrDesign.text(isDark),
+            centerTitle: true,
+            elevation: 0,
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            labelTextStyle: WidgetStateProperty.all(
+              TextStyle(color: NurrDesign.text(isDark), fontSize: 12),
+            ),
+            iconTheme: WidgetStateProperty.resolveWith(
+              (states) => IconThemeData(
+                color: states.contains(WidgetState.selected)
+                    ? NurrDesign.goldDark
+                    : NurrDesign.secondaryText(isDark),
               ),
-            );
-          }
-          if (snapshot.data == true) {
-            return const LanguageSelectionScreen(isFirstTime: true);
-          }
-          return const MainPage();
-        },
+            ),
+          ),
+        ),
+        home: FutureBuilder<String>(
+          future: _startupDestination(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Scaffold(
+                backgroundColor: NurrDesign.cream,
+                body: Center(
+                  child: CircularProgressIndicator(color: currentTheme.color),
+                ),
+              );
+            }
+            if (snapshot.data == 'language') {
+              return const LanguageSelectionScreen(isFirstTime: true);
+            }
+            if (snapshot.data?.startsWith('onboarding:') == true) {
+              return NurrOnboardingPage(
+                languageCode: snapshot.data!.split(':').last,
+                nextPage: const MainPage(),
+              );
+            }
+            return const MainPage();
+          },
+        ),
       ),
     );
   }
 
-  Future<bool> _checkFirstTime() async {
+  Future<String> _startupDestination() async {
     final prefs = await SharedPreferences.getInstance();
-    return !prefs.containsKey('app_language');
+    final language = prefs.getString('app_language');
+    if (language == null) return 'language';
+    if (!(prefs.getBool('nurr_onboarding_seen_v2') ?? false)) {
+      return 'onboarding:$language';
+    }
+    return 'main';
   }
 }
 
@@ -190,7 +257,12 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const MainPage()),
+        MaterialPageRoute(
+          builder: (context) => NurrOnboardingPage(
+            languageCode: selectedLanguage!.code,
+            nextPage: const MainPage(),
+          ),
+        ),
       );
     }
   }
@@ -224,156 +296,186 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1a1a1a),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(30),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                Text(
-                  _getQuestionText(),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 50),
-                ...AppLanguage.values.map((lang) {
-                  final isSelected = selectedLanguage == lang;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedLanguage = lang;
-                      });
-                    },
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      padding: const EdgeInsets.all(25),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isSelected
-                              ? [
-                                  _MyAppState.currentTheme.color,
-                                  Colors.orange.shade700,
-                                ]
-                              : [Colors.grey.shade800, Colors.grey.shade900],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: isSelected
-                              ? _MyAppState.currentTheme.color
-                              : Colors.grey.shade700,
-                          width: isSelected ? 3 : 2,
-                        ),
-                        boxShadow: isSelected
-                            ? [
-                                BoxShadow(
-                                  color: _MyAppState.currentTheme.color
-                                      .withOpacity(0.4),
-                                  blurRadius: 15,
-                                  spreadRadius: 3,
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Row(
-                        children: [
-                          Text(lang.flag, style: const TextStyle(fontSize: 40)),
-                          const SizedBox(width: 20),
-                          Expanded(
-                            child: Text(
-                              lang.displayName,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          if (isSelected)
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 32,
-                            ),
-                        ],
-                      ),
-                    ),
-                  );
-                }),
-                const SizedBox(height: 40),
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: _MyAppState.currentTheme.color.withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/images/quran_app_logo.png',
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[800],
-                          child: const Icon(
-                            Icons.image,
-                            color: Colors.white,
-                            size: 40,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 50),
-                ElevatedButton(
-                  onPressed: selectedLanguage != null ? _saveLanguage : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedLanguage != null
-                        ? _MyAppState.currentTheme.color
-                        : Colors.grey,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 60,
-                      vertical: 18,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: selectedLanguage != null ? 8 : 0,
-                  ),
-                  child: Text(
-                    _getContinueText(),
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
+      backgroundColor: NurrDesign.cream,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFFFFBF1),
+                  Color(0xFFF1E2BF),
+                  Color(0xFFF8F4EA),
+                ],
+              ),
             ),
           ),
-        ),
+          Positioned(
+            top: -80,
+            right: -70,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                color: NurrDesign.gold.withValues(alpha: 0.14),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(30),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 40),
+                    Text(
+                      _getQuestionText(),
+                      style: const TextStyle(
+                        color: NurrDesign.ink,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 50),
+                    ...AppLanguage.values.map((lang) {
+                      final isSelected = selectedLanguage == lang;
+                      final languageMark = switch (lang) {
+                        AppLanguage.german => 'DE',
+                        AppLanguage.english => 'EN',
+                        AppLanguage.arabic => 'ع',
+                      };
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            selectedLanguage = lang;
+                          });
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 20),
+                          padding: const EdgeInsets.all(25),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: isSelected
+                                  ? [
+                                      _MyAppState.currentTheme.color,
+                                      NurrDesign.goldDark,
+                                    ]
+                                  : [Colors.white, const Color(0xFFFFFBF2)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? _MyAppState.currentTheme.color
+                                  : NurrDesign.gold.withValues(alpha: 0.25),
+                              width: isSelected ? 3 : 2,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: NurrDesign.gold.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      blurRadius: 15,
+                                      spreadRadius: 3,
+                                    ),
+                                  ]
+                                : [],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Colors.white.withValues(alpha: 0.18)
+                                      : NurrDesign.gold.withValues(alpha: 0.13),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    languageMark,
+                                    style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : NurrDesign.goldDark,
+                                      fontSize: lang == AppLanguage.arabic
+                                          ? 23
+                                          : 14,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 20),
+                              Expanded(
+                                child: Text(
+                                  lang.displayName,
+                                  style: TextStyle(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : NurrDesign.ink,
+                                    fontSize: 22,
+                                    fontWeight: isSelected
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: selectedLanguage != null
+                          ? _saveLanguage
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: selectedLanguage != null
+                            ? _MyAppState.currentTheme.color
+                            : Colors.grey,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 60,
+                          vertical: 18,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: selectedLanguage != null ? 8 : 0,
+                      ),
+                      child: Text(
+                        _getContinueText(),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -389,14 +491,12 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int tab = 0;
+  int _quranResumeRequest = 0;
   AppLanguage _appLanguage = AppLanguage.german;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _warmupMushafPages();
-    });
     _loadAppLanguage();
   }
 
@@ -424,93 +524,59 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  Future<void> _warmupMushafPages() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) {
-      return;
-    }
-
-    final numberingVersion = prefs.getInt('mushaf_page_numbering_version') ?? 1;
-    final rawSavedPage = prefs.getInt('mushaf_last_page');
-    final visiblePage = rawSavedPage == null
-        ? 1
-        : numberingVersion >= 2
-        ? rawSavedPage.clamp(1, 602)
-        : (rawSavedPage - 1).clamp(1, 602);
-    final startPage = (visiblePage - 1).clamp(1, 602);
-    final endPage = (visiblePage + 3).clamp(1, 602);
-    final mediaQuery = MediaQuery.of(context);
-    final targetWidth = (mediaQuery.size.width * mediaQuery.devicePixelRatio)
-        .clamp(900.0, 1800.0)
-        .round();
-
-    for (int page = startPage; page <= endPage; page++) {
-      final pageNum = (page + 2).toString().padLeft(3, '0');
-      precacheImage(
-        ResizeImage(
-          AssetImage('assets/mushaf_pages/$pageNum.png'),
-          width: targetWidth,
-        ),
-        context,
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppBackground>(
-      valueListenable: _MyAppState.backgroundNotifier,
-      builder: (context, background, child) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: NurrDesign.darkMode,
+      builder: (context, isDark, child) {
         return Scaffold(
-          body: Stack(
-            children: [
-              Image.asset(
-                background.assetPath,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
-              ),
-              [
-                HomePage(appLanguage: _appLanguage),
-                _appLanguage == AppLanguage.german
-                    ? GermanReaderPage(
-                        themeColor: _MyAppState.currentTheme.color,
-                      )
-                    : _appLanguage == AppLanguage.english
-                    ? MushafReaderPage(
-                        themeColor: _MyAppState.currentTheme.color,
-                        uiLanguageCode: _appLanguage.code,
-                      )
-                    : ArabicMushafNavigatorPage(
-                        themeColor: _MyAppState.currentTheme.color,
-                      ),
-                PrayerTimesPage(appLanguage: _appLanguage),
-                DuaPage(
-                  themeColor: _MyAppState.currentTheme.color,
-                  langCode: _appLanguage.code,
+          backgroundColor: NurrDesign.background(isDark),
+          body: [
+            ModernHomePage(
+              languageCode: _appLanguage.code,
+              darkMode: isDark,
+              onOpenTab: (index) => setState(() => tab = index),
+              onOpenMasbaha: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MasbahaPage(language: _appLanguage),
                 ),
-                const NamesOfAllahPage(),
-                const SettingsPage(),
-              ][tab],
-            ],
-          ),
-          bottomNavigationBar: BottomNavigationBar(
-            currentIndex: tab,
-            onTap: (i) => setState(() => tab = i),
-            backgroundColor: Colors.black87,
-            selectedItemColor: _MyAppState.currentTheme.color,
-            unselectedItemColor: Colors.white70,
-            type: BottomNavigationBarType.fixed,
-            items: [
-              BottomNavigationBarItem(
+              ),
+              onContinueReading: () => setState(() {
+                tab = 1;
+                _quranResumeRequest++;
+              }),
+            ),
+            QuranTextHomePage(
+              themeColor: _MyAppState.currentTheme.color,
+              uiLanguageCode: _appLanguage.code,
+              resumeRequest: _quranResumeRequest,
+            ),
+            PrayerTimesPage(appLanguage: _appLanguage),
+            DuaPage(
+              themeColor: _MyAppState.currentTheme.color,
+              langCode: _appLanguage.code,
+            ),
+            const NamesOfAllahPage(),
+            const SettingsPage(),
+          ][tab],
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: tab,
+            onDestinationSelected: (i) => setState(() => tab = i),
+            height: 72,
+            backgroundColor: NurrDesign.surface(isDark),
+            indicatorColor: NurrDesign.gold.withValues(alpha: 0.18),
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+            destinations: [
+              NavigationDestination(
                 icon: const Icon(Icons.home),
                 label: _navLabel('Home', 'Home', 'الرئيسية'),
               ),
-              BottomNavigationBarItem(
+              NavigationDestination(
                 icon: const Icon(Icons.book),
                 label: _navLabel('Quran', 'Quran', 'القرآن'),
               ),
-              BottomNavigationBarItem(
+              NavigationDestination(
                 icon: const Icon(Icons.access_time_filled),
                 label: _navLabel(
                   'Gebetszeiten',
@@ -518,17 +584,17 @@ class _MainPageState extends State<MainPage> {
                   'أوقات الصلاة',
                 ),
               ),
-              BottomNavigationBarItem(
+              NavigationDestination(
                 icon: const Icon(Icons.favorite),
                 label: _navLabel('Dua', 'Dua', 'الدعاء'),
               ),
-              BottomNavigationBarItem(
+              NavigationDestination(
                 icon: Container(
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white70, width: 1.5),
+                    border: Border.all(color: NurrDesign.muted, width: 1.5),
                   ),
                   child: const Center(
                     child: Text(
@@ -542,7 +608,7 @@ class _MainPageState extends State<MainPage> {
                 ),
                 label: _navLabel('99 Namen', '99 Names', '99 اسما'),
               ),
-              BottomNavigationBarItem(
+              NavigationDestination(
                 icon: const Icon(Icons.more_horiz),
                 label: _navLabel('Mehr', 'More', 'المزيد'),
               ),
@@ -1530,8 +1596,9 @@ class _QuranPageState extends State<QuranPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => GermanReaderPage(
+                    builder: (_) => QuranTextHomePage(
                       themeColor: _MyAppState.currentTheme.color,
+                      uiLanguageCode: 'de',
                     ),
                   ),
                 );
@@ -3125,6 +3192,13 @@ class _SettingsPageState extends State<SettingsPage> {
     _MyAppState.updateTheme(context, newTheme);
   }
 
+  Future<void> _changeDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('nurr_app_dark_mode', value);
+    await prefs.setBool('quran_reader_dark_mode', value);
+    NurrDesign.darkMode.value = value;
+  }
+
   Future<void> _changeBackground(AppBackground newBackground) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_background', newBackground.assetPath);
@@ -3297,6 +3371,53 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
+  String _themeLabel(AppTheme theme) {
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return switch (theme) {
+          AppTheme.classic => 'Klassisch',
+          AppTheme.green => 'Grün',
+          AppTheme.blue => 'Blau',
+          AppTheme.pink => 'Rosa',
+          AppTheme.graphite => 'Grau',
+          AppTheme.purple => 'Lila',
+          AppTheme.teal => 'Türkis',
+        };
+      case AppLanguage.english:
+        return switch (theme) {
+          AppTheme.classic => 'Classic',
+          AppTheme.green => 'Green',
+          AppTheme.blue => 'Blue',
+          AppTheme.pink => 'Pink',
+          AppTheme.graphite => 'Graphite',
+          AppTheme.purple => 'Purple',
+          AppTheme.teal => 'Teal',
+        };
+      case AppLanguage.arabic:
+        return switch (theme) {
+          AppTheme.classic => 'كلاسيكي',
+          AppTheme.green => 'أخضر',
+          AppTheme.blue => 'أزرق',
+          AppTheme.pink => 'وردي',
+          AppTheme.graphite => 'رمادي',
+          AppTheme.purple => 'بنفسجي',
+          AppTheme.teal => 'فيروزي',
+        };
+    }
+  }
+
+  String _backgroundLabel(AppBackground background) {
+    final number = background.index + 1;
+    switch (appLanguage) {
+      case AppLanguage.german:
+        return 'Hintergrund $number';
+      case AppLanguage.english:
+        return 'Background $number';
+      case AppLanguage.arabic:
+        return 'الخلفية $number';
+    }
+  }
+
   String _aboutTitle() {
     switch (appLanguage) {
       case AppLanguage.english:
@@ -3322,14 +3443,14 @@ class _SettingsPageState extends State<SettingsPage> {
     );
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: NurrDesign.background(NurrDesign.darkMode.value),
       body: SafeArea(
         child: Column(
           children: [
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.7),
+                color: NurrDesign.surface(NurrDesign.darkMode.value),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -3337,16 +3458,12 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.settings,
-                    color: _MyAppState.currentTheme.color,
-                    size: 32,
-                  ),
+                  Icon(Icons.settings, color: NurrDesign.goldDark, size: 32),
                   const SizedBox(width: 12),
                   Text(
                     _settingsTitle(),
                     style: TextStyle(
-                      color: _MyAppState.currentTheme.color,
+                      color: NurrDesign.text(NurrDesign.darkMode.value),
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -3359,92 +3476,36 @@ class _SettingsPageState extends State<SettingsPage> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.image,
-                              color: _MyAppState.currentTheme.color,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              _backgroundTitle(),
-                              style: TextStyle(
-                                color: _MyAppState.currentTheme.color,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                  ValueListenableBuilder<bool>(
+                    valueListenable: NurrDesign.darkMode,
+                    builder: (context, isDark, child) => _buildCard(
+                      child: SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        value: isDark,
+                        activeThumbColor: NurrDesign.gold,
+                        secondary: Icon(
+                          isDark
+                              ? Icons.dark_mode_rounded
+                              : Icons.light_mode_rounded,
+                          color: NurrDesign.gold,
                         ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: AppBackground.values.map((background) {
-                            final isSelected = appBackground == background;
-                            return GestureDetector(
-                              onTap: () => _changeBackground(background),
-                              child: Container(
-                                width: 150,
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? _MyAppState.currentTheme.color
-                                        : _MyAppState.currentTheme.color
-                                              .withOpacity(0.3),
-                                    width: isSelected ? 2 : 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  children: [
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Image.asset(
-                                        background.assetPath,
-                                        width: double.infinity,
-                                        height: 100,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            background.label,
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 14,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.bold
-                                                  : FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        if (isSelected)
-                                          Icon(
-                                            Icons.check_circle,
-                                            color:
-                                                _MyAppState.currentTheme.color,
-                                            size: 20,
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
+                        title: Text(
+                          appLanguage == AppLanguage.arabic
+                              ? 'الوضع الداكن'
+                              : appLanguage == AppLanguage.english
+                              ? 'Dark mode'
+                              : 'Dunkelmodus',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                      ],
+                        subtitle: Text(
+                          appLanguage == AppLanguage.arabic
+                              ? 'يمكن تغييره في أي وقت'
+                              : appLanguage == AppLanguage.english
+                              ? 'Can be changed at any time'
+                              : 'Jederzeit änderbar',
+                        ),
+                        onChanged: _changeDarkMode,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -3808,7 +3869,7 @@ class _SettingsPageState extends State<SettingsPage> {
                                         ),
                                         const SizedBox(height: 8),
                                         Text(
-                                          theme.name.split(' ')[0],
+                                          _themeLabel(theme),
                                           style: TextStyle(
                                             color: theme.color,
                                             fontSize: 12,
@@ -3892,13 +3953,14 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildCard({required Widget child}) {
+    final dark = NurrDesign.darkMode.value;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.7),
+        color: NurrDesign.surface(dark),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _MyAppState.currentTheme.color.withOpacity(0.3),
+          color: NurrDesign.gold.withValues(alpha: 0.25),
           width: 1,
         ),
       ),
@@ -4216,8 +4278,10 @@ class _PrayerStatisticsPageState extends State<PrayerStatisticsPage> {
                         ),
                         Text(
                           _subtitle(),
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: NurrDesign.secondaryText(
+                              NurrDesign.darkMode.value,
+                            ),
                             fontSize: 13,
                           ),
                         ),
@@ -4788,16 +4852,13 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   }
 
   Widget _buildTimingCard(String prayer, String time) {
-    final color = _MyAppState.currentTheme.color;
+    final dark = NurrDesign.darkMode.value;
+    const color = NurrDesign.goldDark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.24), Colors.black.withOpacity(0.45)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: NurrDesign.surface(dark),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: color.withOpacity(0.4)),
       ),
@@ -4816,8 +4877,8 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
           Expanded(
             child: Text(
               _localizedPrayerName(prayer),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: NurrDesign.text(dark),
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
               ),
@@ -4838,8 +4899,9 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = NurrDesign.darkMode.value;
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: NurrDesign.background(dark),
       body: SafeArea(
         child: Column(
           children: [
@@ -4847,7 +4909,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.72),
+                color: NurrDesign.surface(dark),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
@@ -4859,7 +4921,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                   Text(
                     _title(),
                     style: TextStyle(
-                      color: _MyAppState.currentTheme.color,
+                      color: NurrDesign.goldDark,
                       fontSize: 30,
                       fontWeight: FontWeight.bold,
                     ),
@@ -4867,14 +4929,17 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                   const SizedBox(height: 4),
                   Text(
                     _subtitle(),
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                    style: TextStyle(
+                      color: NurrDesign.secondaryText(dark),
+                      fontSize: 14,
+                    ),
                   ),
                   if (_locationLabel.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       _locationLabel,
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: NurrDesign.secondaryText(dark),
                         fontSize: 12,
                       ),
                     ),
@@ -4896,14 +4961,14 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         children: [
                           Icon(
                             Icons.location_on_outlined,
-                            color: _MyAppState.currentTheme.color,
+                            color: NurrDesign.goldDark,
                             size: 64,
                           ),
                           const SizedBox(height: 16),
                           Text(
                             _locationInfoLabel(),
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: NurrDesign.secondaryText(dark),
                               fontSize: 14,
                             ),
                             textAlign: TextAlign.center,
@@ -4920,8 +4985,8 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                               ),
                             ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _MyAppState.currentTheme.color,
-                              foregroundColor: Colors.black,
+                              backgroundColor: NurrDesign.gold,
+                              foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 14,
@@ -4943,7 +5008,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.72),
+                        color: NurrDesign.surface(dark),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
                           color: Colors.redAccent.withOpacity(0.45),
@@ -4954,7 +5019,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         children: [
                           Text(
                             _errorMessage!,
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: NurrDesign.text(dark)),
                           ),
                           const SizedBox(height: 12),
                           ElevatedButton(
@@ -4970,19 +5035,17 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         margin: const EdgeInsets.only(bottom: 16),
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.72),
+                          color: NurrDesign.surface(dark),
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
-                            color: _MyAppState.currentTheme.color.withOpacity(
-                              0.45,
-                            ),
+                            color: NurrDesign.gold.withValues(alpha: 0.35),
                           ),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.notifications_active,
-                              color: _MyAppState.currentTheme.color,
+                              color: NurrDesign.goldDark,
                             ),
                             const SizedBox(width: 10),
                             Expanded(
@@ -4991,15 +5054,15 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                 children: [
                                   Text(
                                     _nextPrayerLabel(),
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: NurrDesign.secondaryText(dark),
                                       fontSize: 13,
                                     ),
                                   ),
                                   Text(
                                     '$_nextPrayerName • $_nextPrayerTime',
                                     style: TextStyle(
-                                      color: _MyAppState.currentTheme.color,
+                                      color: NurrDesign.goldDark,
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -5007,8 +5070,8 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                                   if (_remainingLabel != null)
                                     Text(
                                       _remainingLabel!,
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: NurrDesign.text(dark),
                                         fontSize: 14,
                                       ),
                                     ),
@@ -5028,8 +5091,8 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         if (_lastUpdated != null)
                           Text(
                             _updatedLabel(_lastUpdated!),
-                            style: const TextStyle(
-                              color: Colors.white60,
+                            style: TextStyle(
+                              color: NurrDesign.secondaryText(dark),
                               fontSize: 12,
                             ),
                           ),
@@ -5379,153 +5442,97 @@ class _MasbahaPageState extends State<MasbahaPage> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppBackground>(
-      valueListenable: _MyAppState.backgroundNotifier,
-      builder: (context, background, child) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: NurrDesign.darkMode,
+      builder: (context, dark, child) {
+        final textColor = NurrDesign.text(dark);
         return Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Stack(
-            children: [
-              Image.asset(
-                background.assetPath,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+          backgroundColor: NurrDesign.background(dark),
+          appBar: AppBar(
+            backgroundColor: NurrDesign.surface(dark),
+            foregroundColor: textColor,
+            elevation: 0,
+            title: Text(
+              _title(),
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            actions: [
+              IconButton(
+                tooltip: _introTitle(),
+                onPressed: () => _showIntroDialog(firstTime: false),
+                icon: const Icon(Icons.info_outline_rounded),
               ),
-              SafeArea(
+            ],
+          ),
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 720),
                 child: Column(
                   children: [
-                    Container(
-                      color: Colors.black.withOpacity(0.65),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.arrow_back,
-                              color: Colors.white,
-                            ),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _title(),
-                            style: TextStyle(
-                              color: _MyAppState.currentTheme.color,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            tooltip: _introTitle(),
-                            onPressed: () => _showIntroDialog(firstTime: false),
-                            icon: Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                Icon(
-                                  Icons.info_outline,
-                                  color: _MyAppState.currentTheme.color,
-                                  size: 24,
-                                ),
-                                if (!_hasSeenIntro)
-                                  Positioned(
-                                    top: -1,
-                                    right: -1,
-                                    child: Container(
-                                      width: 8,
-                                      height: 8,
-                                      decoration: BoxDecoration(
-                                        color: Colors.redAccent,
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 0.8,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
-                        vertical: 20,
-                      ),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.65),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: _MyAppState.currentTheme.color.withOpacity(
-                              0.5,
+                      padding: const EdgeInsets.all(20),
+                      child: DropdownButtonFormField<String>(
+                        initialValue: selectedDhikr,
+                        dropdownColor: NurrDesign.surface(dark),
+                        style: TextStyle(color: textColor, fontSize: 17),
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: NurrDesign.surface(dark),
+                          prefixIcon: const Icon(
+                            Icons.auto_awesome_rounded,
+                            color: NurrDesign.goldDark,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            borderSide: BorderSide(
+                              color: NurrDesign.gold.withValues(alpha: 0.3),
                             ),
                           ),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: selectedDhikr,
-                            isExpanded: true,
-                            dropdownColor: const Color(0xFF1a1a1a),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                            items: _dhikrOptions.map((dhikr) {
-                              return DropdownMenuItem<String>(
+                        items: _dhikrOptions
+                            .map(
+                              (dhikr) => DropdownMenuItem(
                                 value: dhikr,
                                 child: Text(dhikr),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  selectedDhikr = value;
-                                  tasbihCount = _countsByDhikr[value] ?? 0;
-                                });
-                                _saveState();
-                              }
-                            },
-                          ),
-                        ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            selectedDhikr = value;
+                            tasbihCount = _countsByDhikr[value] ?? 0;
+                          });
+                          _saveState();
+                        },
                       ),
                     ),
                     Expanded(
                       child: Center(
-                        child: GestureDetector(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(150),
                           onTap: _increment,
                           child: Container(
                             width: 260,
                             height: 260,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  _MyAppState.currentTheme.color,
-                                  _MyAppState.currentTheme.color.withOpacity(
-                                    0.65,
-                                  ),
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
+                              gradient: const LinearGradient(
+                                colors: [NurrDesign.gold, NurrDesign.goldDark],
+                              ),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.45),
+                                width: 3,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _MyAppState.currentTheme.color
-                                      .withOpacity(0.5),
-                                  blurRadius: 30,
-                                  spreadRadius: 5,
+                                  color: NurrDesign.gold.withValues(alpha: 0.3),
+                                  blurRadius: 32,
+                                  offset: const Offset(0, 16),
                                 ),
                               ],
                             ),
@@ -5535,24 +5542,23 @@ class _MasbahaPageState extends State<MasbahaPage> {
                                 Text(
                                   '$tasbihCount',
                                   style: const TextStyle(
-                                    color: Colors.black,
+                                    color: Colors.white,
                                     fontSize: 72,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
-                                const SizedBox(height: 4),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
+                                    horizontal: 22,
                                   ),
                                   child: Text(
                                     selectedDhikr,
+                                    textAlign: TextAlign.center,
                                     style: const TextStyle(
-                                      color: Colors.black,
-                                      fontSize: 20,
+                                      color: Colors.white,
+                                      fontSize: 19,
                                       fontWeight: FontWeight.w700,
                                     ),
-                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ],
@@ -5562,30 +5568,19 @@ class _MasbahaPageState extends State<MasbahaPage> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 40),
-                      child: TextButton.icon(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 32),
+                      child: OutlinedButton.icon(
                         onPressed: _reset,
-                        icon: Icon(
-                          Icons.refresh,
-                          color: _MyAppState.currentTheme.color,
-                          size: 28,
-                        ),
-                        label: Text(
-                          _resetLabel(),
-                          style: TextStyle(
-                            color: _MyAppState.currentTheme.color,
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: Text(_resetLabel()),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: textColor,
+                          side: BorderSide(
+                            color: NurrDesign.gold.withValues(alpha: 0.5),
                           ),
-                        ),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.black.withOpacity(0.5),
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 14,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            horizontal: 28,
+                            vertical: 15,
                           ),
                         ),
                       ),
@@ -5593,7 +5588,7 @@ class _MasbahaPageState extends State<MasbahaPage> {
                   ],
                 ),
               ),
-            ],
+            ),
           ),
         );
       },
@@ -7199,305 +7194,305 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filteredNames();
-    return SafeArea(
-      child: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _MyAppState.currentTheme.color.withOpacity(0.35),
-                  Colors.black.withOpacity(0.9),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+    final dark = NurrDesign.darkMode.value;
+    return ColoredBox(
+      color: NurrDesign.background(dark),
+      child: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+              decoration: BoxDecoration(
+                color: NurrDesign.surface(dark),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
               ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(20),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withOpacity(0.6),
-                    border: Border.all(
-                      color: _MyAppState.currentTheme.color,
-                      width: 2,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '99',
-                      style: TextStyle(
+              child: Row(
+                children: [
+                  Container(
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.black.withOpacity(0.6),
+                      border: Border.all(
                         color: _MyAppState.currentTheme.color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                        width: 2,
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _title(),
+                    child: Center(
+                      child: Text(
+                        '99',
                         style: TextStyle(
                           color: _MyAppState.currentTheme.color,
-                          fontSize: 24,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _subtitle(),
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                Align(
-                  alignment: Alignment.topRight,
-                  child: IconButton(
-                    tooltip: _introTitle(),
-                    onPressed: () => _showIntroDialog(firstTime: false),
-                    icon: Stack(
-                      clipBehavior: Clip.none,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: _MyAppState.currentTheme.color,
-                          size: 24,
-                        ),
-                        if (!_hasSeenIntro)
-                          Positioned(
-                            top: -1,
-                            right: -1,
-                            child: Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.redAccent,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.black,
-                                  width: 0.8,
-                                ),
-                              ),
-                            ),
+                        Text(
+                          _title(),
+                          style: TextStyle(
+                            color: _MyAppState.currentTheme.color,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _subtitle(),
+                          style: TextStyle(
+                            color: NurrDesign.secondaryText(dark),
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      tooltip: _introTitle(),
+                      onPressed: () => _showIntroDialog(firstTime: false),
+                      icon: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Icon(
+                            Icons.info_outline,
+                            color: _MyAppState.currentTheme.color,
+                            size: 24,
+                          ),
+                          if (!_hasSeenIntro)
+                            Positioned(
+                              top: -1,
+                              right: -1,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.redAccent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.black,
+                                    width: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-              style: const TextStyle(color: Colors.white),
-              textDirection: appLanguage == AppLanguage.arabic
-                  ? TextDirection.rtl
-                  : TextDirection.ltr,
-              decoration: InputDecoration(
-                hintText: _searchHint(),
-                hintStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: Icon(
-                  Icons.search,
-                  color: _MyAppState.currentTheme.color,
-                ),
-                suffixIcon: _searchQuery.trim().isNotEmpty
-                    ? IconButton(
-                        tooltip: 'Clear',
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {
-                            _searchQuery = '';
-                          });
-                        },
-                        icon: Icon(
-                          Icons.close,
-                          color: _MyAppState.currentTheme.color,
-                        ),
-                      )
-                    : null,
-                filled: true,
-                fillColor: Colors.black.withOpacity(0.55),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: _MyAppState.currentTheme.color.withOpacity(0.45),
-                  ),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: _MyAppState.currentTheme.color.withOpacity(0.45),
-                  ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+                style: TextStyle(color: NurrDesign.text(dark)),
+                textDirection: appLanguage == AppLanguage.arabic
+                    ? TextDirection.rtl
+                    : TextDirection.ltr,
+                decoration: InputDecoration(
+                  hintText: _searchHint(),
+                  hintStyle: TextStyle(color: NurrDesign.secondaryText(dark)),
+                  prefixIcon: Icon(
+                    Icons.search,
                     color: _MyAppState.currentTheme.color,
-                    width: 1.8,
+                  ),
+                  suffixIcon: _searchQuery.trim().isNotEmpty
+                      ? IconButton(
+                          tooltip: 'Clear',
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          icon: Icon(
+                            Icons.close,
+                            color: _MyAppState.currentTheme.color,
+                          ),
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: NurrDesign.surface(dark),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: _MyAppState.currentTheme.color.withOpacity(0.45),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: _MyAppState.currentTheme.color,
+                      width: 1.8,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22),
-                      child: Text(
-                        _noResultsLabel(),
-                        textAlign: TextAlign.center,
-                        textDirection: appLanguage == AppLanguage.arabic
-                            ? TextDirection.rtl
-                            : TextDirection.ltr,
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 22),
+                        child: Text(
+                          _noResultsLabel(),
+                          textAlign: TextAlign.center,
+                          textDirection: appLanguage == AppLanguage.arabic
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(14),
-                    itemCount: filtered.length,
-                    itemBuilder: (context, index) {
-                      final item = filtered[index];
-                      return GestureDetector(
-                        onTap: _isAllah(item)
-                            ? null
-                            : () => _showNameDetail(item),
-                        child: Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _MyAppState.currentTheme.color,
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _MyAppState.currentTheme.color
-                                    .withOpacity(0.18),
-                                blurRadius: 8,
-                                spreadRadius: 1,
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(14),
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final item = filtered[index];
+                        return GestureDetector(
+                          onTap: _isAllah(item)
+                              ? null
+                              : () => _showNameDetail(item),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: NurrDesign.surface(dark),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: _MyAppState.currentTheme.color,
+                                width: 2,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  color: _MyAppState.currentTheme.color,
-                                  shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _MyAppState.currentTheme.color
+                                      .withOpacity(0.18),
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    '${_displayNumberFor(item)}',
-                                    style: const TextStyle(
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.bold,
+                              ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 34,
+                                  height: 34,
+                                  decoration: BoxDecoration(
+                                    color: _MyAppState.currentTheme.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '${_displayNumberFor(item)}',
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.arabic,
-                                      textDirection: TextDirection.rtl,
-                                      style: GoogleFonts.notoNaskhArabic(
-                                        color: Colors.black,
-                                        fontSize: 30,
-                                        height: 1.7,
-                                        fontWeight: FontWeight.w700,
-                                        textStyle: const TextStyle(
-                                          color: Colors.black,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.arabic,
+                                        textDirection: TextDirection.rtl,
+                                        style: GoogleFonts.notoNaskhArabic(
+                                          color: NurrDesign.text(dark),
+                                          fontSize: 30,
+                                          height: 1.7,
+                                          fontWeight: FontWeight.w700,
+                                          textStyle: TextStyle(
+                                            color: NurrDesign.text(dark),
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      item.transliteration,
-                                      style: const TextStyle(
-                                        color: Colors.black87,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        item.transliteration,
+                                        style: TextStyle(
+                                          color: NurrDesign.text(dark),
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    if (!_isAllah(item))
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            item.meaning(appLanguage),
-                                            style: const TextStyle(
-                                              color: Colors.black54,
-                                              fontSize: 15,
+                                      const SizedBox(height: 4),
+                                      if (!_isAllah(item))
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.meaning(appLanguage),
+                                              style: TextStyle(
+                                                color: NurrDesign.secondaryText(
+                                                  dark,
+                                                ),
+                                                fontSize: 15,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            _tapForMeaningLabel(),
-                                            style: TextStyle(
-                                              color: _MyAppState
-                                                  .currentTheme
-                                                  .color,
-                                              fontSize: 13,
-                                              fontStyle: FontStyle.italic,
-                                              fontWeight: FontWeight.w600,
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              _tapForMeaningLabel(),
+                                              style: TextStyle(
+                                                color: _MyAppState
+                                                    .currentTheme
+                                                    .color,
+                                                fontSize: 13,
+                                                fontStyle: FontStyle.italic,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                              textDirection:
+                                                  appLanguage ==
+                                                      AppLanguage.arabic
+                                                  ? TextDirection.rtl
+                                                  : TextDirection.ltr,
                                             ),
-                                            textDirection:
-                                                appLanguage ==
-                                                    AppLanguage.arabic
-                                                ? TextDirection.rtl
-                                                : TextDirection.ltr,
-                                          ),
-                                        ],
-                                      ),
-                                  ],
+                                          ],
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -409,8 +409,8 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
   }
 
   String get _imageFolder {
-    if (_isEnglishUi) return 'assets/mushaf_pages_en';
-    return 'assets/mushaf_pages';
+    if (_isEnglishUi) return 'assets/assets/mushaf_pages_en';
+    return 'assets/assets/mushaf_pages';
   }
 
   String get _savedPageKey {
@@ -595,7 +595,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
     for (final page in pagesToPreload) {
       if (page >= 1 && page <= _totalPages) {
         final pageNum = _formatPageNumber(page);
-        final imagePath = '$_imageFolder/$pageNum.png';
+        final imagePath = '$_imageFolder/$pageNum.webp';
         final mediaQuery = MediaQuery.of(context);
         final targetWidth =
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
@@ -813,7 +813,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       builder: (BuildContext context, int physicalIndex) {
         final visiblePage = _convertToLogicalPage(physicalIndex);
         final pageNum = _formatPageNumber(visiblePage);
-        final imagePath = '$_imageFolder/$pageNum.png';
+        final imagePath = '$_imageFolder/$pageNum.webp';
         final mediaQuery = MediaQuery.of(context);
         final targetWidth =
             (mediaQuery.size.width * mediaQuery.devicePixelRatio)
@@ -828,13 +828,13 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
           // Decode at device-appropriate width for better speed/memory.
           imageProvider: imageProvider,
 
-          // Start at contained size so horizontal swipe switches pages directly.
+          // Match the German reader: show the complete page initially.
           initialScale: PhotoViewComputedScale.contained,
 
           // Keep min at contained to avoid accidental underscale panning.
           minScale: PhotoViewComputedScale.contained,
 
-          // Max: 3x zoom
+          // Match the German reader's zoom range on every device size.
           maxScale: PhotoViewComputedScale.covered * 3.0,
 
           // Keep rendering lightweight on lower-end devices.
@@ -915,7 +915,7 @@ class _MushafReaderPageState extends State<MushafReaderPage> {
       itemBuilder: (context, pageIndex) {
         final visiblePage = _convertToLogicalPage(pageIndex);
         final pageNum = _formatPageNumber(visiblePage);
-        final imagePath = '$_imageFolder/$pageNum.png';
+        final imagePath = '$_imageFolder/$pageNum.webp';
 
         return Container(
           color: Colors.black,

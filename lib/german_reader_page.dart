@@ -6,7 +6,7 @@ import 'dart:convert';
 
 /// Deutsches Quran-Seiten-Leser (LTR, Bildbasiert)
 /// 
-/// Zeigt das deutsche Quran-PDF als Bilder (assets/german_pages/).
+/// Zeigt das deutsche Quran-PDF als Bilder (assets/assets/german_pages/).
 /// Genau wie der arabische Mushaf-Reader, aber LTR.
 class GermanReaderPage extends StatefulWidget {
   final Color themeColor;
@@ -158,7 +158,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
   void _preloadPages(int page) {
     for (final p in [page - 1, page, page + 1]) {
       if (p >= 1 && p <= totalPages) {
-        final imagePath = 'assets/german_pages/${p.toString().padLeft(4, '0')}.jpg';
+        final imagePath = 'assets/assets/german_pages/${p.toString().padLeft(4, '0')}.jpg';
         final mq = MediaQuery.of(context);
         final targetWidth =
             (mq.size.width * mq.devicePixelRatio).clamp(600.0, 1600.0).round();
@@ -168,7 +168,7 @@ class _GermanReaderPageState extends State<GermanReaderPage> {
   }
 
   String _imagePath(int page) =>
-      'assets/german_pages/${page.toString().padLeft(4, '0')}.jpg';
+      'assets/assets/german_pages/${page.toString().padLeft(4, '0')}.jpg';
 
   void _goToNext() {
     if (_currentPage < totalPages) {

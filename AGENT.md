@@ -19,14 +19,41 @@ Nurr ist eine Flutter-App fuer Quran- und Dua-Inhalte mit Fokus auf:
 - Gebets-Tracking / lokale Nutzungsdaten
 - 99 Namen Allahs
 - Theme- und Hintergrundauswahl
+- lokalisierte Farb- und Hintergrundnamen auf Deutsch, Englisch und Arabisch
+- einheitlich eingepasste Mushaf-Seiten mit Pinch-Zoom auf allen Displaygrößen
+- Arabische und englische Mushaf-Seiten werden platzsparend als hochqualitative WebP-Assets ausgeliefert; deutsche JPG-Seiten bleiben unverändert.
 
 Technischer Stand:
 - Flutter/Dart App
+- Modernes Nurr-UI in Creme, Weiss, Gold und dezentem Dunkelgruen mit Material 3 Navigation, responsiver Startseite und dreisprachigem Onboarding. Keine Ramadan-spezifischen Motive.
+- Die produktiven Hauptseiten verwenden eine feste Nurr-Farbidentitaet. Hellmodus nutzt dunkle Texte, Dunkelmodus helle Texte.
+- Sprachwahl und Onboarding sind vollstaendig codebasiert (Gradienten, Formen und Material-Symbole) und besitzen keine Abhaengigkeit von externen oder generierten Hintergrundbildern.
+- Vor dem Abschluss des Onboardings wird Hell oder Dunkel gewaehlt. Die Einstellung `nurr_app_dark_mode` ist spaeter unter Mehr aenderbar und wird mit dem Quran-Lesemodus synchronisiert.
+- Alte frei waehlbare Hintergrundbilder werden nicht mehr hinter den Hauptseiten gerendert und die Hintergrundauswahl ist aus der produktiven Einstellungsoberflaeche entfernt.
+- Die Dua-Kategorien verwenden einheitliche Material-Symbole statt Emoji-Kacheln. Die Home-Schnellaktionen enthalten Masbaha statt eines doppelten Zugriffs auf die 99 Namen.
+- Die Masbaha rendert keine alten Hintergrundbilder mehr und verwendet dieselben Nurr-Flaechen, Karten und Goldakzente wie Home.
+- Die vorherige `HomePage` bleibt als nicht produktiv verwendete Rueckfallimplementierung in `lib/main.dart`. Rueckbauhinweise stehen in `REDESIGN_ROLLBACK.md`.
+- Der produktive Quran-Reader arbeitet offline mit gebuendelten Textdaten statt mit Seitenbildern.
+- Er bietet Arabisch mit deutscher oder englischer Uebersetzung, Nur-Arabisch und Nur-Uebersetzung, zwei Lesemodi, getrennte Schriftgroessen, Versabstand, Suche, Vers-Lesezeichen, Kopieren und Teilen.
+- Home-Weiterlesen speichert die zuletzt geoeffnete Sure und den zuletzt angezeigten Seitenbeginn und oeffnet diese Lesestelle direkt wieder.
+- Die Basmala wird bei Suren 2-8 und 10-114 als eigene zentrierte Ueberschrift dargestellt und nicht als Bestandteil von Vers 1; Sure 1 behaelt sie als Vers 1, Sure 9 hat keine Basmala-Ueberschrift.
+- Der Quran-Reader besitzt einen persistenten Hell-/Dunkelmodus. Die Auswahl wird beim ersten Einsatz dieser Einstellung abgefragt und kann spaeter in den Anzeigeeinstellungen geaendert werden.
+- In der Seitenansicht kann auf breiten Displays optional Arabisch und Uebersetzung nebeneinander oder einzeln angezeigt werden. Horizontales Wischen wechselt zur vorherigen bzw. naechsten Seite innerhalb der Sure.
+- Arabischer Qurantext bleibt RTL, wird aber mit symmetrischen Seitenabstaenden, zentrierten Zeilen und einer auf breiten Displays begrenzten Lesebreite Mushaf-aehnlich dargestellt. Die Darstellung darf den gebuendelten Text niemals veraendern.
+- Die Sichtbarkeit von Arabisch und Uebersetzung wird pro App-Sprache gespeichert. Bei erstmaliger arabischer UI-Nutzung ist nur der arabische Text aktiv; eine Uebersetzung muss bewusst eingeschaltet werden.
+- Tafsir und Audio sind nur als spaetere Funktionen gekennzeichnet und noch nicht aktiv.
+- Quran-Daten: Tanzil Uthmani 1.1, Bubenheim & Elyas und Saheeh International. Alle 6.236 Verse werden mit festen SHA-256-Pruefsummen und Strukturpruefungen validiert.
+- Ein fehlgeschlagener Quran-Ladeversuch wird nicht dauerhaft im Repository zwischengespeichert; die Fehleransicht bietet einen erneuten Ladeversuch. Repository- und Widget-Tests pruefen Datenintegritaet und das sichtbare Laden der Surenliste.
+- Tanzil-Uebersetzungen sind nur fuer nicht kommerzielle Nutzung freigegeben. Nurr muss daher dauerhaft kostenlos und werbefrei bleiben und darf keine In-App-Kaeufe oder Abos fuer diese Inhalte enthalten.
+- Die alten grossen Mushaf-Bildordner koennen lokal noch vorhanden sein, werden aber nicht mehr ueber `pubspec.yaml` in die App gebuendelt.
+- Quran-Schrift: Amiri Quran unter SIL Open Font License 1.1.
 - Hauptlogik liegt aktuell hauptsaechlich in `lib/main.dart`
 - Weitere grosse UI-/Feature-Dateien:
   - `lib/mushaf_reader_page.dart`
   - `lib/german_reader_page.dart`
   - `lib/dua_page.dart`
+  - `lib/quran_text_reader_page.dart`
+  - `lib/quran_text_repository.dart`
 
 ## Wichtige Ordner
 
@@ -62,7 +89,11 @@ Die App nutzt `shared_preferences` fuer lokale Persistenz. Je nach Feature werde
 - Bookmark-Daten
 - Prayer-Tracking / Verlauf
 - Intro-/Tutorial-Status
+- globaler Nurr-Onboarding-Status (`nurr_onboarding_seen_v2`)
+- globaler Hell-/Dunkelmodus (`nurr_app_dark_mode`)
 - weitere UI- und Feature-Zustaende
+- Quran-Anzeigemodus, Uebersetzungssprache, getrennte Schriftgroessen, Versabstand und Vers-Lesezeichen
+- letzte Quran-Lesestelle (`quran_last_surah`, `quran_last_ayah`)
 
 Wichtig:
 - Wenn neue lokal gespeicherte Daten hinzukommen, muessen `legal/privacy.md` und ggf. `legal/support.md` angepasst werden.
@@ -81,6 +112,7 @@ Moeglich je nach Plattform/Build:
 Wichtig:
 - Neue APIs, CDNs oder Drittanbieter muessen in `AGENT.md` und den Legal-Texten nachgezogen werden.
 - Fuer neue Endpunkte moeglichst HTTPS verwenden.
+- Der produktive Quran-Reader benoetigt zum Lesen und Suchen keine Netzwerkverbindung. Die bestehende Al-Quran-Cloud-Nutzung gehoert zu altem Code bzw. anderen Quran-Routen.
 
 ## Permissions / Plattformhinweise
 

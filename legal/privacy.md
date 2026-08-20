@@ -1,12 +1,12 @@
 # Privacy Policy for Nurr
 
-Last updated: April 10, 2026
+Last updated: August 20, 2026
 
 This Privacy Policy explains how Nurr handles information when you use the app.
 
 ## Overview
 
-Nurr is a Quran and dua app. The app does not require account creation and currently does not include in-app advertising, payment processing, or user profile creation.
+Nurr is a Quran and dua app. The app is permanently free and does not include advertising, in-app purchases, subscriptions, payment processing, account creation, or user profile creation.
 
 The app stores some data locally on your device and uses third-party services for selected content and location-based features.
 
@@ -24,7 +24,9 @@ Depending on the feature you use, this may include:
 - prayer checklist or prayer-history data
 - tasbih counter state and selected dhikr
 - intro or tutorial status
+- whether the Nurr welcome onboarding has already been completed and the selected global light/dark appearance
 - other feature-related app preferences needed to restore your last state
+- Quran display mode, single/side-by-side page preference, language-specific text visibility, light/dark appearance, selected translation, separate Arabic and translation font sizes, verse spacing, and verse bookmarks
 
 This data is stored locally on your device to provide app functionality. It is not tied to an account and is not synced by the app to a personal user profile.
 
@@ -48,8 +50,9 @@ Service:
 - `https://api.alquran.cloud/`
 
 Purpose:
-- loading Quran metadata
-- loading surah and translation content
+- legacy Quran-related screens may load Quran metadata or content
+
+The primary Quran reader uses complete Quran and translation files bundled with the app. Reading and searching the Quran in that reader does not contact this service.
 
 Data sent:
 - standard technical request data such as IP address, request metadata, and device/browser network information

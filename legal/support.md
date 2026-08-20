@@ -1,6 +1,6 @@
 # Nurr Support
 
-Last updated: April 10, 2026
+Last updated: August 20, 2026
 
 This page provides support information for Nurr.
 
@@ -8,8 +8,9 @@ This page provides support information for Nurr.
 
 Nurr is a Quran and dua app with:
 
-- Quran reading views
-- Mushaf reading pages
+- offline Quran reading in Arabic, German, and English
+- combined verse view and Arabic/translation page view
+- separate font sizing, verse spacing, local search, copying and sharing
 - bookmarks and last-read position
 - dua content
 - tasbih-related local app state
@@ -53,7 +54,7 @@ The prayer times feature depends on location access and external services.
 
 ## Content Availability
 
-Some app content depends on external services used to load Quran, Hadith, or prayer-related data.
+The primary Quran reader is bundled with the app and works offline. Other content such as Hadith or prayer-related data may depend on external services.
 
 - If a third-party service is unavailable, some content may fail to load temporarily.
 - Network restrictions, browser settings, or provider-side issues may affect content loading.
