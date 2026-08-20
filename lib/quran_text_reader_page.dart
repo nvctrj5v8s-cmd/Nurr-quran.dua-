@@ -115,7 +115,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
       (item) => item.number == surahNumber,
       orElse: () => data.surahs.first,
     );
-    _openSurah(surah, initialAyah: ayah.clamp(1, surah.ayahCount));
+    _openSurah(surah, data: data, initialAyah: ayah.clamp(1, surah.ayahCount));
   }
 
   String _t(String de, String en, String ar) {
@@ -167,6 +167,8 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    NurrDesign.darkMode.value = _preferences.darkMode;
+    await prefs.setBool('nurr_app_dark_mode', _preferences.darkMode);
     await prefs.setString('quran_text_reading_mode', _preferences.mode.name);
     await prefs.setBool(
       'quran_show_arabic_${widget.uiLanguageCode}',
@@ -216,7 +218,14 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
       barrierDismissible: !firstTime,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF151515),
+          backgroundColor: NurrDesign.surface(darkMode),
+          surfaceTintColor: Colors.transparent,
+          titleTextStyle: TextStyle(
+            color: NurrDesign.text(darkMode),
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+          contentTextStyle: TextStyle(color: NurrDesign.text(darkMode)),
           title: Text(
             _t(
               'Wie möchtest du lesen?',
@@ -316,176 +325,200 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: const Color(0xFF151515),
+      backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) {
           void update(QuranReaderPreferences value) {
             setSheetState(() => draft = value);
           }
 
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    _t('Quran-Anzeige', 'Quran display', 'عرض القرآن'),
-                    style: TextStyle(
-                      color: widget.themeColor,
-                      fontSize: 23,
-                      fontWeight: FontWeight.bold,
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: draft.darkMode
+                  ? const ColorScheme.dark(
+                      primary: NurrDesign.gold,
+                      surface: NurrDesign.darkSurface,
+                    )
+                  : const ColorScheme.light(
+                      primary: NurrDesign.goldDark,
+                      surface: NurrDesign.paper,
                     ),
-                  ),
-                  const SizedBox(height: 14),
-                  SegmentedButton<QuranReadingMode>(
-                    segments: [
-                      ButtonSegment(
-                        value: QuranReadingMode.interleaved,
-                        label: Text(_t('Versweise', 'Verses', 'الآيات')),
+              textTheme: Theme.of(context).textTheme.apply(
+                bodyColor: NurrDesign.text(draft.darkMode),
+                displayColor: NurrDesign.text(draft.darkMode),
+              ),
+            ),
+            child: ColoredBox(
+              color: NurrDesign.surface(draft.darkMode),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 30),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _t('Quran-Anzeige', 'Quran display', 'عرض القرآن'),
+                        style: TextStyle(
+                          color: widget.themeColor,
+                          fontSize: 23,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      ButtonSegment(
-                        value: QuranReadingMode.pairedPages,
-                        label: Text(_t('Seiten', 'Pages', 'الصفحات')),
+                      const SizedBox(height: 14),
+                      SegmentedButton<QuranReadingMode>(
+                        segments: [
+                          ButtonSegment(
+                            value: QuranReadingMode.interleaved,
+                            label: Text(_t('Versweise', 'Verses', 'الآيات')),
+                          ),
+                          ButtonSegment(
+                            value: QuranReadingMode.pairedPages,
+                            label: Text(_t('Seiten', 'Pages', 'الصفحات')),
+                          ),
+                        ],
+                        selected: {draft.mode},
+                        onSelectionChanged: (value) =>
+                            update(draft.copyWith(mode: value.first)),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: widget.themeColor,
+                        secondary: const Icon(Icons.view_week_outlined),
+                        title: Text(
+                          _t(
+                            'Zwei Seiten nebeneinander',
+                            'Two pages side by side',
+                            'صفحتان جنبًا إلى جنب',
+                          ),
+                        ),
+                        subtitle: Text(
+                          _t(
+                            'Für iPad, Tablet und PC',
+                            'For iPad, tablet and PC',
+                            'للآيباد والجهاز اللوحي والكمبيوتر',
+                          ),
+                        ),
+                        value: draft.showSideBySide,
+                        onChanged: draft.mode == QuranReadingMode.pairedPages
+                            ? (value) =>
+                                  update(draft.copyWith(showSideBySide: value))
+                            : null,
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: widget.themeColor,
+                        title: Text(
+                          _t('Arabischer Text', 'Arabic text', 'النص العربي'),
+                        ),
+                        value: draft.showArabic,
+                        onChanged: (value) {
+                          if (!value && !draft.showTranslation) return;
+                          update(draft.copyWith(showArabic: value));
+                        },
+                      ),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: widget.themeColor,
+                        title: Text(
+                          _t('Übersetzung', 'Translation', 'الترجمة'),
+                        ),
+                        value: draft.showTranslation,
+                        onChanged: (value) {
+                          if (!value && !draft.showArabic) return;
+                          update(draft.copyWith(showTranslation: value));
+                        },
+                      ),
+                      DropdownButtonFormField<String>(
+                        initialValue: language,
+                        decoration: InputDecoration(
+                          labelText: _t(
+                            'Übersetzungssprache',
+                            'Translation language',
+                            'لغة الترجمة',
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'de', child: Text('Deutsch')),
+                          DropdownMenuItem(value: 'en', child: Text('English')),
+                        ],
+                        onChanged: (value) =>
+                            setSheetState(() => language = value!),
+                      ),
+                      const SizedBox(height: 16),
+                      _SettingsSlider(
+                        label: _t(
+                          'Arabische Schriftgröße',
+                          'Arabic font size',
+                          'حجم الخط العربي',
+                        ),
+                        value: draft.arabicFontSize,
+                        min: 22,
+                        max: 48,
+                        onChanged: (value) =>
+                            update(draft.copyWith(arabicFontSize: value)),
+                      ),
+                      _SettingsSlider(
+                        label: _t(
+                          'Übersetzungsgröße',
+                          'Translation size',
+                          'حجم خط الترجمة',
+                        ),
+                        value: draft.translationFontSize,
+                        min: 14,
+                        max: 30,
+                        onChanged: (value) =>
+                            update(draft.copyWith(translationFontSize: value)),
+                      ),
+                      _SettingsSlider(
+                        label: _t(
+                          'Versabstand',
+                          'Verse spacing',
+                          'المسافة بين الآيات',
+                        ),
+                        value: draft.verseSpacing,
+                        min: 8,
+                        max: 36,
+                        onChanged: (value) =>
+                            update(draft.copyWith(verseSpacing: value)),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        activeThumbColor: widget.themeColor,
+                        secondary: Icon(
+                          draft.darkMode
+                              ? Icons.dark_mode_outlined
+                              : Icons.light_mode_outlined,
+                        ),
+                        title: Text(
+                          _t('Dunkelmodus', 'Dark mode', 'الوضع الداكن'),
+                        ),
+                        value: draft.darkMode,
+                        onChanged: (value) =>
+                            update(draft.copyWith(darkMode: value)),
+                      ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: widget.themeColor,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _preferences = draft;
+                              _translationLanguage = language;
+                            });
+                            _savePreferences();
+                            Navigator.pop(context);
+                          },
+                          child: Text(_t('Speichern', 'Save', 'حفظ')),
+                        ),
                       ),
                     ],
-                    selected: {draft.mode},
-                    onSelectionChanged: (value) =>
-                        update(draft.copyWith(mode: value.first)),
                   ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeThumbColor: widget.themeColor,
-                    secondary: const Icon(Icons.view_week_outlined),
-                    title: Text(
-                      _t(
-                        'Zwei Seiten nebeneinander',
-                        'Two pages side by side',
-                        'صفحتان جنبًا إلى جنب',
-                      ),
-                    ),
-                    subtitle: Text(
-                      _t(
-                        'Für iPad, Tablet und PC',
-                        'For iPad, tablet and PC',
-                        'للآيباد والجهاز اللوحي والكمبيوتر',
-                      ),
-                    ),
-                    value: draft.showSideBySide,
-                    onChanged: draft.mode == QuranReadingMode.pairedPages
-                        ? (value) =>
-                              update(draft.copyWith(showSideBySide: value))
-                        : null,
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeThumbColor: widget.themeColor,
-                    title: Text(
-                      _t('Arabischer Text', 'Arabic text', 'النص العربي'),
-                    ),
-                    value: draft.showArabic,
-                    onChanged: (value) {
-                      if (!value && !draft.showTranslation) return;
-                      update(draft.copyWith(showArabic: value));
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeThumbColor: widget.themeColor,
-                    title: Text(_t('Übersetzung', 'Translation', 'الترجمة')),
-                    value: draft.showTranslation,
-                    onChanged: (value) {
-                      if (!value && !draft.showArabic) return;
-                      update(draft.copyWith(showTranslation: value));
-                    },
-                  ),
-                  DropdownButtonFormField<String>(
-                    initialValue: language,
-                    decoration: InputDecoration(
-                      labelText: _t(
-                        'Übersetzungssprache',
-                        'Translation language',
-                        'لغة الترجمة',
-                      ),
-                    ),
-                    items: const [
-                      DropdownMenuItem(value: 'de', child: Text('Deutsch')),
-                      DropdownMenuItem(value: 'en', child: Text('English')),
-                    ],
-                    onChanged: (value) =>
-                        setSheetState(() => language = value!),
-                  ),
-                  const SizedBox(height: 16),
-                  _SettingsSlider(
-                    label: _t(
-                      'Arabische Schriftgröße',
-                      'Arabic font size',
-                      'حجم الخط العربي',
-                    ),
-                    value: draft.arabicFontSize,
-                    min: 22,
-                    max: 48,
-                    onChanged: (value) =>
-                        update(draft.copyWith(arabicFontSize: value)),
-                  ),
-                  _SettingsSlider(
-                    label: _t(
-                      'Übersetzungsgröße',
-                      'Translation size',
-                      'حجم خط الترجمة',
-                    ),
-                    value: draft.translationFontSize,
-                    min: 14,
-                    max: 30,
-                    onChanged: (value) =>
-                        update(draft.copyWith(translationFontSize: value)),
-                  ),
-                  _SettingsSlider(
-                    label: _t(
-                      'Versabstand',
-                      'Verse spacing',
-                      'المسافة بين الآيات',
-                    ),
-                    value: draft.verseSpacing,
-                    min: 8,
-                    max: 36,
-                    onChanged: (value) =>
-                        update(draft.copyWith(verseSpacing: value)),
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    activeThumbColor: widget.themeColor,
-                    secondary: Icon(
-                      draft.darkMode
-                          ? Icons.dark_mode_outlined
-                          : Icons.light_mode_outlined,
-                    ),
-                    title: Text(_t('Dunkelmodus', 'Dark mode', 'الوضع الداكن')),
-                    value: draft.darkMode,
-                    onChanged: (value) =>
-                        update(draft.copyWith(darkMode: value)),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: widget.themeColor,
-                        foregroundColor: Colors.black,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _preferences = draft;
-                          _translationLanguage = language;
-                        });
-                        _savePreferences();
-                        Navigator.pop(context);
-                      },
-                      child: Text(_t('Speichern', 'Save', 'حفظ')),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );
@@ -494,7 +527,11 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
     );
   }
 
-  void _openSurah(QuranSurah surah, {int? initialAyah}) {
+  void _openSurah(
+    QuranSurah surah, {
+    required QuranTextData data,
+    int? initialAyah,
+  }) {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setInt('quran_last_surah', surah.number);
       prefs.setInt('quran_last_ayah', initialAyah ?? 1);
@@ -503,6 +540,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
       context,
       MaterialPageRoute(
         builder: (_) => QuranSurahReaderPage(
+          data: data,
           surah: surah,
           initialAyah: initialAyah,
           themeColor: widget.themeColor,
@@ -591,6 +629,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                           Navigator.pop(context);
                           _openSurah(
                             data.surahs[verse.surah - 1],
+                            data: data,
                             initialAyah: verse.ayah,
                           );
                         },
@@ -672,6 +711,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                             Navigator.pop(context);
                             _openSurah(
                               data.surahs[verse.surah - 1],
+                              data: data,
                               initialAyah: verse.ayah,
                             );
                           },
@@ -833,7 +873,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                               fontSize: 23,
                             ),
                           ),
-                          onTap: () => _openSurah(surah),
+                          onTap: () => _openSurah(surah, data: data),
                         ),
                       );
                     },
@@ -849,6 +889,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
 }
 
 class QuranSurahReaderPage extends StatefulWidget {
+  final QuranTextData data;
   final QuranSurah surah;
   final int? initialAyah;
   final Color themeColor;
@@ -860,6 +901,7 @@ class QuranSurahReaderPage extends StatefulWidget {
 
   const QuranSurahReaderPage({
     super.key,
+    required this.data,
     required this.surah,
     this.initialAyah,
     required this.themeColor,
@@ -878,6 +920,7 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
   late Set<String> _bookmarks;
   late List<int> _pages;
   late int _pageIndex;
+  late final ScrollController _interleavedController;
   bool _showArabicPage = true;
 
   bool get _isArabicUi => widget.uiLanguageCode == 'ar';
@@ -892,6 +935,7 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
   @override
   void initState() {
     super.initState();
+    _interleavedController = ScrollController();
     _bookmarks = {...widget.bookmarks};
     _showArabicPage = widget.preferences.showArabic;
     _pages = widget.surah.verses.map((v) => v.page).toSet().toList()..sort();
@@ -902,6 +946,12 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
         ? 0
         : _pages.indexOf(initialVerse.page).clamp(0, _pages.length - 1);
     _saveLastRead();
+  }
+
+  @override
+  void dispose() {
+    _interleavedController.dispose();
+    super.dispose();
   }
 
   Future<void> _saveLastRead() async {
@@ -916,10 +966,65 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
   }
 
   void _changePage(int delta) {
-    final next = (_pageIndex + delta).clamp(0, _pages.length - 1);
-    if (next == _pageIndex) return;
+    final requested = _pageIndex + delta;
+    if (requested < 0) {
+      _openAdjacentSurah(-1);
+      return;
+    }
+    if (requested >= _pages.length) {
+      _openAdjacentSurah(1);
+      return;
+    }
+    final next = requested.clamp(0, _pages.length - 1);
     setState(() => _pageIndex = next);
     _saveLastRead();
+  }
+
+  void _openAdjacentSurah(int delta) {
+    final targetNumber = widget.surah.number + delta;
+    if (targetNumber < 1 || targetNumber > widget.data.surahs.length) return;
+    final target = widget.data.surahs[targetNumber - 1];
+    final initialAyah = delta < 0 ? target.ayahCount : 1;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuranSurahReaderPage(
+          data: widget.data,
+          surah: target,
+          initialAyah: initialAyah,
+          themeColor: widget.themeColor,
+          uiLanguageCode: widget.uiLanguageCode,
+          translationLanguage: widget.translationLanguage,
+          preferences: widget.preferences,
+          bookmarks: _bookmarks,
+          onBookmarksChanged: widget.onBookmarksChanged,
+        ),
+      ),
+    );
+  }
+
+  void _handleHorizontalSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity < -250) {
+      _changePage(1);
+    } else if (velocity > 250) {
+      _changePage(-1);
+    }
+  }
+
+  void _handleInterleavedSwipe(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (!_interleavedController.hasClients) return;
+    final position = _interleavedController.position;
+    const edgeTolerance = 24.0;
+    final isAtStart =
+        position.pixels <= position.minScrollExtent + edgeTolerance;
+    final isAtEnd = position.pixels >= position.maxScrollExtent - edgeTolerance;
+    if (velocity < -250 && isAtEnd) {
+      _openAdjacentSurah(1);
+    } else if (velocity > 250 && isAtStart) {
+      _openAdjacentSurah(-1);
+    }
   }
 
   String _t(String de, String en, String ar) {
@@ -959,92 +1064,103 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
   void _showVerseActions(QuranVerse verse) {
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF151515),
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: Icon(
-                _bookmarks.contains(verse.key)
-                    ? Icons.bookmark_remove
-                    : Icons.bookmark_add_outlined,
-                color: widget.themeColor,
-              ),
-              title: Text(
-                _bookmarks.contains(verse.key)
-                    ? _t(
-                        'Lesezeichen entfernen',
-                        'Remove bookmark',
-                        'إزالة الإشارة',
-                      )
-                    : _t(
-                        'Lesezeichen speichern',
-                        'Save bookmark',
-                        'حفظ الإشارة',
-                      ),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _toggleBookmark(verse);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.copy, color: widget.themeColor),
-              title: Text(
-                _t('Arabisch kopieren', 'Copy Arabic', 'نسخ العربية'),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _copyVerse(verse, '${verse.arabic}\n[${verse.key}]');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.translate, color: widget.themeColor),
-              title: Text(
-                _t('Übersetzung kopieren', 'Copy translation', 'نسخ الترجمة'),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _copyVerse(verse, '${_translation(verse)}\n[${verse.key}]');
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.share_outlined, color: widget.themeColor),
-              title: Text(_t('Vers teilen', 'Share verse', 'مشاركة الآية')),
-              onTap: () {
-                Navigator.pop(context);
-                _shareVerse(verse);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.menu_book_outlined,
-                color: Colors.white38,
-              ),
-              title: Text(
-                _t(
-                  'Tafsir – später verfügbar',
-                  'Tafsir – coming later',
-                  'التفسير – لاحقًا',
+      backgroundColor: _cardColor,
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          textTheme: Theme.of(
+            context,
+          ).textTheme.apply(bodyColor: _textColor, displayColor: _textColor),
+          listTileTheme: ListTileThemeData(
+            textColor: _textColor,
+            iconColor: widget.themeColor,
+          ),
+        ),
+        child: SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(
+                  _bookmarks.contains(verse.key)
+                      ? Icons.bookmark_remove
+                      : Icons.bookmark_add_outlined,
+                  color: widget.themeColor,
                 ),
-              ),
-              enabled: false,
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.volume_up_outlined,
-                color: Colors.white38,
-              ),
-              title: Text(
-                _t(
-                  'Audio – später verfügbar',
-                  'Audio – coming later',
-                  'الصوت – لاحقًا',
+                title: Text(
+                  _bookmarks.contains(verse.key)
+                      ? _t(
+                          'Lesezeichen entfernen',
+                          'Remove bookmark',
+                          'إزالة الإشارة',
+                        )
+                      : _t(
+                          'Lesezeichen speichern',
+                          'Save bookmark',
+                          'حفظ الإشارة',
+                        ),
                 ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _toggleBookmark(verse);
+                },
               ),
-              enabled: false,
-            ),
-          ],
+              ListTile(
+                leading: Icon(Icons.copy, color: widget.themeColor),
+                title: Text(
+                  _t('Arabisch kopieren', 'Copy Arabic', 'نسخ العربية'),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyVerse(verse, '${verse.arabic}\n[${verse.key}]');
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.translate, color: widget.themeColor),
+                title: Text(
+                  _t('Übersetzung kopieren', 'Copy translation', 'نسخ الترجمة'),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyVerse(verse, '${_translation(verse)}\n[${verse.key}]');
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.share_outlined, color: widget.themeColor),
+                title: Text(_t('Vers teilen', 'Share verse', 'مشاركة الآية')),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareVerse(verse);
+                },
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.menu_book_outlined,
+                  color: Colors.white38,
+                ),
+                title: Text(
+                  _t(
+                    'Tafsir – später verfügbar',
+                    'Tafsir – coming later',
+                    'التفسير – لاحقًا',
+                  ),
+                ),
+                enabled: false,
+              ),
+              ListTile(
+                leading: const Icon(
+                  Icons.volume_up_outlined,
+                  color: Colors.white38,
+                ),
+                title: Text(
+                  _t(
+                    'Audio – später verfügbar',
+                    'Audio – coming later',
+                    'الصوت – لاحقًا',
+                  ),
+                ),
+                enabled: false,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1085,91 +1201,98 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
         final horizontalPadding = constraints.maxWidth > 928
             ? (constraints.maxWidth - 900) / 2
             : 14.0;
-        return ListView.builder(
-          padding: EdgeInsets.fromLTRB(
-            horizontalPadding,
-            14,
-            horizontalPadding,
-            14,
-          ),
-          itemCount: widget.surah.verses.length + (_hasBasmala ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (_hasBasmala && index == 0) {
-              return _buildBasmalaHeader();
-            }
-            final verse = widget.surah.verses[index - (_hasBasmala ? 1 : 0)];
-            return Card(
-              key: ValueKey(verse.key),
-              color: _cardColor,
-              margin: EdgeInsets.only(bottom: widget.preferences.verseSpacing),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-                side: BorderSide(
-                  color: widget.initialAyah == verse.ayah
-                      ? widget.themeColor
-                      : (_isDark ? Colors.white12 : Colors.black12),
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragEnd: _handleInterleavedSwipe,
+          child: ListView.builder(
+            controller: _interleavedController,
+            padding: EdgeInsets.fromLTRB(
+              horizontalPadding,
+              14,
+              horizontalPadding,
+              14,
+            ),
+            itemCount: widget.surah.verses.length + (_hasBasmala ? 1 : 0),
+            itemBuilder: (context, index) {
+              if (_hasBasmala && index == 0) {
+                return _buildBasmalaHeader();
+              }
+              final verse = widget.surah.verses[index - (_hasBasmala ? 1 : 0)];
+              return Card(
+                key: ValueKey(verse.key),
+                color: _cardColor,
+                margin: EdgeInsets.only(
+                  bottom: widget.preferences.verseSpacing,
                 ),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () => _showVerseActions(verse),
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          _VerseNumber(
-                            number: verse.ayah,
-                            color: widget.themeColor,
-                          ),
-                          const Spacer(),
-                          if (_bookmarks.contains(verse.key))
-                            Icon(
-                              Icons.bookmark,
-                              color: widget.themeColor,
-                              size: 20,
-                            ),
-                        ],
-                      ),
-                      if (widget.preferences.showArabic) ...[
-                        const SizedBox(height: 12),
-                        SelectableText(
-                          verse.arabic,
-                          textDirection: TextDirection.rtl,
-                          textAlign: TextAlign.center,
-                          textWidthBasis: TextWidthBasis.parent,
-                          style: TextStyle(
-                            color: _textColor,
-                            fontFamily: 'AmiriQuran',
-                            fontSize: widget.preferences.arabicFontSize,
-                            height: 2,
-                          ),
-                        ),
-                      ],
-                      if (widget.preferences.showArabic &&
-                          widget.preferences.showTranslation)
-                        Divider(
-                          height: 26,
-                          color: _isDark ? Colors.white24 : Colors.black12,
-                        ),
-                      if (widget.preferences.showTranslation)
-                        SelectableText(
-                          _translation(verse),
-                          textAlign: TextAlign.start,
-                          style: TextStyle(
-                            color: _textColor.withValues(alpha: 0.88),
-                            fontSize: widget.preferences.translationFontSize,
-                            height: 1.55,
-                          ),
-                        ),
-                    ],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  side: BorderSide(
+                    color: widget.initialAyah == verse.ayah
+                        ? widget.themeColor
+                        : (_isDark ? Colors.white12 : Colors.black12),
                   ),
                 ),
-              ),
-            );
-          },
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => _showVerseActions(verse),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          children: [
+                            _VerseNumber(
+                              number: verse.ayah,
+                              color: widget.themeColor,
+                            ),
+                            const Spacer(),
+                            if (_bookmarks.contains(verse.key))
+                              Icon(
+                                Icons.bookmark,
+                                color: widget.themeColor,
+                                size: 20,
+                              ),
+                          ],
+                        ),
+                        if (widget.preferences.showArabic) ...[
+                          const SizedBox(height: 12),
+                          SelectableText(
+                            verse.arabic,
+                            textDirection: TextDirection.rtl,
+                            textAlign: TextAlign.center,
+                            textWidthBasis: TextWidthBasis.parent,
+                            style: TextStyle(
+                              color: _textColor,
+                              fontFamily: 'AmiriQuran',
+                              fontSize: widget.preferences.arabicFontSize,
+                              height: 2,
+                            ),
+                          ),
+                        ],
+                        if (widget.preferences.showArabic &&
+                            widget.preferences.showTranslation)
+                          Divider(
+                            height: 26,
+                            color: _isDark ? Colors.white24 : Colors.black12,
+                          ),
+                        if (widget.preferences.showTranslation)
+                          SelectableText(
+                            _translation(verse),
+                            textAlign: TextAlign.start,
+                            style: TextStyle(
+                              color: _textColor.withValues(alpha: 0.88),
+                              fontSize: widget.preferences.translationFontSize,
+                              height: 1.55,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
@@ -1243,14 +1366,7 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
             !sideBySide;
         return GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onHorizontalDragEnd: (details) {
-            final velocity = details.primaryVelocity ?? 0;
-            if (velocity < -250 && _pageIndex < _pages.length - 1) {
-              _changePage(1);
-            } else if (velocity > 250 && _pageIndex > 0) {
-              _changePage(-1);
-            }
-          },
+          onHorizontalDragEnd: _handleHorizontalSwipe,
           child: Column(
             children: [
               Container(
@@ -1262,7 +1378,9 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: _pageIndex > 0 ? () => _changePage(-1) : null,
+                      onPressed: widget.surah.number > 1 || _pageIndex > 0
+                          ? () => _changePage(-1)
+                          : null,
                       icon: const Icon(Icons.chevron_left),
                     ),
                     Expanded(
@@ -1272,7 +1390,9 @@ class _QuranSurahReaderPageState extends State<QuranSurahReaderPage> {
                       ),
                     ),
                     IconButton(
-                      onPressed: _pageIndex < _pages.length - 1
+                      onPressed:
+                          widget.surah.number < widget.data.surahs.length ||
+                              _pageIndex < _pages.length - 1
                           ? () => _changePage(1)
                           : null,
                       icon: const Icon(Icons.chevron_right),

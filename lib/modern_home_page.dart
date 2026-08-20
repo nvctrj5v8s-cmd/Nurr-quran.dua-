@@ -290,6 +290,8 @@ class _ContinueReadingCard extends StatelessWidget {
     final en = languageCode == 'en';
     String t(String de, String english, String arabic) =>
         ar ? arabic : (en ? english : de);
+    final primaryText = NurrDesign.text(darkMode);
+    final secondaryText = NurrDesign.secondaryText(darkMode);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(26),
@@ -330,8 +332,8 @@ class _ContinueReadingCard extends StatelessWidget {
                 children: [
                   Text(
                     t('Weiterlesen', 'Continue reading', 'متابعة القراءة'),
-                    style: const TextStyle(
-                      color: Color(0xFFFFDB89),
+                    style: TextStyle(
+                      color: darkMode ? const Color(0xFFFFDB89) : primaryText,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
                     ),
@@ -339,8 +341,8 @@ class _ContinueReadingCard extends StatelessWidget {
                   const SizedBox(height: 5),
                   Text(
                     t('Öffne deinen Quran', 'Open your Quran', 'افتح القرآن'),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: primaryText,
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                     ),
@@ -352,8 +354,8 @@ class _ContinueReadingCard extends StatelessWidget {
                       'Your settings and bookmarks are ready.',
                       'إعداداتك وإشاراتك المرجعية محفوظة.',
                     ),
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: secondaryText,
                       fontSize: 13,
                       height: 1.35,
                     ),
@@ -361,7 +363,7 @@ class _ContinueReadingCard extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+            Icon(Icons.arrow_forward_rounded, color: primaryText),
           ],
         ),
       ),

@@ -10,7 +10,7 @@ void main() {
     SharedPreferences.setMockInitialValues({
       'quran_text_reader_configured': true,
       'quran_reader_theme_configured': true,
-      'quran_text_reading_mode': 'interleaved',
+      'quran_text_reading_mode': 'pairedPages',
     });
 
     await tester.pumpWidget(
@@ -24,9 +24,43 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(find.byIcon(Icons.gpp_bad_outlined), findsNothing);
     expect(find.byType(ListTile), findsWidgets);
+    await tester.tap(find.byType(ListTile).first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(
+      tester
+          .widget<QuranSurahReaderPage>(find.byType(QuranSurahReaderPage))
+          .surah
+          .number,
+      1,
+    );
+
+    final readerSwipeArea = find.byWidgetPredicate(
+      (widget) =>
+          widget is GestureDetector && widget.onHorizontalDragEnd != null,
+    );
+    for (var swipe = 0; swipe < 5; swipe++) {
+      await tester.fling(readerSwipeArea.first, const Offset(-500, 0), 1000);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      final reader = tester.widget<QuranSurahReaderPage>(
+        find.byType(QuranSurahReaderPage),
+      );
+      if (reader.surah.number == 2) break;
+    }
+
+    expect(
+      tester
+          .widget<QuranSurahReaderPage>(find.byType(QuranSurahReaderPage))
+          .surah
+          .number,
+      2,
+    );
   });
 }
