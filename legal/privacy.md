@@ -1,6 +1,6 @@
 # Privacy Policy for Nurr
 
-Last updated: August 20, 2026
+Last updated: August 21, 2026
 
 This Privacy Policy explains how Nurr handles information when you use the app.
 
@@ -22,6 +22,7 @@ Depending on the feature you use, this may include:
 - last-read Quran or Mushaf page
 - bookmark data
 - prayer checklist or prayer-history data
+- daily Sunnah practice selections and the prayer-journey weekly progress, stored only on the device
 - tasbih counter state and selected dhikr
 - intro or tutorial status
 - whether the Nurr welcome onboarding has already been completed and the selected global light/dark appearance

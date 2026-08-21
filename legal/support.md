@@ -1,6 +1,6 @@
 # Nurr Support
 
-Last updated: August 20, 2026
+Last updated: August 21, 2026
 
 This page provides support information for Nurr.
 
@@ -15,6 +15,7 @@ Nurr is a Quran and dua app with:
 - dua content
 - tasbih-related local app state
 - prayer tracking
+- daily Quran impulses, sourced Sunnah habits, and the prayer-journey weekly view
 - location-based prayer times
 - multilingual app support
 
@@ -30,6 +31,7 @@ You can request help with:
 - dua or content display issues
 - translation or language issues
 - theme or display issues
+- daily Sunnah or prayer-journey progress issues
 - general bug reports and feature requests
 
 ## Basic Troubleshooting

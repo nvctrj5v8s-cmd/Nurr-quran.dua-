@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nurr_design.dart';
+import 'spiritual_home_features.dart';
 
 class ModernHomePage extends StatefulWidget {
   final String languageCode;
@@ -9,6 +12,7 @@ class ModernHomePage extends StatefulWidget {
   final ValueChanged<int> onOpenTab;
   final VoidCallback onOpenMasbaha;
   final VoidCallback onContinueReading;
+  final void Function(int surah, int ayah) onOpenQuranVerse;
 
   const ModernHomePage({
     super.key,
@@ -17,6 +21,7 @@ class ModernHomePage extends StatefulWidget {
     required this.onOpenTab,
     required this.onOpenMasbaha,
     required this.onContinueReading,
+    required this.onOpenQuranVerse,
   });
 
   @override
@@ -24,7 +29,6 @@ class ModernHomePage extends StatefulWidget {
 }
 
 class _ModernHomePageState extends State<ModernHomePage> {
-  final _prayerNames = const ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   List<bool> _prayers = List.filled(5, false);
 
   bool get _ar => widget.languageCode == 'ar';
@@ -39,6 +43,15 @@ class _ModernHomePageState extends State<ModernHomePage> {
 
   Future<void> _loadPrayers() async {
     final prefs = await SharedPreferences.getInstance();
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    if (prefs.getString('nurr_prayer_day') != today) {
+      await prefs.setString('nurr_prayer_day', today);
+      for (var index = 0; index < 5; index++) {
+        await prefs.setBool('gebet_$index', false);
+      }
+    }
     final values = List.generate(
       5,
       (index) => prefs.getBool('gebet_$index') ?? false,
@@ -51,6 +64,15 @@ class _ModernHomePageState extends State<ModernHomePage> {
     final updated = [..._prayers];
     updated[index] = !updated[index];
     await prefs.setBool('gebet_$index', updated[index]);
+    final raw = prefs.getString('nurr_prayer_journey_history');
+    final history = raw == null
+        ? <String, dynamic>{}
+        : jsonDecode(raw) as Map<String, dynamic>;
+    final now = DateTime.now();
+    final today =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    history[today] = updated.where((value) => value).length;
+    await prefs.setString('nurr_prayer_journey_history', jsonEncode(history));
     if (mounted) setState(() => _prayers = updated);
   }
 
@@ -136,18 +158,22 @@ class _ModernHomePageState extends State<ModernHomePage> {
                           ),
                           _QuickAction(
                             darkMode: widget.darkMode,
-                            icon: Icons.schedule_rounded,
-                            title: _t(
-                              'Gebetszeiten',
-                              'Prayer times',
-                              'مواقيت الصلاة',
-                            ),
+                            icon: Icons.eco_rounded,
+                            title: _t('Sunnahs', 'Sunnahs', 'السنن'),
                             subtitle: _t(
-                              'Für deinen Ort',
-                              'For your location',
-                              'حسب موقعك',
+                              'Heute schön leben',
+                              'Practice beautifully',
+                              'عِشها اليوم',
                             ),
-                            onTap: () => widget.onOpenTab(2),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SunnahHabitsPage(
+                                  languageCode: widget.languageCode,
+                                  darkMode: widget.darkMode,
+                                ),
+                              ),
+                            ),
                           ),
                           _QuickAction(
                             darkMode: widget.darkMode,
@@ -174,17 +200,29 @@ class _ModernHomePageState extends State<ModernHomePage> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      _PrayerTracker(
+                      PrayerJourneyCard(
                         languageCode: widget.languageCode,
                         darkMode: widget.darkMode,
-                        names: _prayerNames,
-                        values: _prayers,
+                        prayers: _prayers,
                         onToggle: _togglePrayer,
+                        onOpen: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PrayerJourneyPage(
+                                languageCode: widget.languageCode,
+                                darkMode: widget.darkMode,
+                              ),
+                            ),
+                          );
+                          _loadPrayers();
+                        },
                       ),
                       const SizedBox(height: 18),
-                      _DailyCard(
+                      DailyImpulseCard(
                         languageCode: widget.languageCode,
                         darkMode: widget.darkMode,
+                        onOpenVerse: widget.onOpenQuranVerse,
                       ),
                     ],
                   ),
@@ -463,6 +501,8 @@ class _QuickAction extends StatelessWidget {
   );
 }
 
+// Kept temporarily for rollback compatibility with the previous home layout.
+// ignore: unused_element
 class _PrayerTracker extends StatelessWidget {
   final String languageCode;
   final bool darkMode;
@@ -540,6 +580,8 @@ class _PrayerTracker extends StatelessWidget {
   }
 }
 
+// Kept temporarily for rollback compatibility with the previous home layout.
+// ignore: unused_element
 class _DailyCard extends StatelessWidget {
   final String languageCode;
   final bool darkMode;

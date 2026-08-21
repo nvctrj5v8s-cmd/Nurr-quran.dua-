@@ -546,6 +546,16 @@ class _MainPageState extends State<MainPage> {
                 tab = 1;
                 _quranResumeRequest++;
               }),
+              onOpenQuranVerse: (surah, ayah) async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setInt('quran_last_surah', surah);
+                await prefs.setInt('quran_last_ayah', ayah);
+                if (!mounted) return;
+                setState(() {
+                  tab = 1;
+                  _quranResumeRequest++;
+                });
+              },
             ),
             QuranTextHomePage(
               themeColor: _MyAppState.currentTheme.color,
@@ -3431,17 +3441,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final statsHistory = _prayerHistory;
-    final isPreview = _prayerHistory.isEmpty;
-    final completedTotal = statsHistory.fold<int>(
-      0,
-      (sum, entry) => sum + ((entry.value['completed'] as num?)?.toInt() ?? 0),
-    );
-    final totalPrayers = statsHistory.fold<int>(
-      0,
-      (sum, entry) => sum + ((entry.value['total'] as num?)?.toInt() ?? 0),
-    );
-
     return Scaffold(
       backgroundColor: NurrDesign.background(NurrDesign.darkMode.value),
       body: SafeArea(
@@ -3590,92 +3589,6 @@ class _SettingsPageState extends State<SettingsPage> {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => PrayerStatisticsPage(
-                            appLanguage: appLanguage,
-                            prayerHistory: _prayerHistory,
-                          ),
-                        ),
-                      );
-                      _loadSettings();
-                    },
-                    child: _buildCard(
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.query_stats,
-                            color: _MyAppState.currentTheme.color,
-                            size: 32,
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _prayerStatsTitle(),
-                                  style: TextStyle(
-                                    color: _MyAppState.currentTheme.color,
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _prayerStatsSubtitle(),
-                                  style: const TextStyle(
-                                    color: Colors.white70,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _prayerStatsDoneLabel(
-                                    completedTotal,
-                                    totalPrayers,
-                                  ),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                if (isPreview)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 6),
-                                    child: Text(
-                                      _prayerStatsEmptyLabel(),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _prayerStatsOpenHint(),
-                                  style: TextStyle(
-                                    color: _MyAppState.currentTheme.color,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            color: _MyAppState.currentTheme.color,
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
                           builder: (_) => MasbahaPage(language: appLanguage),
                         ),
                       );
@@ -3801,96 +3714,100 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.palette,
-                              color: _MyAppState.currentTheme.color,
-                              size: 28,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              _themeTitle(),
-                              style: TextStyle(
+                  if (false)
+                    _buildCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.palette,
                                 color: _MyAppState.currentTheme.color,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                                size: 28,
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: AppTheme.values
-                              .map(
-                                (theme) => GestureDetector(
-                                  onTap: () => _changeTheme(theme),
-                                  child: Container(
-                                    width: 100,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 12,
-                                      horizontal: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: theme.color.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: _MyAppState.currentTheme == theme
-                                            ? theme.color
-                                            : theme.color.withOpacity(0.3),
-                                        width: _MyAppState.currentTheme == theme
-                                            ? 3
-                                            : 1,
+                              const SizedBox(width: 12),
+                              Text(
+                                _themeTitle(),
+                                style: TextStyle(
+                                  color: _MyAppState.currentTheme.color,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: AppTheme.values
+                                .map(
+                                  (theme) => GestureDetector(
+                                    onTap: () => _changeTheme(theme),
+                                    child: Container(
+                                      width: 100,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 12,
+                                        horizontal: 8,
                                       ),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        Container(
-                                          width: 40,
-                                          height: 40,
-                                          decoration: BoxDecoration(
-                                            color: theme.color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child:
+                                      decoration: BoxDecoration(
+                                        color: theme.color.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color:
                                               _MyAppState.currentTheme == theme
-                                              ? const Icon(
-                                                  Icons.check,
-                                                  color: Colors.white,
-                                                  size: 24,
-                                                )
-                                              : null,
+                                              ? theme.color
+                                              : theme.color.withOpacity(0.3),
+                                          width:
+                                              _MyAppState.currentTheme == theme
+                                              ? 3
+                                              : 1,
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          _themeLabel(theme),
-                                          style: TextStyle(
-                                            color: theme.color,
-                                            fontSize: 12,
-                                            fontWeight:
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            decoration: BoxDecoration(
+                                              color: theme.color,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child:
                                                 _MyAppState.currentTheme ==
                                                     theme
-                                                ? FontWeight.bold
-                                                : FontWeight.normal,
+                                                ? const Icon(
+                                                    Icons.check,
+                                                    color: Colors.white,
+                                                    size: 24,
+                                                  )
+                                                : null,
                                           ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _themeLabel(theme),
+                                            style: TextStyle(
+                                              color: theme.color,
+                                              fontSize: 12,
+                                              fontWeight:
+                                                  _MyAppState.currentTheme ==
+                                                      theme
+                                                  ? FontWeight.bold
+                                                  : FontWeight.normal,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
+                                )
+                                .toList(),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 16),
                   _buildCard(
                     child: Column(
@@ -4853,14 +4770,37 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
   Widget _buildTimingCard(String prayer, String time) {
     final dark = NurrDesign.darkMode.value;
-    const color = NurrDesign.goldDark;
-    return Container(
+    final active = _nextPrayerName == _localizedPrayerName(prayer);
+    final icon = switch (prayer) {
+      'Fajr' => Icons.wb_twilight_rounded,
+      'Dhuhr' => Icons.wb_sunny_rounded,
+      'Asr' => Icons.light_mode_rounded,
+      'Maghrib' => Icons.nights_stay_rounded,
+      _ => Icons.dark_mode_rounded,
+    };
+    final color = active ? NurrDesign.gold : NurrDesign.goldDark;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 450),
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
       decoration: BoxDecoration(
-        color: NurrDesign.surface(dark),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.4)),
+        gradient: active
+            ? LinearGradient(
+                colors: dark
+                    ? const [Color(0xFF3C301D), Color(0xFF1A1814)]
+                    : const [Color(0xFFFFF1C9), Color(0xFFFFFCF3)],
+              )
+            : null,
+        color: active ? null : NurrDesign.surface(dark),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withValues(alpha: active ? .75 : .22)),
+        boxShadow: [
+          BoxShadow(
+            color: NurrDesign.gold.withValues(alpha: active ? .17 : .04),
+            blurRadius: active ? 18 : 8,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -4868,10 +4808,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.18),
-              borderRadius: BorderRadius.circular(12),
+              color: color.withValues(alpha: 0.18),
+              shape: BoxShape.circle,
             ),
-            child: Icon(Icons.access_time_filled, color: color),
+            child: Icon(icon, color: color),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -4880,7 +4820,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               style: TextStyle(
                 color: NurrDesign.text(dark),
                 fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontWeight: active ? FontWeight.w900 : FontWeight.w700,
               ),
             ),
           ),
@@ -4892,6 +4832,14 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
               fontWeight: FontWeight.bold,
             ),
           ),
+          if (active) ...[
+            const SizedBox(width: 8),
+            const Icon(
+              Icons.notifications_active_rounded,
+              size: 18,
+              color: NurrDesign.goldDark,
+            ),
+          ],
         ],
       ),
     );
@@ -4907,40 +4855,82 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+              height: 245,
+              padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
               decoration: BoxDecoration(
-                color: NurrDesign.surface(dark),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+                image: const DecorationImage(
+                  image: AssetImage(
+                    'assets/assets/images/prayer_journey_hero_v1.webp',
+                  ),
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  colorFilter: ColorFilter.mode(
+                    Color(0x88201812),
+                    BlendMode.darken,
+                  ),
                 ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(36),
+                  bottomRight: Radius.circular(36),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black26,
+                    blurRadius: 22,
+                    offset: Offset(0, 9),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: .16),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white24),
+                        ),
+                        child: const Icon(
+                          Icons.mosque_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (!_awaitingUserTrigger)
+                        IconButton.filledTonal(
+                          tooltip: _refreshLabel(),
+                          onPressed: _isLoading ? null : _loadPrayerTimes,
+                          icon: const Icon(Icons.refresh_rounded),
+                        ),
+                    ],
+                  ),
+                  const Spacer(),
                   Text(
                     _title(),
-                    style: TextStyle(
-                      color: NurrDesign.goldDark,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w900,
+                      shadows: [Shadow(color: Colors.black45, blurRadius: 12)],
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _subtitle(),
-                    style: TextStyle(
-                      color: NurrDesign.secondaryText(dark),
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   if (_locationLabel.isNotEmpty) ...[
                     const SizedBox(height: 6),
                     Text(
                       _locationLabel,
-                      style: TextStyle(
-                        color: NurrDesign.secondaryText(dark),
+                      style: const TextStyle(
+                        color: Colors.white70,
                         fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -5033,46 +5023,67 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                     if (_nextPrayerName != null && _nextPrayerTime != null)
                       Container(
                         margin: const EdgeInsets.only(bottom: 16),
-                        padding: const EdgeInsets.all(18),
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: NurrDesign.surface(dark),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: NurrDesign.gold.withValues(alpha: 0.35),
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF174F43), Color(0xFF2B7866)],
                           ),
+                          borderRadius: BorderRadius.circular(25),
+                          border: Border.all(
+                            color: NurrDesign.gold.withValues(alpha: 0.55),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: NurrDesign.emerald.withValues(alpha: .22),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.notifications_active,
-                              color: NurrDesign.goldDark,
+                            Container(
+                              width: 54,
+                              height: 54,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: .12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.notifications_active_rounded,
+                                color: Color(0xFFFFD978),
+                              ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     _nextPrayerLabel(),
-                                    style: TextStyle(
-                                      color: NurrDesign.secondaryText(dark),
+                                    style: const TextStyle(
+                                      color: Colors.white70,
                                       fontSize: 13,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                   Text(
                                     '$_nextPrayerName • $_nextPrayerTime',
-                                    style: TextStyle(
-                                      color: NurrDesign.goldDark,
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
                                     ),
                                   ),
                                   if (_remainingLabel != null)
                                     Text(
                                       _remainingLabel!,
-                                      style: TextStyle(
-                                        color: NurrDesign.text(dark),
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFD978),
                                         fontSize: 14,
+                                        fontWeight: FontWeight.w800,
                                       ),
                                     ),
                                 ],

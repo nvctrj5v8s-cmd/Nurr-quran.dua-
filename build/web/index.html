@@ -14,7 +14,7 @@
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
-  <base href="/Nurr-quran.dua-/">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -34,24 +34,33 @@
 </head>
 <body>
   <script>
-    (function () {
-      if (!('serviceWorker' in navigator)) {
-        return;
-      }
-      navigator.serviceWorker.getRegistrations().then(function (registrations) {
-        for (var i = 0; i < registrations.length; i++) {
-          registrations[i].unregister();
+    (async function () {
+      try {
+        const wasControlled =
+            'serviceWorker' in navigator && navigator.serviceWorker.controller;
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((item) => item.unregister()));
         }
-      });
-      if ('caches' in window) {
-        caches.keys().then(function (keys) {
-          for (var i = 0; i < keys.length; i++) {
-            caches.delete(keys[i]);
-          }
-        });
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+        if (wasControlled && !sessionStorage.getItem('nurr_cache_reloaded')) {
+          sessionStorage.setItem('nurr_cache_reloaded', 'true');
+          location.reload();
+          return;
+        }
+        sessionStorage.removeItem('nurr_cache_reloaded');
+      } catch (_) {
+        // Flutter still starts if a browser blocks cache-management APIs.
       }
+      if (document.body.dataset.flutterStarted === 'true') return;
+      document.body.dataset.flutterStarted = 'true';
+      const flutterScript = document.createElement('script');
+      flutterScript.src = 'flutter_bootstrap.js?v=20260820-mobile-cache-fix-2';
+      document.body.appendChild(flutterScript);
     })();
   </script>
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
