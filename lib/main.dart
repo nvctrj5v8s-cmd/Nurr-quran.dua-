@@ -1,8 +1,10 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dua_page.dart';
@@ -182,6 +184,34 @@ class _MyAppState extends State<MyApp> {
             centerTitle: true,
             elevation: 0,
           ),
+          dialogTheme: DialogThemeData(
+            backgroundColor: NurrDesign.surface(isDark),
+            surfaceTintColor: Colors.transparent,
+            titleTextStyle: TextStyle(
+              color: NurrDesign.text(isDark),
+              fontSize: 21,
+              fontWeight: FontWeight.w800,
+            ),
+            contentTextStyle: TextStyle(
+              color: NurrDesign.text(isDark),
+              height: 1.45,
+            ),
+          ),
+          bottomSheetTheme: BottomSheetThemeData(
+            backgroundColor: NurrDesign.surface(isDark),
+            surfaceTintColor: Colors.transparent,
+            modalBackgroundColor: NurrDesign.surface(isDark),
+          ),
+          cardTheme: CardThemeData(
+            color: NurrDesign.surface(isDark),
+            surfaceTintColor: Colors.transparent,
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: NurrDesign.surface(isDark),
+            labelStyle: TextStyle(color: NurrDesign.secondaryText(isDark)),
+            hintStyle: TextStyle(color: NurrDesign.secondaryText(isDark)),
+          ),
           navigationBarTheme: NavigationBarThemeData(
             labelTextStyle: WidgetStateProperty.all(
               TextStyle(color: NurrDesign.text(isDark), fontSize: 12),
@@ -200,7 +230,7 @@ class _MyAppState extends State<MyApp> {
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return Scaffold(
-                backgroundColor: NurrDesign.cream,
+                backgroundColor: NurrDesign.background(isDark),
                 body: Center(
                   child: CircularProgressIndicator(color: currentTheme.color),
                 ),
@@ -226,7 +256,11 @@ class _MyAppState extends State<MyApp> {
     final prefs = await SharedPreferences.getInstance();
     final language = prefs.getString('app_language');
     if (language == null) return 'language';
-    if (!(prefs.getBool('nurr_onboarding_seen_v2') ?? false)) {
+    final onboardingCompleted =
+        prefs.getBool('onboardingCompleted') ??
+        prefs.getBool('nurr_onboarding_seen_v2') ??
+        false;
+    if (!onboardingCompleted) {
       return 'onboarding:$language';
     }
     return 'main';
@@ -3209,6 +3243,16 @@ class _SettingsPageState extends State<SettingsPage> {
     NurrDesign.darkMode.value = value;
   }
 
+  Future<void> _replayOnboarding() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            NurrOnboardingPage(languageCode: appLanguage.code, replay: true),
+      ),
+    );
+  }
+
   Future<void> _changeBackground(AppBackground newBackground) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_background', newBackground.assetPath);
@@ -3505,6 +3549,49 @@ class _SettingsPageState extends State<SettingsPage> {
                         ),
                         onChanged: _changeDarkMode,
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildCard(
+                    child: ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: NurrDesign.gold.withValues(alpha: .12),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.slideshow_rounded,
+                          color: NurrDesign.goldDark,
+                        ),
+                      ),
+                      title: Text(
+                        appLanguage == AppLanguage.arabic
+                            ? 'مشاهدة المقدمة مرة أخرى'
+                            : appLanguage == AppLanguage.english
+                            ? 'View introduction again'
+                            : 'Einführung erneut ansehen',
+                        style: TextStyle(
+                          color: NurrDesign.text(NurrDesign.darkMode.value),
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: Text(
+                        appLanguage == AppLanguage.arabic
+                            ? 'اكتشف أهم ميزات التطبيق'
+                            : appLanguage == AppLanguage.english
+                            ? 'Discover the app’s main features'
+                            : 'Die wichtigsten Funktionen erneut entdecken',
+                        style: TextStyle(
+                          color: NurrDesign.secondaryText(
+                            NurrDesign.darkMode.value,
+                          ),
+                        ),
+                      ),
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded),
+                      onTap: _replayOnboarding,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -4411,6 +4498,11 @@ class PrayerTimesPage extends StatefulWidget {
 }
 
 class _PrayerTimesPageState extends State<PrayerTimesPage> {
+  static const _cachedLatitudeKey = 'nurr_prayer_latitude';
+  static const _cachedLongitudeKey = 'nurr_prayer_longitude';
+  static const _cachedLocationLabelKey = 'nurr_prayer_location_label';
+  static const _cachedTimingsKey = 'nurr_prayer_cached_timings';
+  static const _cachedUpdatedKey = 'nurr_prayer_cached_updated';
   bool _isLoading = false;
   bool _awaitingUserTrigger = true;
   String? _errorMessage;
@@ -4420,15 +4512,54 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
   String? _nextPrayerName;
   String? _nextPrayerTime;
   String? _remainingLabel;
+  Timer? _clockTimer;
 
   @override
   void initState() {
     super.initState();
-    // On web (iOS Safari etc.) geolocation must be triggered by a user gesture.
-    // Auto-load only for native apps.
+    _initializeLocation();
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted || _timings.isEmpty) return;
+      setState(() => _computeNextPrayer(_timings));
+    });
+  }
+
+  Future<void> _initializeLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    final cachedTimingsRaw = prefs.getString(_cachedTimingsKey);
+    if (cachedTimingsRaw != null) {
+      try {
+        final decoded = json.decode(cachedTimingsRaw) as Map<String, dynamic>;
+        final restored = decoded.map((key, value) => MapEntry(key, '$value'));
+        if (mounted && restored.isNotEmpty) {
+          setState(() {
+            _timings = restored;
+            _locationLabel = prefs.getString(_cachedLocationLabelKey) ?? '';
+            _lastUpdated = DateTime.tryParse(
+              prefs.getString(_cachedUpdatedKey) ?? '',
+            );
+            _awaitingUserTrigger = false;
+            _computeNextPrayer(restored);
+          });
+        }
+      } catch (_) {
+        // Invalid legacy cache is ignored and replaced after the next load.
+      }
+    }
+    final hasCachedLocation =
+        prefs.containsKey(_cachedLatitudeKey) &&
+        prefs.containsKey(_cachedLongitudeKey);
+    if (hasCachedLocation) {
+      if (mounted) setState(() => _awaitingUserTrigger = false);
+      await _loadPrayerTimes(automatic: true);
+      return;
+    }
+
+    // iOS Safari requires the first precise-location request to come from a
+    // button press. Native platforms can safely request once on first use.
     if (!kIsWeb) {
-      _awaitingUserTrigger = false;
-      _loadPrayerTimes();
+      if (mounted) setState(() => _awaitingUserTrigger = false);
+      await _loadPrayerTimes();
     }
   }
 
@@ -4709,7 +4840,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     }
   }
 
-  Future<void> _loadPrayerTimes() async {
+  Future<void> _loadPrayerTimes({bool automatic = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -4717,10 +4848,29 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
     });
 
     try {
-      final coords = await _resolveCoordinates();
+      final prefs = await SharedPreferences.getInstance();
+      Map<String, dynamic> coords;
+      if (automatic && kIsWeb) {
+        // Reopening the web app must not trigger the browser permission dialog.
+        // IP location refreshes the city automatically when the user travels.
+        try {
+          coords = await _resolveCoordinatesFromIp();
+        } catch (_) {
+          coords = {
+            'latitude': prefs.getDouble(_cachedLatitudeKey),
+            'longitude': prefs.getDouble(_cachedLongitudeKey),
+            'label': prefs.getString(_cachedLocationLabelKey) ?? '',
+          };
+        }
+      } else {
+        coords = await _resolveCoordinates();
+      }
       final latitude = (coords['latitude'] as num).toDouble();
       final longitude = (coords['longitude'] as num).toDouble();
       final label = '${coords['label'] ?? ''}'.trim();
+      await prefs.setDouble(_cachedLatitudeKey, latitude);
+      await prefs.setDouble(_cachedLongitudeKey, longitude);
+      await prefs.setString(_cachedLocationLabelKey, label);
       final uri = Uri.parse(
         'https://api.aladhan.com/v1/timings?latitude=$latitude&longitude=$longitude&method=3',
       );
@@ -4745,6 +4895,10 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         'Isha': _normalizeTime('${rawTimings['Isha'] ?? ''}'),
       };
 
+      final updatedAt = DateTime.now();
+      await prefs.setString(_cachedTimingsKey, json.encode(parsed));
+      await prefs.setString(_cachedUpdatedKey, updatedAt.toIso8601String());
+
       _computeNextPrayer(parsed);
 
       if (!mounted) {
@@ -4753,7 +4907,7 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
 
       setState(() {
         _timings = parsed;
-        _lastUpdated = DateTime.now();
+        _lastUpdated = updatedAt;
         _locationLabel = label;
         _isLoading = false;
       });
@@ -4762,10 +4916,18 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
         return;
       }
       setState(() {
-        _errorMessage = error.toString().replaceFirst('Exception: ', '');
+        _errorMessage = _timings.isEmpty
+            ? error.toString().replaceFirst('Exception: ', '')
+            : null;
         _isLoading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   Widget _buildTimingCard(String prayer, String time) {
@@ -4989,12 +5151,12 @@ class _PrayerTimesPageState extends State<PrayerTimesPage> {
                         ],
                       ),
                     )
-                  else if (_isLoading)
+                  else if (_isLoading && _timings.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 60),
                       child: Center(child: CircularProgressIndicator()),
                     )
-                  else if (_errorMessage != null)
+                  else if (_errorMessage != null && _timings.isEmpty)
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
@@ -5284,12 +5446,14 @@ class _MasbahaPageState extends State<MasbahaPage> {
   }
 
   Future<void> _showIntroDialog({required bool firstTime}) async {
+    final dark = NurrDesign.darkMode.value;
     await showDialog<void>(
       context: context,
       barrierDismissible: !firstTime,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.black.withOpacity(0.95),
+          backgroundColor: NurrDesign.surface(dark),
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
@@ -5316,8 +5480,8 @@ class _MasbahaPageState extends State<MasbahaPage> {
                 textAlign: widget.language == AppLanguage.arabic
                     ? TextAlign.right
                     : TextAlign.left,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: NurrDesign.text(dark),
                   fontSize: 15,
                   height: 1.45,
                 ),
@@ -6868,12 +7032,14 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
   }
 
   Future<void> _showIntroDialog({required bool firstTime}) async {
+    final dark = NurrDesign.darkMode.value;
     await showDialog<void>(
       context: context,
       barrierDismissible: !firstTime,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF101010),
+          backgroundColor: NurrDesign.surface(dark),
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
             side: BorderSide(color: _MyAppState.currentTheme.color, width: 2),
@@ -6891,7 +7057,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
               children: [
                 Text(
                   _introBody(),
-                  style: const TextStyle(color: Colors.white, height: 1.4),
+                  style: TextStyle(color: NurrDesign.text(dark), height: 1.4),
                   textDirection: appLanguage == AppLanguage.arabic
                       ? TextDirection.rtl
                       : TextDirection.ltr,
@@ -6908,7 +7074,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                 const SizedBox(height: 6),
                 Text(
                   _hadithText(),
-                  style: const TextStyle(color: Colors.white, height: 1.45),
+                  style: TextStyle(color: NurrDesign.text(dark), height: 1.45),
                   textDirection: appLanguage == AppLanguage.arabic
                       ? TextDirection.rtl
                       : TextDirection.ltr,
@@ -7102,6 +7268,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
     if (_isAllah(item)) {
       return;
     }
+    final dark = NurrDesign.darkMode.value;
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -7113,7 +7280,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
             maxHeight: MediaQuery.of(context).size.height * 0.62,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFF111111),
+            color: NurrDesign.surface(dark),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: _MyAppState.currentTheme.color, width: 2),
           ),
@@ -7157,7 +7324,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                             item.arabic,
                             textDirection: TextDirection.rtl,
                             style: GoogleFonts.notoNaskhArabic(
-                              color: Colors.white,
+                              color: NurrDesign.text(dark),
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
                             ),
@@ -7167,12 +7334,15 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close, color: Colors.white70),
+                      icon: Icon(
+                        Icons.close,
+                        color: NurrDesign.secondaryText(dark),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Divider(color: Colors.white24, height: 1),
+              Divider(color: NurrDesign.gold.withValues(alpha: .2), height: 1),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
@@ -7181,8 +7351,8 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                     textDirection: appLanguage == AppLanguage.arabic
                         ? TextDirection.rtl
                         : TextDirection.ltr,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: NurrDesign.text(dark),
                       fontSize: 16,
                       height: 1.45,
                     ),
@@ -7227,7 +7397,9 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                     height: 54,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.black.withOpacity(0.6),
+                      color: NurrDesign.gold.withValues(
+                        alpha: dark ? .14 : .18,
+                      ),
                       border: Border.all(
                         color: _MyAppState.currentTheme.color,
                         width: 2,
@@ -7292,7 +7464,7 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                                   color: Colors.redAccent,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.black,
+                                    color: NurrDesign.surface(dark),
                                     width: 0.8,
                                   ),
                                 ),
@@ -7375,8 +7547,8 @@ class _NamesOfAllahPageState extends State<NamesOfAllahPage> {
                           textDirection: appLanguage == AppLanguage.arabic
                               ? TextDirection.rtl
                               : TextDirection.ltr,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: NurrDesign.secondaryText(dark),
                             fontSize: 16,
                           ),
                         ),

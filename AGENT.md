@@ -27,7 +27,7 @@ Technischer Stand:
 - Flutter/Dart App
 - Modernes Nurr-UI in Creme, Weiss, Gold und dezentem Dunkelgruen mit Material 3 Navigation, responsiver Startseite und dreisprachigem Onboarding. Keine Ramadan-spezifischen Motive.
 - Die produktiven Hauptseiten verwenden eine feste Nurr-Farbidentitaet. Hellmodus nutzt dunkle Texte, Dunkelmodus helle Texte.
-- Sprachwahl und Onboarding sind vollstaendig codebasiert (Gradienten, Formen und Material-Symbole) und besitzen keine Abhaengigkeit von externen oder generierten Hintergrundbildern.
+- Sprachwahl und das hochwertige siebenstufige First-Launch-Onboarding sind vollstaendig codebasiert (Gradienten, Formen und Material-Symbole) und besitzen keine Abhaengigkeit von externen oder generierten Hintergrundbildern. Das Onboarding stellt Quran, Gebete, Duas/Dhikr, persoenliche Ziele und die optionale Standortfreigabe vor, respektiert reduzierte Animationen und kann unter Mehr erneut angesehen werden.
 - Vor dem Abschluss des Onboardings wird Hell oder Dunkel gewaehlt. Die Einstellung `nurr_app_dark_mode` ist spaeter unter Mehr aenderbar und wird mit dem Quran-Lesemodus synchronisiert.
 - Alte frei waehlbare Hintergrundbilder werden nicht mehr hinter den Hauptseiten gerendert und die Hintergrundauswahl ist aus der produktiven Einstellungsoberflaeche entfernt.
 - Die Dua-Kategorien verwenden einheitliche Material-Symbole statt Emoji-Kacheln. Die Home-Schnellaktionen enthalten Masbaha statt eines doppelten Zugriffs auf die 99 Namen.
@@ -79,6 +79,10 @@ Technischer Stand:
 - 99 Namen Allahs
 - Theme- und Hintergrundanpassung
 - Intro/Tutorial-Zustand
+- kuratierter taeglicher Quran-Impuls mit direkter Verknuepfung zum Vers
+- illustrierte, offline verfuegbare Sunnah-Gewohnheiten mit Quellen und lokalem Tagesfortschritt
+- animierter Gebetsweg mit direktem Abhaken auf Home, Tagesansicht und lokaler Wochenhistorie
+- Gebetsweg und Sunnah-Seite verwenden zwei optimierte, textfreie WebP-Heroillustrationen (zusammen unter 130 KB); Texte, Bedienung, Fortschritt und Animationen bleiben fuer robuste Lokalisierung codebasiert.
 
 ## Lokale Datenspeicherung
 
@@ -90,10 +94,13 @@ Die App nutzt `shared_preferences` fuer lokale Persistenz. Je nach Feature werde
 - Prayer-Tracking / Verlauf
 - Intro-/Tutorial-Status
 - globaler Nurr-Onboarding-Status (`nurr_onboarding_seen_v2`)
+- neuer globaler Onboarding-Abschlussstatus (`onboardingCompleted`), ausgewaehlte Onboarding-Ziele (`nurr_onboarding_goals`) und die optionale Standortauswahl (`nurr_onboarding_location_choice`, `nurr_onboarding_manual_location`)
 - globaler Hell-/Dunkelmodus (`nurr_app_dark_mode`)
 - weitere UI- und Feature-Zustaende
 - Quran-Anzeigemodus, Uebersetzungssprache, getrennte Schriftgroessen, Versabstand und Vers-Lesezeichen
 - letzte Quran-Lesestelle (`quran_last_surah`, `quran_last_ayah`)
+- taeglicher Sunnah-Fortschritt (`nurr_sunnah_YYYY-MM-DD`)
+- aktueller Gebetstag und Gebetsweg-Historie (`nurr_prayer_day`, `nurr_prayer_journey_history`)
 
 Wichtig:
 - Wenn neue lokal gespeicherte Daten hinzukommen, muessen `legal/privacy.md` und ggf. `legal/support.md` angepasst werden.

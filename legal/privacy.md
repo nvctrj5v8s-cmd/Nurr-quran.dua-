@@ -25,7 +25,7 @@ Depending on the feature you use, this may include:
 - daily Sunnah practice selections and the prayer-journey weekly progress, stored only on the device
 - tasbih counter state and selected dhikr
 - intro or tutorial status
-- whether the Nurr welcome onboarding has already been completed and the selected global light/dark appearance
+- whether the Nurr welcome onboarding has already been completed, the optional focus goals selected during onboarding, an optional manually entered prayer-time place, and the selected global light/dark appearance
 - other feature-related app preferences needed to restore your last state
 - Quran display mode, single/side-by-side page preference, language-specific text visibility, light/dark appearance, selected translation, separate Arabic and translation font sizes, verse spacing, and verse bookmarks
 
@@ -37,6 +37,7 @@ The prayer times feature can use your current location to calculate local prayer
 
 - On Android and iOS, the app may request location permission through the system permission dialog.
 - On web, the browser may request location permission.
+- During onboarding, the system location request is triggered only after you select the location button. You may decline, skip the step, or store a manually entered place locally instead.
 - If direct location access is unavailable on web, the app may use an IP-based fallback through `https://ipapi.co/json/` to estimate an approximate location.
 
 The app does not currently create user accounts or maintain an internal location history for profiling. However, location-related data may be processed by third-party services when prayer times are requested.

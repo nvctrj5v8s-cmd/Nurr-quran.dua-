@@ -167,8 +167,6 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
 
   Future<void> _savePreferences() async {
     final prefs = await SharedPreferences.getInstance();
-    NurrDesign.darkMode.value = _preferences.darkMode;
-    await prefs.setBool('nurr_app_dark_mode', _preferences.darkMode);
     await prefs.setString('quran_text_reading_mode', _preferences.mode.name);
     await prefs.setBool(
       'quran_show_arabic_${widget.uiLanguageCode}',
@@ -348,7 +346,7 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                 displayColor: NurrDesign.text(draft.darkMode),
               ),
             ),
-            child: ColoredBox(
+            child: Material(
               color: NurrDesign.surface(draft.darkMode),
               child: SafeArea(
                 child: SingleChildScrollView(
@@ -559,95 +557,213 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
 
   Future<void> _showSearch(QuranTextData data) async {
     final controller = TextEditingController();
+    List<QuranSurah> surahResults = [];
     List<QuranVerse> results = [];
+    final dialogDark = _preferences.darkMode;
     await showDialog<void>(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xFF151515),
-          title: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: _t(
-                'Im Quran suchen',
-                'Search Quran',
-                'البحث في القرآن',
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(
+          colorScheme: dialogDark
+              ? const ColorScheme.dark(
+                  primary: NurrDesign.gold,
+                  surface: NurrDesign.darkSurface,
+                )
+              : const ColorScheme.light(
+                  primary: NurrDesign.goldDark,
+                  surface: NurrDesign.paper,
+                ),
+        ),
+        child: StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            backgroundColor: NurrDesign.surface(dialogDark),
+            surfaceTintColor: Colors.transparent,
+            title: TextField(
+              controller: controller,
+              autofocus: true,
+              style: TextStyle(color: NurrDesign.text(dialogDark)),
+              decoration: InputDecoration(
+                hintText: _t(
+                  'Sure, Nummer oder Vers suchen',
+                  'Search surah, number, or verse',
+                  'ابحث عن سورة أو رقم أو آية',
+                ),
+                prefixIcon: const Icon(Icons.search),
               ),
-              prefixIcon: const Icon(Icons.search),
+              onChanged: (query) {
+                final trimmed = query.trim();
+                final normalized = _normalizeSearch(trimmed);
+                setDialogState(() {
+                  surahResults = normalized.isEmpty
+                      ? []
+                      : data.surahs
+                            .where((surah) {
+                              return _matchesSurahSearch(surah, normalized);
+                            })
+                            .take(12)
+                            .toList();
+                  results = normalized.length < 2 && !normalized.contains(':')
+                      ? []
+                      : data.verses
+                            .where((verse) {
+                              return verse.arabic.contains(trimmed) ||
+                                  verse
+                                      .translationFor(_translationLanguage)
+                                      .toLowerCase()
+                                      .contains(normalized) ||
+                                  verse.key == normalized;
+                            })
+                            .take(100)
+                            .toList();
+                });
+              },
             ),
-            onChanged: (query) {
-              final normalized = query.trim().toLowerCase();
-              setDialogState(() {
-                results = normalized.length < 2
-                    ? []
-                    : data.verses
-                          .where((verse) {
-                            return verse.arabic.contains(query.trim()) ||
-                                verse
-                                    .translationFor(_translationLanguage)
-                                    .toLowerCase()
-                                    .contains(normalized) ||
-                                verse.key == normalized;
-                          })
-                          .take(100)
-                          .toList();
-              });
-            },
-          ),
-          content: SizedBox(
-            width: 600,
-            height: 420,
-            child: results.isEmpty
-                ? Center(
-                    child: Text(
-                      _t(
-                        'Mindestens zwei Zeichen eingeben',
-                        'Enter at least two characters',
-                        'أدخل حرفين على الأقل',
+            content: SizedBox(
+              width: 600,
+              height: 420,
+              child: surahResults.isEmpty && results.isEmpty
+                  ? Center(
+                      child: Text(
+                        _t(
+                          'Suraname, Suranummer oder mindestens zwei Zeichen eingeben',
+                          'Enter a surah name, surah number, or at least two characters',
+                          'أدخل اسم السورة أو رقمها أو حرفين على الأقل',
+                        ),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: NurrDesign.secondaryText(dialogDark),
+                        ),
                       ),
+                    )
+                  : ListView(
+                      children: [
+                        if (surahResults.isNotEmpty) ...[
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                            child: Text(
+                              _t('Suren', 'Surahs', 'السور'),
+                              style: const TextStyle(
+                                color: NurrDesign.goldDark,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          ...surahResults.map(
+                            (surah) => ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: NurrDesign.gold.withValues(
+                                  alpha: .16,
+                                ),
+                                foregroundColor: NurrDesign.goldDark,
+                                child: Text('${surah.number}'),
+                              ),
+                              title: Text(
+                                surah.transliteratedName,
+                                style: TextStyle(
+                                  color: NurrDesign.text(dialogDark),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              subtitle: Text(
+                                surah.englishName,
+                                style: TextStyle(
+                                  color: NurrDesign.secondaryText(dialogDark),
+                                ),
+                              ),
+                              trailing: Text(
+                                surah.arabicName,
+                                textDirection: TextDirection.rtl,
+                                style: const TextStyle(
+                                  fontFamily: 'AmiriQuran',
+                                  color: NurrDesign.goldDark,
+                                  fontSize: 20,
+                                ),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _openSurah(surah, data: data);
+                              },
+                            ),
+                          ),
+                          if (results.isNotEmpty) const Divider(),
+                        ],
+                        if (results.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                            child: Text(
+                              _t('Verse', 'Verses', 'الآيات'),
+                              style: const TextStyle(
+                                color: NurrDesign.goldDark,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                        ...results.map(
+                          (verse) => ListTile(
+                            title: Text(
+                              verse.arabic,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(
+                                fontFamily: 'AmiriQuran',
+                                color: NurrDesign.text(dialogDark),
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${verse.key} · ${verse.translationFor(_translationLanguage)}',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: NurrDesign.secondaryText(dialogDark),
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _openSurah(
+                                data.surahs[verse.surah - 1],
+                                data: data,
+                                initialAyah: verse.ayah,
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                : ListView.builder(
-                    itemCount: results.length,
-                    itemBuilder: (context, index) {
-                      final verse = results[index];
-                      return ListTile(
-                        title: Text(
-                          verse.arabic,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textDirection: TextDirection.rtl,
-                          style: const TextStyle(fontFamily: 'AmiriQuran'),
-                        ),
-                        subtitle: Text(
-                          '${verse.key} · ${verse.translationFor(_translationLanguage)}',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          _openSurah(
-                            data.surahs[verse.surah - 1],
-                            data: data,
-                            initialAyah: verse.ayah,
-                          );
-                        },
-                      );
-                    },
-                  ),
+            ),
           ),
         ),
       ),
     );
-    controller.dispose();
+  }
+
+  String _normalizeSearch(String value) => value
+      .toLowerCase()
+      .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '')
+      .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06ff:]'), '')
+      .replaceFirst(RegExp(r'^(surah|sura|sure)'), '');
+
+  bool _matchesSurahSearch(QuranSurah surah, String normalized) {
+    if (surah.number.toString() == normalized) return true;
+    final variants = <String>{normalized};
+    if (normalized.endsWith('h') && normalized.length > 1) {
+      variants.add(normalized.substring(0, normalized.length - 1));
+    }
+    final names = [
+      surah.arabicName,
+      surah.transliteratedName,
+      surah.englishName,
+    ].map(_normalizeSearch);
+    return variants.any((query) => names.any((name) => name.contains(query)));
   }
 
   Future<void> _showBookmarks(QuranTextData data) async {
     final sorted = _bookmarks.toList()..sort(_compareVerseKeys);
+    final dialogDark = _preferences.darkMode;
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: const Color(0xFF151515),
+      backgroundColor: NurrDesign.surface(dialogDark),
+      showDragHandle: true,
       builder: (context) => SafeArea(
         child: Column(
           children: [
@@ -671,6 +787,9 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                           'No bookmarks yet',
                           'لا توجد إشارات مرجعية بعد',
                         ),
+                        style: TextStyle(
+                          color: NurrDesign.secondaryText(dialogDark),
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -682,7 +801,12 @@ class _QuranTextHomePageState extends State<QuranTextHomePage> {
                             Icons.bookmark,
                             color: widget.themeColor,
                           ),
-                          title: Text('[${verse.key}]'),
+                          title: Text(
+                            '[${verse.key}]',
+                            style: TextStyle(
+                              color: NurrDesign.text(dialogDark),
+                            ),
+                          ),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -1519,8 +1643,9 @@ class QuranSourcesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = NurrDesign.darkMode.value;
     return Scaffold(
-      backgroundColor: const Color(0xFF101010),
+      backgroundColor: NurrDesign.background(dark),
       appBar: AppBar(title: const Text('Quran – Quellen & Lizenzen')),
       body: ListView(
         padding: const EdgeInsets.all(18),
@@ -1559,9 +1684,12 @@ class QuranSourcesPage extends StatelessWidget {
                 'Quelle: Google Fonts / Amiri Font Project',
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Übersetzungen geben die Bedeutung des Quran wieder und ersetzen nicht den arabischen Qurantext.',
-            style: TextStyle(color: Colors.white70, height: 1.5),
+            style: TextStyle(
+              color: NurrDesign.secondaryText(dark),
+              height: 1.5,
+            ),
           ),
         ],
       ),
@@ -1582,8 +1710,9 @@ class _SourceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = NurrDesign.darkMode.value;
     return Card(
-      color: const Color(0xFF191919),
+      color: NurrDesign.surface(dark),
       margin: const EdgeInsets.only(bottom: 14),
       child: Padding(
         padding: const EdgeInsets.all(17),
@@ -1601,7 +1730,10 @@ class _SourceCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               body,
-              style: const TextStyle(color: Colors.white70, height: 1.5),
+              style: TextStyle(
+                color: NurrDesign.secondaryText(dark),
+                height: 1.5,
+              ),
             ),
           ],
         ),

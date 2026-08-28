@@ -18,6 +18,7 @@ Nurr is a Quran and dua app with:
 - daily Quran impulses, sourced Sunnah habits, and the prayer-journey weekly view
 - location-based prayer times
 - multilingual app support
+- a seven-step first-launch introduction that can later be viewed again from More without resetting completion
 
 ## Support Topics
 
