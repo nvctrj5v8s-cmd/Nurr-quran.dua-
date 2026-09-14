@@ -46,3 +46,9 @@ app.*.map.json
 /android/key.properties
 /android/app/release.keystore
 /android/local.properties
+
+# Local signing/export and backup files
+**/*.pem
+**/*.bak
+/assets/assets/assets/
+/flutter_service_worker.js
