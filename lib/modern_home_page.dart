@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nurr_design.dart';
+import 'quran_reading_plan/reading_plan_page.dart';
 import 'spiritual_home_features.dart';
 
 class ModernHomePage extends StatefulWidget {
@@ -123,6 +124,11 @@ class _ModernHomePageState extends State<ModernHomePage> {
                         languageCode: widget.languageCode,
                         darkMode: widget.darkMode,
                         onTap: widget.onContinueReading,
+                      ),
+                      const SizedBox(height: 18),
+                      QuranReadingPlanCard(
+                        languageCode: widget.languageCode,
+                        darkMode: widget.darkMode,
                       ),
                       const SizedBox(height: 24),
                       _SectionTitle(
